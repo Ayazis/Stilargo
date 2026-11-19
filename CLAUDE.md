@@ -19,6 +19,21 @@ Multiple people work on this repo.
 - Never force-push or rewrite shared history.
 - Be extra careful with scenes and prefabs: they conflict badly. Tell the user if a scene/prefab is touched on another branch.
 
+## Build after each step
+
+The user plays the game as a Windows exe, not in the Unity editor. When a feature step is finished, build a Windows player and tell the user where the exe is.
+
+- Close the Unity editor for this project first; batch mode can't open a project that is already open.
+- Use the editor version in `ProjectSettings/ProjectVersion.txt` (installed under `C:\Program Files\Unity\Hub\Editor\<version>\Editor\Unity.exe`). If that version isn't installed, tell the user; don't upgrade the project.
+- Build from the repo root (output goes to the git-ignored `Builds/` folder):
+
+  ```powershell
+  & "C:\Program Files\Unity\Hub\Editor\<version>\Editor\Unity.exe" -batchmode -quit -projectPath . -buildWindows64Player "Builds/Windows/Stilargo.exe" -logFile "Builds/build.log"
+  ```
+
+- The build includes only the scenes enabled in Build Settings. If a step adds a scene, list the editor step to add it there.
+- A step is done only when the build succeeds. On failure, read `Builds/build.log`, fix the errors and rebuild. Report anything you can't fix to the user.
+
 ## Structure
 
 - Own code under `Assets/_Project/Scripts/`, split into `Core` (plain C# game logic), `Gameplay`, `UI`, `Infrastructure`, `Editor`, each with its own `.asmdef`. `Core` depends on nothing of ours.
