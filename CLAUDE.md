@@ -18,6 +18,7 @@ Multiple people work on this repo.
 - Regularly check for merge conflicts with `main` and with related branches, especially before committing or opening a PR. Report conflicts to the user; don't resolve someone else's changes without asking.
 - Never force-push or rewrite shared history.
 - Be extra careful with scenes and prefabs: they conflict badly. Tell the user if a scene/prefab is touched on another branch.
+- `CollaborationNotes.md` is the shared scratchpad between Ci and FL. Read it before starting work. Add an entry when you change shared files (ProjectSettings, Build Settings, contracts, asmdefs) or need something from the other person.
 
 ## Build after each step
 
