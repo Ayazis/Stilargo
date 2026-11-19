@@ -6,6 +6,7 @@ using Stilargo.Gameplay.Navigation;
 using Stilargo.Gameplay.Orders;
 using Stilargo.Gameplay.Selection;
 using Stilargo.Gameplay.Units;
+using Stilargo.Editor.Rendering;
 using Stilargo.Infrastructure.Composition;
 using Unity.AI.Navigation;
 using UnityEditor;
@@ -33,9 +34,6 @@ namespace Stilargo.Editor.Scenes
         private const string UnitMaterialPath = MaterialsFolder + "/Greybox_Unit.mat";
         private const string SelectionMarkerMaterialPath = MaterialsFolder + "/Greybox_SelectionMarker.mat";
         private const string WaypointPathMaterialPath = MaterialsFolder + "/Greybox_WaypointPath.mat";
-        private const string LitShaderName = "Universal Render Pipeline/Lit";
-        private const string UnlitShaderName = "Universal Render Pipeline/Unlit";
-        private const string BaseColorProperty = "_BaseColor";
 
         // Distinct colours so the ground, boxes, units and their markers can be told apart; Unity's default material is plain white.
         private static readonly Color GroundColor = new Color(0.22f, 0.24f, 0.27f);
@@ -120,6 +118,7 @@ namespace Stilargo.Editor.Scenes
         {
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             CreateSun();
+            PhotorealSceneDefaults.CreateGlobalVolume();
             GroundNavMeshInstaller groundInstaller = CreateWalkableWorld();
             SelectableUnit[] units = CreateUnits();
             RtsCameraRig rig = CreateCamera();
@@ -138,8 +137,7 @@ namespace Stilargo.Editor.Scenes
 
         private static void CreateSun()
         {
-            var sun = new GameObject(LightName);
-            sun.AddComponent<Light>().type = LightType.Directional;
+            Light sun = PhotorealSceneDefaults.CreateSun(LightName);
             sun.transform.rotation = Quaternion.Euler(SunPitchDegrees, SunYawDegrees, 0f);
         }
 
@@ -155,8 +153,8 @@ namespace Stilargo.Editor.Scenes
             surface.collectObjects = CollectObjects.Children;
             surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
 
-            CreateGround(world.transform, LoadOrCreateMaterial(GroundMaterialPath, GroundColor, LitShaderName));
-            CreateLandmarks(world.transform, LoadOrCreateMaterial(LandmarkMaterialPath, LandmarkColor, LitShaderName));
+            CreateGround(world.transform, LoadOrCreateLitMaterial(GroundMaterialPath, GroundColor));
+            CreateLandmarks(world.transform, LoadOrCreateLitMaterial(LandmarkMaterialPath, LandmarkColor));
             return world.AddComponent<GroundNavMeshInstaller>();
         }
 
@@ -187,9 +185,9 @@ namespace Stilargo.Editor.Scenes
 
         private static SelectableUnit[] CreateUnits()
         {
-            Material body = LoadOrCreateMaterial(UnitMaterialPath, UnitColor, LitShaderName);
-            Material marker = LoadOrCreateMaterial(SelectionMarkerMaterialPath, SelectionMarkerColor, UnlitShaderName);
-            Material path = LoadOrCreateMaterial(WaypointPathMaterialPath, WaypointPathColor, UnlitShaderName);
+            Material body = LoadOrCreateLitMaterial(UnitMaterialPath, UnitColor);
+            Material marker = LoadOrCreateUnlitMaterial(SelectionMarkerMaterialPath, SelectionMarkerColor);
+            Material path = LoadOrCreateUnlitMaterial(WaypointPathMaterialPath, WaypointPathColor);
 
             var units = new SelectableUnit[UnitColumns * UnitRows];
             for (int row = 0; row < UnitRows; row++)
@@ -262,7 +260,17 @@ namespace Stilargo.Editor.Scenes
             return pathObject.AddComponent<WaypointPathView>();
         }
 
-        private static Material LoadOrCreateMaterial(string path, Color color, string shaderName)
+        private static Material LoadOrCreateLitMaterial(string path, Color color)
+        {
+            return LoadOrCreateMaterial(path, () => HdrpMaterials.CreateLit(color));
+        }
+
+        private static Material LoadOrCreateUnlitMaterial(string path, Color color)
+        {
+            return LoadOrCreateMaterial(path, () => HdrpMaterials.CreateUnlit(color));
+        }
+
+        private static Material LoadOrCreateMaterial(string path, Func<Material> create)
         {
             var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (existing != null)
@@ -270,14 +278,7 @@ namespace Stilargo.Editor.Scenes
                 return existing;
             }
 
-            Shader shader = Shader.Find(shaderName);
-            if (shader == null)
-            {
-                throw new InvalidOperationException($"Shader '{shaderName}' not found; is URP installed?");
-            }
-
-            var material = new Material(shader);
-            material.SetColor(BaseColorProperty, color);
+            Material material = create();
             EnsureFolder(MaterialsFolder);
             AssetDatabase.CreateAsset(material, path);
             return material;
@@ -286,7 +287,7 @@ namespace Stilargo.Editor.Scenes
         private static RtsCameraRig CreateCamera()
         {
             var cameraObject = new GameObject(CameraName) { tag = MainCameraTag };
-            cameraObject.AddComponent<Camera>();
+            PhotorealSceneDefaults.ConfigureCamera(cameraObject.AddComponent<Camera>());
             cameraObject.AddComponent<AudioListener>();
             cameraObject.transform.position = new Vector3(0f, StartHeight, 0f);
             return cameraObject.AddComponent<RtsCameraRig>();

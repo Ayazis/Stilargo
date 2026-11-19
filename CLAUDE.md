@@ -35,6 +35,16 @@ The user plays the game as a Windows exe, not in the Unity editor. When a featur
 - The build includes only the scenes enabled in Build Settings. If a step adds a scene, list the editor step to add it there.
 - A step is done only when the build succeeds. On failure, read `Builds/build.log`, fix the errors and rebuild. Report anything you can't fix to the user.
 
+## Visual fidelity (photoreal target)
+
+- Pipeline is HDRP (`Assets/_Project/Settings/HdrpPipeline.asset`). Create materials only through `HdrpMaterials` (`HDRP/Lit`, `HDRP/Unlit`); never URP, Built-in or legacy shaders.
+- Linear color space, physical units: 1 unit = 1 m, PBR-valid albedo (no pure black/white), lights in lux/lumen with color temperature (Kelvin). The sun is ~100,000 lux and exposure is automatic.
+- Project-wide rendering comes from `Stilargo → Apply Photoreal Rendering Settings` (`Editor/Rendering/PhotorealRenderingSetup.cs`). It writes the pipeline asset and `Settings/PhotorealVolumeProfile.asset` (physically based sky, exposure, fog, SSAO, SSR, contact shadows, ACES). Change settings there, not by hand.
+- Scene builders use `PhotorealSceneDefaults` for the camera (TAA), the sun and the global volume.
+- Code-generated placeholder materials must be easy to swap for authored PBR assets.
+- Don't change Graphics/Quality/Player settings or volume profiles without logging it in `CollaborationNotes.md`.
+- Claude can't judge looks from code: after a visual change, build and ask the user to check it in the exe.
+
 ## Structure
 
 - Own code under `Assets/_Project/Scripts/`, split into `Core` (plain C# game logic), `Gameplay`, `UI`, `Infrastructure`, `Editor`, each with its own `.asmdef`. `Core` depends on nothing of ours.

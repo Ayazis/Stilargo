@@ -66,7 +66,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 7c91f7d8fb8083f4e8a5513a981e174d, type: 2}
+  - {fileID: 2100000, guid: f65c26788f154c848a4cb566734640d2, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -157,7 +157,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: bf44c99009db0174483bf89becc2bbb0, type: 2}
+  - {fileID: 2100000, guid: a8fc161c93d026c4b950d6b0229e5916, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -202,7 +202,7 @@ MonoBehaviour:
   _visibleColor:
     serializedVersion: 2
     rgba: 0
-  _textureProperty: _BaseMap
+  _textureProperty: _UnlitColorMap
   _heightAboveGround: 20
 --- !u!1 &1069551782597450373
 GameObject:
@@ -319,7 +319,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6278ec64b20989a4ebd33100dfe5e054, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Stilargo.Gameplay::Stilargo.Gameplay.Scavenging.LootCacheSpawner
-  _cachePrefab: {fileID: 2086301301145509954, guid: 5e497bd1d8428e24bb0eee5be46af8ac, type: 3}
+  _cachePrefab: {fileID: 281574719226016913, guid: 873894ac2ba884d46874a0d6f87a3152, type: 3}
   _heightAboveGround: 0.5
 --- !u!1 &5125501201319692817
 GameObject:
@@ -398,7 +398,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c61433bfc647a34a80b63bf3e571316, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Stilargo.Gameplay::Stilargo.Gameplay.City.CitySpawner
-  _groundPrefab: {fileID: 6654349834697389646, guid: fc73411d94f7c324a97dfef1b5feb1ff, type: 3}
-  _buildingPrefab: {fileID: 5475022968441913262, guid: bc66e7bb5699c8641918eab15657eb1e, type: 3}
+  _groundPrefab: {fileID: 1689230458956282134, guid: c0cfe682ed173d44fa28c295cb8824f3, type: 3}
+  _buildingPrefab: {fileID: 8672573999000431306, guid: 2dc7beca6102f8a4f9b2a8cc74071069, type: 3}
   _storeyHeight: 3
   _groundThickness: 0.2

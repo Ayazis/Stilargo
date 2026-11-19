@@ -8,6 +8,22 @@ Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handover
 
 ---
 
+### 2026-11-19 · FL (photoreal rendering, branch `feature/photoreal-rendering`)
+
+**@both: the project is now on HDRP (URP removed)**
+- `com.unity.render-pipelines.universal` is gone and `high-definition` 17.6.0 is in. `UrpPipelineSetup`, the URP assets and `Assets/DefaultVolumeProfile.asset` were deleted. `Stilargo.Editor` now references `Unity.RenderPipelines.HighDefinition.Runtime`.
+- **Color space is Linear.** Lights use physical units: the sun is 6000 K at 100,000 lux, with automatic exposure.
+- `Stilargo → Apply Photoreal Rendering Settings` creates `Settings/HdrpPipeline.asset` and `Settings/PhotorealVolumeProfile.asset`, and is safe to rerun. The volume holds a physically based sky, fog, SSAO, SSR, contact shadows, ACES, bloom and vignette. Quality levels force anisotropic filtering and full-resolution textures.
+- Make new materials only with `Editor/Rendering/HdrpMaterials` (`CreateLit`, `CreateUnlit`, `CreateTransparentUnlit`). Lit color is `_BaseColor`; unlit is `_UnlitColor` / `_UnlitColorMap`.
+
+**@Ci: I changed `MainSceneCreator`**
+It now uses `HdrpMaterials` for its materials and `PhotorealSceneDefaults` for the camera (TAA), the sun and a global volume. The Greybox materials and `Main.unity` were regenerated, so the material GUIDs changed. If you get conflicts, run `Stilargo → Recreate Main Scene` instead of merging YAML.
+
+**@both: `FogOverlay._textureProperty` now defaults to `_UnlitColorMap`** (HDRP Unlit). The World prefab and its materials were regenerated.
+
+**@both: harmless warning**
+HDRP's global settings still reference one URP type (`MipGenRenderPipelineRuntimeResources`). The log warns about it, but the build is fine.
+
 ### 2026-11-19 · Ci (selection & orders, branch `ci/selection-orders`)
 
 **@FL: `IUnitOrders` is unchanged.** Units implement it through Core's `UnitOrders` (a waypoint queue over an `INavigationAgent`). `SelectableUnit` (`Stilargo.Gameplay.Units`) has a `NavMeshAgent`, so you can still add `ScavengerComponent` to it.
