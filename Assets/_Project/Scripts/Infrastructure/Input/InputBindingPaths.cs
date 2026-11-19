@@ -22,6 +22,7 @@ namespace Stilargo.Infrastructure.Input
         public const string KeyRightArrow = "<Keyboard>/rightArrow";
         public const string KeyLeftShift = "<Keyboard>/leftShift";
         public const string KeyRightShift = "<Keyboard>/rightShift";
+        public const string KeyF = "<Keyboard>/f";
 
         public const string MouseScrollY = "<Mouse>/scroll/y";
         public const string MouseLeftButton = "<Mouse>/leftButton";

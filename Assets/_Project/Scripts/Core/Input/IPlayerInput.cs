@@ -26,5 +26,8 @@ namespace Stilargo.Core.Input
 
         /// <summary>True while the modifier that queues orders instead of replacing them is held.</summary>
         bool IsQueueModifierHeld { get; }
+
+        /// <summary>True on the frame the player asks for the next formation.</summary>
+        bool WasCycleFormationPressedThisFrame { get; }
     }
 }

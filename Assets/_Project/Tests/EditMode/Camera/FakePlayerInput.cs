@@ -23,5 +23,7 @@ namespace Stilargo.Tests.EditMode.Camera
         public bool WasCommandPressedThisFrame { get; set; }
 
         public bool IsQueueModifierHeld { get; set; }
+
+        public bool WasCycleFormationPressedThisFrame { get; set; }
     }
 }
