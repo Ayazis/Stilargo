@@ -82,6 +82,29 @@ These are the contracts every agent codes against.
 
 Each agent's brief gives its folder ownership, the contracts it must use, and "done = compiles + EditMode tests pass".
 
+## Split between two people (C and F)
+The split follows the code: **C** takes units and combat, and **F** takes the world and the economy. Each person owns their own feature folders, so the two accounts never edit the same files. Each person works on their own branch (`c/<feature>`, `f/<feature>`) and opens a PR into `main`.
+
+**Shared first: Wave 0 (C does it, F reviews)**
+- Step 1, the skeleton: folders, asmdefs, `GameBootstrapper`, the `Main` scene, `.gitignore`.
+- The Core contracts: `IDamageable`, `IVisionSource`, `IPlayerInput`, `IUnitOrders`, `Wallet`, `CityLayout`.
+- Both people start only after this is merged. A contract changes only through a PR that the other person approves.
+
+| Order | C: units & combat | F: world & economy |
+|---|---|---|
+| 1 | 2. Input + RTS camera | 3. Procedural city + NavMesh |
+| 2 | 4. Selection, waypoints, formations | 7. Fog of war |
+| 3 | 5. Combat, stances, target priority | 8. Scavenging & economy (uses `IUnitOrders`) |
+| 4 | 6. Cover & garrison (uses `CityLayout`) | 9. Claim & fortify (uses `IDamageable`, `Wallet`) |
+| 5 | 10. Hill + rival AI | 11. Minimal UI |
+
+**Ownership rules**
+- `GameBootstrapper` and the `Main` scene each have a single owner, and scene YAML merges badly. Each person adds their own installer, `CombatInstaller` or `WorldInstaller`, and the bootstrapper calls both. Only C touches the scene, and F gets things into it with prefabs.
+- Before a dependency is merged, code against its contract and test with fakes. For example, F tests scavenging with a fake `IUnitOrders`.
+- Step 10 needs F's steps 3, 8 and 9. C starts it last.
+
+Both people's sub-steps can still run as parallel subagents inside each account, as described above.
+
 ## Out of scope (phase 2+)
 More houses and troops, recruiting, ambient civilian NPCs, multiple AI players, a full-size city, art, audio and saving.
 
