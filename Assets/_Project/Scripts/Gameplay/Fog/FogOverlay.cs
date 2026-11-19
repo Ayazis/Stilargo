@@ -14,7 +14,7 @@ namespace Stilargo.Gameplay.Fog
         [SerializeField] private Color32 _unseenColor = new Color32(0, 0, 0, 255);
         [SerializeField] private Color32 _exploredColor = new Color32(0, 0, 0, 160);
         [SerializeField] private Color32 _visibleColor = new Color32(0, 0, 0, 0);
-        [SerializeField] private string _textureProperty = "_BaseMap";
+        [SerializeField] private string _textureProperty = "_UnlitColorMap";
         [SerializeField] private float _heightAboveGround = 20f;
 
         private Renderer _renderer;

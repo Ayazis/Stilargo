@@ -1,4 +1,5 @@
 using System;
+using Stilargo.Editor.Rendering;
 using Stilargo.Gameplay.City;
 using Stilargo.Gameplay.Fog;
 using Stilargo.Gameplay.Scavenging;
@@ -6,7 +7,6 @@ using Stilargo.Gameplay.World;
 using Unity.AI.Navigation;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace Stilargo.Editor.World
 {
@@ -20,14 +20,10 @@ namespace Stilargo.Editor.World
         public const string PrefabPath = Root + "/World.prefab";
 
         private const string Root = "Assets/_Project/World";
-        private const string LitShader = "Universal Render Pipeline/Lit";
-        private const string UnlitShader = "Universal Render Pipeline/Unlit";
-        private const string BaseColorProperty = "_BaseColor";
         private const float CityCentre = 58f;
         private const float LootCacheSize = 1.2f;
         private const float HomeMarkerSize = 4f;
         private const float HomeMarkerThickness = 0.1f;
-        private const int TransparentRenderQueue = (int)RenderQueue.Transparent;
 
         private static readonly Color GroundColor = new Color(0.25f, 0.25f, 0.27f);
         private static readonly Color BuildingColor = new Color(0.7f, 0.68f, 0.62f);
@@ -133,13 +129,11 @@ namespace Stilargo.Editor.World
                 return existing;
             }
 
-            Material material = new Material(RequireShader(LitShader));
-            material.SetColor(BaseColorProperty, color);
+            Material material = HdrpMaterials.CreateLit(color);
             AssetDatabase.CreateAsset(material, path);
             return material;
         }
 
-        // URP exposes transparency as material properties plus keywords; the inspector normally sets these.
         private static Material LoadOrCreateFogMaterial()
         {
             string path = $"{Root}/Fog.mat";
@@ -149,14 +143,7 @@ namespace Stilargo.Editor.World
                 return existing;
             }
 
-            Material material = new Material(RequireShader(UnlitShader));
-            material.SetFloat("_Surface", 1f);
-            material.SetFloat("_Blend", 0f);
-            material.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
-            material.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
-            material.SetFloat("_ZWrite", 0f);
-            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            material.renderQueue = TransparentRenderQueue;
+            Material material = HdrpMaterials.CreateTransparentUnlit();
             AssetDatabase.CreateAsset(material, path);
             return material;
         }
@@ -202,16 +189,6 @@ namespace Stilargo.Editor.World
             return prefab;
         }
 
-        private static Shader RequireShader(string shaderName)
-        {
-            Shader shader = Shader.Find(shaderName);
-            if (shader == null)
-            {
-                throw new InvalidOperationException($"Shader '{shaderName}' not found. Is URP the active pipeline?");
-            }
-
-            return shader;
-        }
 
         private static void EnsureFolder()
         {

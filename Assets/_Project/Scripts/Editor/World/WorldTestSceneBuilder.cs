@@ -1,4 +1,5 @@
 using System.Linq;
+using Stilargo.Editor.Rendering;
 using Stilargo.Gameplay.Fog;
 using Stilargo.Gameplay.Scavenging;
 using Stilargo.Gameplay.World;
@@ -37,6 +38,7 @@ namespace Stilargo.Editor.World
             WorldInstaller world = InstantiateWorld();
             CreateCamera();
             CreateSun();
+            PhotorealSceneDefaults.CreateGlobalVolume();
             CreateBootstrapper(world);
             CreateTestWiring(world, CreateScout());
 
@@ -74,12 +76,12 @@ namespace Stilargo.Editor.World
             Camera camera = cameraObject.GetComponent<Camera>();
             camera.orthographic = true;
             camera.orthographicSize = CameraOrthographicSize;
+            PhotorealSceneDefaults.ConfigureCamera(camera);
         }
 
         private static void CreateSun()
         {
-            GameObject sun = new GameObject("Sun", typeof(Light));
-            sun.GetComponent<Light>().type = LightType.Directional;
+            Light sun = PhotorealSceneDefaults.CreateSun("Sun");
             sun.transform.rotation = Quaternion.Euler(SunAngle, SunAngle, 0f);
         }
 
