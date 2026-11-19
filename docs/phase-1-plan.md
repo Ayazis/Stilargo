@@ -85,10 +85,12 @@ Each agent's brief gives its folder ownership, the contracts it must use, and "d
 ## Split between two people (Ci and FL)
 The split follows the code: **Ci** takes units and combat, and **FL** takes the world and the economy. Each person owns their own feature folders, so the two accounts never edit the same files. Each person works on their own branch (`ci/<feature>`, `fl/<feature>`) and opens a PR into `main`.
 
-**Shared first: Wave 0 (Ci does it, FL reviews)**
-- Step 1, the skeleton: folders, asmdefs, `GameBootstrapper`, the `Main` scene, `.gitignore`.
-- The Core contracts: `IDamageable`, `IVisionSource`, `IPlayerInput`, `IUnitOrders`, `Wallet`, `CityLayout`.
-- Both people start only after this is merged. A contract changes only through a PR that the other person approves.
+**Wave 0, split so both start in parallel**
+- FL (small PR, merged first, Ci reviews): the asmdefs only (`Stilargo.Core`, `Stilargo.Gameplay`, `Stilargo.Tests.EditMode`). No other code.
+- Each person then writes the contracts they own inside their own feature folders, as part of their first feature PR:
+  - FL: `CityLayout`, `IVisionSource`, `Wallet`.
+  - Ci: `IDamageable`, `IPlayerInput`, `IUnitOrders`, plus `GameBootstrapper` and the `Main` scene.
+- Until the other person's contract is merged, code against a local fake in your test folder, never a copy of the contract. A contract changes only through a PR that the other person approves.
 
 | Order | Ci: units & combat | FL: world & economy |
 |---|---|---|
