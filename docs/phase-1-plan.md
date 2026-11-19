@@ -82,15 +82,15 @@ These are the contracts every agent codes against.
 
 Each agent's brief gives its folder ownership, the contracts it must use, and "done = compiles + EditMode tests pass".
 
-## Split between two people (C and F)
-The split follows the code: **C** takes units and combat, and **F** takes the world and the economy. Each person owns their own feature folders, so the two accounts never edit the same files. Each person works on their own branch (`c/<feature>`, `f/<feature>`) and opens a PR into `main`.
+## Split between two people (Cirr and FL)
+The split follows the code: **Cirr** takes units and combat, and **FL** takes the world and the economy. Each person owns their own feature folders, so the two accounts never edit the same files. Each person works on their own branch (`cirr/<feature>`, `fl/<feature>`) and opens a PR into `main`.
 
-**Shared first: Wave 0 (C does it, F reviews)**
+**Shared first: Wave 0 (Cirr does it, FL reviews)**
 - Step 1, the skeleton: folders, asmdefs, `GameBootstrapper`, the `Main` scene, `.gitignore`.
 - The Core contracts: `IDamageable`, `IVisionSource`, `IPlayerInput`, `IUnitOrders`, `Wallet`, `CityLayout`.
 - Both people start only after this is merged. A contract changes only through a PR that the other person approves.
 
-| Order | C: units & combat | F: world & economy |
+| Order | Cirr: units & combat | FL: world & economy |
 |---|---|---|
 | 1 | 2. Input + RTS camera | 3. Procedural city + NavMesh |
 | 2 | 4. Selection, waypoints, formations | 7. Fog of war |
@@ -99,9 +99,9 @@ The split follows the code: **C** takes units and combat, and **F** takes the wo
 | 5 | 10. Hill + rival AI | 11. Minimal UI |
 
 **Ownership rules**
-- `GameBootstrapper` and the `Main` scene each have a single owner, and scene YAML merges badly. Each person adds their own installer, `CombatInstaller` or `WorldInstaller`, and the bootstrapper calls both. Only C touches the scene, and F gets things into it with prefabs.
-- Before a dependency is merged, code against its contract and test with fakes. For example, F tests scavenging with a fake `IUnitOrders`.
-- Step 10 needs F's steps 3, 8 and 9. C starts it last.
+- `GameBootstrapper` and the `Main` scene each have a single owner, and scene YAML merges badly. Each person adds their own installer, `CombatInstaller` or `WorldInstaller`, and the bootstrapper calls both. Only Cirr touches the scene, and FL gets things into it with prefabs.
+- Before a dependency is merged, code against its contract and test with fakes. For example, FL tests scavenging with a fake `IUnitOrders`.
+- Step 10 needs FL's steps 3, 8 and 9. Cirr starts it last.
 
 Both people's sub-steps can still run as parallel subagents inside each account, as described above.
 
