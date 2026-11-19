@@ -1,16 +1,20 @@
 using System;
+using System.Collections.Generic;
 using Stilargo.Core.City;
+using Stilargo.Core.Economy;
 using Stilargo.Core.Fog;
+using Stilargo.Core.Scavenging;
 using Stilargo.Gameplay.City;
 using Stilargo.Gameplay.Fog;
+using Stilargo.Gameplay.Scavenging;
 using UnityEngine;
 
 namespace Stilargo.Gameplay.World
 {
     /// <summary>
-    /// Composition root for FL's world features: generates the city and sets up fog of war over it.
-    /// The game bootstrapper calls <see cref="Install"/> once, then hands <see cref="VisibilityGrid"/>
-    /// to units and enemies (vision sources and hideables).
+    /// Composition root for FL's world features: generates the city, sets up fog of war over it and scatters
+    /// loot for scavenging. The game bootstrapper calls <see cref="Install"/> once, then hands
+    /// <see cref="VisibilityGrid"/> and <see cref="ScavengingArea"/> to the units.
     /// </summary>
     public sealed class WorldInstaller : MonoBehaviour
     {
@@ -19,10 +23,18 @@ namespace Stilargo.Gameplay.World
         [SerializeField] private CitySpawner _citySpawner;
         [SerializeField] private FogOverlay _fogOverlay;
         [SerializeField] private FogTicker _fogTicker;
+        [SerializeField] private LootConfigAsset _lootConfig;
+        [SerializeField] private LootCacheSpawner _lootCacheSpawner;
+        [SerializeField] private Transform _dropOffPoint;
+        [SerializeField] private float _scavengeReach = 2.5f;
 
         public CityLayout CityLayout { get; private set; }
 
         public VisibilityGrid VisibilityGrid { get; private set; }
+
+        public Wallet Wallet { get; private set; }
+
+        public ScavengingArea ScavengingArea { get; private set; }
 
         public void Install()
         {
@@ -32,21 +44,42 @@ namespace Stilargo.Gameplay.World
             }
 
             RequireReferences();
+            InstallCity();
+            InstallFog();
+            InstallScavenging();
+        }
+
+        private void InstallCity()
+        {
             CityLayout = new CityGenerator(_seed, _cityConfig.ToConfig()).Generate();
             _citySpawner.Construct(CityLayout);
+        }
 
-            // The fog grid shares the city's cells so a revealed cell lines up with a street or plot.
+        // The fog grid shares the city's cells so a revealed cell lines up with a street or plot.
+        private void InstallFog()
+        {
             VisibilityGrid = new VisibilityGrid(CityLayout.Width, CityLayout.Height, CityLayout.CellSize);
             _fogOverlay.Construct(VisibilityGrid);
             _fogTicker.Construct(VisibilityGrid);
         }
 
+        private void InstallScavenging()
+        {
+            Wallet = new Wallet();
+            Vector3 home = _dropOffPoint.position;
+            DropOff dropOff = new DropOff(new WorldPoint(home.x, home.z), Wallet);
+            IReadOnlyList<LootCache> caches = new LootPlacer(_seed, _lootConfig.ToConfig()).Place(CityLayout);
+            ScavengingArea = new ScavengingArea(caches, dropOff, _scavengeReach);
+            _lootCacheSpawner.Construct(caches, VisibilityGrid);
+        }
+
         private void RequireReferences()
         {
-            if (_cityConfig == null || _citySpawner == null || _fogOverlay == null || _fogTicker == null)
+            if (_cityConfig == null || _citySpawner == null || _fogOverlay == null || _fogTicker == null
+                || _lootConfig == null || _lootCacheSpawner == null || _dropOffPoint == null)
             {
                 throw new InvalidOperationException(
-                    $"{nameof(WorldInstaller)} needs a city config, city spawner, fog overlay and fog ticker assigned.");
+                    $"{nameof(WorldInstaller)} needs every city, fog and scavenging reference assigned.");
             }
         }
     }

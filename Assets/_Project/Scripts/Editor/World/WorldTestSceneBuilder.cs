@@ -2,11 +2,13 @@ using System;
 using System.Linq;
 using Stilargo.Gameplay.City;
 using Stilargo.Gameplay.Fog;
+using Stilargo.Gameplay.Scavenging;
 using Stilargo.Gameplay.World;
 using Unity.AI.Navigation;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.Rendering;
 
 namespace Stilargo.Editor.World
@@ -28,6 +30,11 @@ namespace Stilargo.Editor.World
         private const float SunAngle = 50f;
         private const float VisionSourceHeight = 1f;
         private const int TransparentRenderQueue = (int)RenderQueue.Transparent;
+        private const float ScoutSpeed = 8f;
+        private const float ScoutBaseOffset = 0.5f;
+        private const float LootCacheSize = 1.2f;
+        private const float HomeMarkerSize = 4f;
+        private const float HomeMarkerThickness = 0.1f;
 
         [MenuItem("Stilargo/Build World Test Scene")]
         public static void Build()
@@ -35,16 +42,14 @@ namespace Stilargo.Editor.World
             // NewScene unloads every asset nothing references yet, so open the scene before creating assets.
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             RecreateFolder();
-            GameObject groundPrefab = CreateCubePrefab("Ground", CreateLitMaterial("Ground", new Color(0.25f, 0.25f, 0.27f)));
-            GameObject buildingPrefab = CreateCubePrefab("Building", CreateLitMaterial("Building", new Color(0.7f, 0.68f, 0.62f)));
-            CityConfigAsset config = CreateCityConfig();
-            Material fogMaterial = CreateFogMaterial();
-
             CreateCamera();
             CreateSun();
-            WorldInstaller installer = CreateWorld(config, groundPrefab, buildingPrefab, fogMaterial);
-            VisionSourceComponent visionSource = CreateVisionSource();
-            CreateBootstrap(installer, visionSource);
+            WorldInstaller installer = new GameObject("World", typeof(WorldInstaller), typeof(FogTicker)).GetComponent<WorldInstaller>();
+            CreateCity(installer);
+            CreateFog(installer);
+            CreateScavenging(installer);
+            VisionSourceComponent scout = CreateScout();
+            CreateBootstrap(installer, scout);
 
             EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), ScenePath);
             AddSceneToBuildSettings();
@@ -106,13 +111,6 @@ namespace Stilargo.Editor.World
             return prefab;
         }
 
-        private static CityConfigAsset CreateCityConfig()
-        {
-            CityConfigAsset config = ScriptableObject.CreateInstance<CityConfigAsset>();
-            AssetDatabase.CreateAsset(config, $"{Root}/CityConfig.asset");
-            return config;
-        }
-
         private static void CreateCamera()
         {
             GameObject cameraObject = new GameObject("Camera", typeof(Camera));
@@ -132,46 +130,98 @@ namespace Stilargo.Editor.World
             sun.transform.rotation = Quaternion.Euler(SunAngle, SunAngle, 0f);
         }
 
-        private static WorldInstaller CreateWorld(CityConfigAsset config, GameObject ground, GameObject building, Material fog)
+        private static void CreateCity(WorldInstaller installer)
         {
             GameObject city = new GameObject("City", typeof(NavMeshSurface), typeof(CitySpawner));
-            CitySpawner spawner = city.GetComponent<CitySpawner>();
-            Assign(spawner, "_groundPrefab", ground);
-            Assign(spawner, "_buildingPrefab", building);
 
+            // Only the spawned city is walkable; markers and units elsewhere must not end up in the bake.
+            city.GetComponent<NavMeshSurface>().collectObjects = CollectObjects.Children;
+            CitySpawner spawner = city.GetComponent<CitySpawner>();
+            Assign(spawner, "_groundPrefab", CreateCubePrefab("Ground", CreateLitMaterial("Ground", new Color(0.25f, 0.25f, 0.27f))));
+            Assign(spawner, "_buildingPrefab", CreateCubePrefab("Building", CreateLitMaterial("Building", new Color(0.7f, 0.68f, 0.62f))));
+
+            CityConfigAsset config = ScriptableObject.CreateInstance<CityConfigAsset>();
+            AssetDatabase.CreateAsset(config, $"{Root}/CityConfig.asset");
+            Assign(installer, "_cityConfig", config);
+            Assign(installer, "_citySpawner", spawner);
+        }
+
+        private static void CreateFog(WorldInstaller installer)
+        {
             GameObject fogQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
             fogQuad.name = "Fog";
             UnityEngine.Object.DestroyImmediate(fogQuad.GetComponent<Collider>());
-            fogQuad.GetComponent<Renderer>().sharedMaterial = fog;
-            FogOverlay overlay = fogQuad.AddComponent<FogOverlay>();
-
-            GameObject world = new GameObject("World", typeof(WorldInstaller), typeof(FogTicker));
-            WorldInstaller installer = world.GetComponent<WorldInstaller>();
-            Assign(installer, "_cityConfig", config);
-            Assign(installer, "_citySpawner", spawner);
-            Assign(installer, "_fogOverlay", overlay);
-            Assign(installer, "_fogTicker", world.GetComponent<FogTicker>());
-            return installer;
+            fogQuad.GetComponent<Renderer>().sharedMaterial = CreateFogMaterial();
+            Assign(installer, "_fogOverlay", fogQuad.AddComponent<FogOverlay>());
+            Assign(installer, "_fogTicker", installer.GetComponent<FogTicker>());
         }
 
-        private static VisionSourceComponent CreateVisionSource()
+        private static void CreateScavenging(WorldInstaller installer)
+        {
+            LootConfigAsset config = ScriptableObject.CreateInstance<LootConfigAsset>();
+            AssetDatabase.CreateAsset(config, $"{Root}/LootConfig.asset");
+
+            GameObject spawnerObject = new GameObject("Loot", typeof(LootCacheSpawner));
+            LootCacheSpawner spawner = spawnerObject.GetComponent<LootCacheSpawner>();
+            Assign(spawner, "_cachePrefab", CreateLootCachePrefab());
+
+            GameObject home = CreateHomeMarker();
+
+            Assign(installer, "_lootConfig", config);
+            Assign(installer, "_lootCacheSpawner", spawner);
+            Assign(installer, "_dropOffPoint", home.transform);
+        }
+
+        private static LootCacheView CreateLootCachePrefab()
+        {
+            GameObject cache = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            cache.name = "LootCache";
+            UnityEngine.Object.DestroyImmediate(cache.GetComponent<Collider>());
+            cache.transform.localScale = Vector3.one * LootCacheSize;
+            cache.GetComponent<Renderer>().sharedMaterial = CreateLitMaterial("LootCache", new Color(1f, 0.8f, 0.1f));
+            cache.AddComponent<LootCacheView>();
+            cache.AddComponent<FogHideable>();
+            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(cache, $"{Root}/LootCache.prefab");
+            UnityEngine.Object.DestroyImmediate(cache);
+            return prefab.GetComponent<LootCacheView>();
+        }
+
+        private static GameObject CreateHomeMarker()
+        {
+            GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            marker.name = "Home (drop-off)";
+            UnityEngine.Object.DestroyImmediate(marker.GetComponent<Collider>());
+            marker.transform.position = new Vector3(CityCentre, HomeMarkerThickness, CityCentre);
+            marker.transform.localScale = new Vector3(HomeMarkerSize, HomeMarkerThickness, HomeMarkerSize);
+            marker.GetComponent<Renderer>().sharedMaterial = CreateLitMaterial("Home", new Color(0.2f, 0.75f, 0.3f));
+            return marker;
+        }
+
+        private static VisionSourceComponent CreateScout()
         {
             GameObject scout = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            scout.name = "Scout (vision source)";
+            scout.name = "Scout";
             UnityEngine.Object.DestroyImmediate(scout.GetComponent<Collider>());
             scout.transform.position = new Vector3(CityCentre, VisionSourceHeight, CityCentre);
+
+            NavMeshAgent agent = scout.AddComponent<NavMeshAgent>();
+            agent.speed = ScoutSpeed;
+            agent.baseOffset = ScoutBaseOffset;
+
+            // Enabled by the autopilot once the NavMesh is baked; an agent off the NavMesh logs errors.
+            agent.enabled = false;
+            scout.AddComponent<ScavengerComponent>();
+            scout.AddComponent<WorldTestAutoScavenger>();
             return scout.AddComponent<VisionSourceComponent>();
         }
 
-        private static void CreateBootstrap(WorldInstaller installer, VisionSourceComponent visionSource)
+        private static void CreateBootstrap(WorldInstaller installer, VisionSourceComponent scout)
         {
-            GameObject bootstrapObject = new GameObject("WorldTestBootstrap", typeof(WorldTestBootstrap));
-            SerializedObject bootstrap = new SerializedObject(bootstrapObject.GetComponent<WorldTestBootstrap>());
-            bootstrap.FindProperty("_worldInstaller").objectReferenceValue = installer;
-            SerializedProperty sources = bootstrap.FindProperty("_visionSources");
-            sources.arraySize = 1;
-            sources.GetArrayElementAtIndex(0).objectReferenceValue = visionSource;
-            bootstrap.ApplyModifiedPropertiesWithoutUndo();
+            GameObject bootstrapObject = new GameObject("WorldTestBootstrap", typeof(WorldTestBootstrap), typeof(WorldTestHud));
+            WorldTestBootstrap bootstrap = bootstrapObject.GetComponent<WorldTestBootstrap>();
+            Assign(bootstrap, "_worldInstaller", installer);
+            Assign(bootstrap, "_scout", scout);
+            Assign(bootstrap, "_hud", bootstrapObject.GetComponent<WorldTestHud>());
         }
 
         // Private [SerializeField]s are only reachable through SerializedObject, which is also what the inspector uses.

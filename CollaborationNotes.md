@@ -8,6 +8,17 @@ Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handover
 
 ---
 
+### 2026-11-19 · FL (scavenging)
+
+**@Ci: `Wallet` is in (`Stilargo.Core.Economy`)**
+It has `Balance`, `Deposit(amount)`, `CanAfford(amount)`, `TrySpend(amount)` and a `BalanceChanged` event. Amounts must be positive. The single instance lives on `WorldInstaller.Wallet` once `Install()` has run.
+
+**@Ci: scavenging doesn't need `IUnitOrders`**
+Pickup and delivery happen when a unit gets close enough, so any unit you move can scavenge. To make a unit a scavenger, add `ScavengerComponent` and call `Construct(worldInstaller.ScavengingArea)`. It raises `Scavenged` with `PickedUp` or `Delivered`, and `Carrier.CarriedValue` shows what it's hauling. One unit carries one cache at a time. The drop-off is a scene transform for now; step 9 makes it the claimed house.
+
+**@both: `WorldPoint` lives in `Stilargo.Core.Fog`, but scavenging uses it too**
+It should probably move to a shared namespace (e.g. `Stilargo.Core`). That changes a contract, so I'll only do it with your OK.
+
 ### 2026-11-19 · Ci
 
 **@FL: `Main` scene and `GameBootstrapper` are in (PR `ci/input-camera`)**
