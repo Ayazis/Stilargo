@@ -1,0 +1,7 @@
+{
+    "name": "Stilargo.Editor",
+    "rootNamespace": "Stilargo.Editor",
+    "references": ["Stilargo.Core", "Stilargo.Gameplay", "Unity.AI.Navigation", "Unity.RenderPipelines.Core.Runtime", "Unity.RenderPipelines.Universal.Runtime"],
+    "includePlatforms": ["Editor"],
+    "autoReferenced": false
+}
