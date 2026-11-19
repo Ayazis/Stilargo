@@ -1,0 +1,6 @@
+{
+    "name": "Stilargo.Gameplay",
+    "rootNamespace": "Stilargo.Gameplay",
+    "references": ["Stilargo.Core", "Unity.AI.Navigation"],
+    "autoReferenced": true
+}

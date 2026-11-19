@@ -1,0 +1,7 @@
+{
+    "name": "Stilargo.Core",
+    "rootNamespace": "Stilargo.Core",
+    "references": [],
+    "noEngineReferences": true,
+    "autoReferenced": true
+}
