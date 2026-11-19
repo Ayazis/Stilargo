@@ -5,6 +5,7 @@ using Stilargo.Core.Economy;
 using Stilargo.Core.Fog;
 using Stilargo.Core.Scavenging;
 using Stilargo.Gameplay.City;
+using Stilargo.Gameplay.Composition;
 using Stilargo.Gameplay.Fog;
 using Stilargo.Gameplay.Scavenging;
 using UnityEngine;
@@ -12,11 +13,11 @@ using UnityEngine;
 namespace Stilargo.Gameplay.World
 {
     /// <summary>
-    /// Composition root for FL's world features: generates the city, sets up fog of war over it and scatters
-    /// loot for scavenging. The game bootstrapper calls <see cref="Install"/> once, then hands
-    /// <see cref="VisibilityGrid"/> and <see cref="ScavengingArea"/> to the units.
+    /// Wires FL's side of the game: generates the city, sets up fog of war over it and scatters loot for
+    /// scavenging. List it before installers that need <see cref="VisibilityGrid"/> or
+    /// <see cref="ScavengingArea"/>, because those exist only after <see cref="Install"/> has run.
     /// </summary>
-    public sealed class WorldInstaller : MonoBehaviour
+    public sealed class WorldInstaller : Installer
     {
         [SerializeField] private int _seed;
         [SerializeField] private CityConfigAsset _cityConfig;
@@ -36,8 +37,13 @@ namespace Stilargo.Gameplay.World
 
         public ScavengingArea ScavengingArea { get; private set; }
 
-        public void Install()
+        public override void Install(GameContext context)
         {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
             if (CityLayout != null)
             {
                 throw new InvalidOperationException($"{nameof(WorldInstaller)} is already installed.");
