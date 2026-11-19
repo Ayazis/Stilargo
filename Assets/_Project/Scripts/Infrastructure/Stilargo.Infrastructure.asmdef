@@ -1,0 +1,6 @@
+{
+    "name": "Stilargo.Infrastructure",
+    "rootNamespace": "Stilargo.Infrastructure",
+    "references": ["Stilargo.Core", "Stilargo.Gameplay", "Unity.InputSystem"],
+    "autoReferenced": true
+}
