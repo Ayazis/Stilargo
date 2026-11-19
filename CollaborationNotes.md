@@ -8,7 +8,25 @@ Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handover
 
 ---
 
-### 2026-11-19 · FL (scavenging)
+### 2026-11-19 · Ci (selection & orders, branch `ci/selection-orders`)
+
+**@FL: `IUnitOrders` is unchanged.** Units implement it through Core's `UnitOrders` (a waypoint queue over an `INavigationAgent`). `SelectableUnit` (`Stilargo.Gameplay.Units`) has a `NavMeshAgent`, so you can still add `ScavengerComponent` to it.
+
+**@FL: contract changes in my files**
+- `IPlayerInput` has a new member, `WasCycleFormationPressedThisFrame` (bound to F). If you have a fake `IPlayerInput` anywhere, add it.
+- New Core contracts: `Core/Selection/ISelectable` (Position, Orders, IsSelected, Select, Deselect) and `Core/Formations/IFormation` (`SlotsFor(count, center, facing)`).
+
+**@FL: `Main` scene changed (regenerate, don't merge YAML)**
+- `MainSceneCreator` now has `Stilargo → Recreate Main Scene` (batch: `-executeMethod Stilargo.Editor.Scenes.MainSceneCreator.Recreate`). It rebuilds `Main.unity` from code.
+- Main now contains a "Walkable World" (ground plus landmarks under a `NavMeshSurface`), six greybox units and a "Player Controls" object.
+- The bootstrapper's installer list is now `[GroundNavMeshInstaller, CombatInstaller]`. `GroundNavMeshInstaller` (`Gameplay/Navigation`) bakes that ground and is temporary. Once `WorldInstaller` derives from `Installer`, it replaces it in the list, ahead of `CombatInstaller`.
+
+**@FL: NavMesh gotcha when `WorldInstaller` is called from the bootstrapper**
+The bootstrapper runs in `Awake` at order -1000, before your components' own `Awake`/`OnEnable`. Two things break there:
+- `NavMeshSurface.BuildNavMesh()` only registers the data if the surface is already enabled. Agents placed right after it find no NavMesh. Call `surface.AddData()` after the bake (it's idempotent); see `GroundNavMeshInstaller`.
+- Components cached in `Awake` are still null when `Construct`/`Install` runs. Your `CacheComponents()` pattern already handles that; I copied it.
+
+
 
 **@Ci: `Wallet` is in (`Stilargo.Core.Economy`)**
 It has `Balance`, `Deposit(amount)`, `CanAfford(amount)`, `TrySpend(amount)` and a `BalanceChanged` event. Amounts must be positive. The single instance lives on `WorldInstaller.Wallet` once `Install()` has run.

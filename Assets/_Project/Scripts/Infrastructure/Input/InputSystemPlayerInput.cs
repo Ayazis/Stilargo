@@ -24,6 +24,7 @@ namespace Stilargo.Infrastructure.Input
         private const string SelectActionName = "Select";
         private const string CommandActionName = "Command";
         private const string QueueModifierActionName = "QueueModifier";
+        private const string CycleFormationActionName = "CycleFormation";
 
         private const string Vector2ControlType = "Vector2";
         private const string AxisControlType = "Axis";
@@ -38,6 +39,7 @@ namespace Stilargo.Infrastructure.Input
         private readonly InputAction _select;
         private readonly InputAction _command;
         private readonly InputAction _queueModifier;
+        private readonly InputAction _cycleFormation;
         private readonly float _scrollUnitsPerNotch;
 
         private bool _isDisposed;
@@ -51,6 +53,7 @@ namespace Stilargo.Infrastructure.Input
             _select = _actionMap.AddAction(SelectActionName, InputActionType.Button, InputBindingPaths.MouseLeftButton);
             _command = _actionMap.AddAction(CommandActionName, InputActionType.Button, InputBindingPaths.MouseRightButton);
             _queueModifier = CreateQueueModifierAction(_actionMap);
+            _cycleFormation = _actionMap.AddAction(CycleFormationActionName, InputActionType.Button, InputBindingPaths.KeyF);
             _scrollUnitsPerNotch = ResolveScrollUnitsPerNotch();
         }
 
@@ -69,6 +72,8 @@ namespace Stilargo.Infrastructure.Input
         public bool WasCommandPressedThisFrame => _command.WasPressedThisFrame();
 
         public bool IsQueueModifierHeld => _queueModifier.IsPressed();
+
+        public bool WasCycleFormationPressedThisFrame => _cycleFormation.WasPressedThisFrame();
 
         public void Enable()
         {
