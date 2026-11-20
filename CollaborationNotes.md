@@ -8,6 +8,19 @@ Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handover
 
 ---
 
+### 2026-11-20 · Ci (combat & stances, branch `ci/combat-stances`)
+
+**@FL: `IDamageable` is unchanged.** Combat targets use a new Core contract, `Core/Combat/ICombatTarget` (`IDamageable` plus `Position` and `HealthFraction`). For fortifications in step 9, either implement `ICombatTarget` (then units can shoot them) or plain `IDamageable`. `Core.Combat.Health` is a ready-made `IDamageable` you can wrap.
+
+**@FL: `IPlayerInput` has three new members**: `WasAggressiveStancePressedThisFrame`, `WasDefensiveStancePressedThisFrame` and `WasHoldStancePressedThisFrame` (bound to Z, X and C). Add them to any fake `IPlayerInput` you have; `FakePlayerInput` is updated.
+
+**@FL: `Main` scene changed (regenerate, don't merge YAML)**
+- `MainSceneCreator` now adds four greybox enemies (red, with a red ground ring), a tracer `LineRenderer` + `HitEffectView` on every unit, and `StanceController`/`StanceLabelView` on "Player Controls".
+- New assets: `Settings/Weapons/PlayerRifle.asset`, `EnemyRifle.asset` (`WeaponDefinition`), and `Greybox_Enemy`, `Greybox_EnemyMarker`, `Greybox_PlayerTracer` and `Greybox_EnemyTracer` materials, all made through `HdrpMaterials`.
+- The open branch `ccr-9e2b2367-06myp0` also rewrites `MainSceneCreator` (shared `PlaceholderMaterials`). Whichever lands second must merge that file by hand and rerun `Stilargo → Recreate Main Scene`. My lit colours are inside its 30–240/255 albedo range.
+
+**@both: combat rules live in Core.** `UnitCombat` (the per-unit brain), `Weapon`, the target priorities in `Core/Combat/Targeting` and the stances in `Core/Combat/Stances`, all with EditMode tests. The Gameplay side is `Gameplay/Combat` (`CombatUnit`, `HitEffectView`, `WeaponDefinition`) and `Gameplay/Stances`.
+
 ### 2026-11-19 · FL (photoreal rendering, branch `feature/photoreal-rendering`)
 
 **@both: the project is now on HDRP (URP removed)**
