@@ -25,6 +25,9 @@ namespace Stilargo.Infrastructure.Input
         private const string CommandActionName = "Command";
         private const string QueueModifierActionName = "QueueModifier";
         private const string CycleFormationActionName = "CycleFormation";
+        private const string AggressiveStanceActionName = "AggressiveStance";
+        private const string DefensiveStanceActionName = "DefensiveStance";
+        private const string HoldStanceActionName = "HoldStance";
 
         private const string Vector2ControlType = "Vector2";
         private const string AxisControlType = "Axis";
@@ -40,6 +43,9 @@ namespace Stilargo.Infrastructure.Input
         private readonly InputAction _command;
         private readonly InputAction _queueModifier;
         private readonly InputAction _cycleFormation;
+        private readonly InputAction _aggressiveStance;
+        private readonly InputAction _defensiveStance;
+        private readonly InputAction _holdStance;
         private readonly float _scrollUnitsPerNotch;
 
         private bool _isDisposed;
@@ -54,6 +60,9 @@ namespace Stilargo.Infrastructure.Input
             _command = _actionMap.AddAction(CommandActionName, InputActionType.Button, InputBindingPaths.MouseRightButton);
             _queueModifier = CreateQueueModifierAction(_actionMap);
             _cycleFormation = _actionMap.AddAction(CycleFormationActionName, InputActionType.Button, InputBindingPaths.KeyF);
+            _aggressiveStance = _actionMap.AddAction(AggressiveStanceActionName, InputActionType.Button, InputBindingPaths.KeyZ);
+            _defensiveStance = _actionMap.AddAction(DefensiveStanceActionName, InputActionType.Button, InputBindingPaths.KeyX);
+            _holdStance = _actionMap.AddAction(HoldStanceActionName, InputActionType.Button, InputBindingPaths.KeyC);
             _scrollUnitsPerNotch = ResolveScrollUnitsPerNotch();
         }
 
@@ -74,6 +83,12 @@ namespace Stilargo.Infrastructure.Input
         public bool IsQueueModifierHeld => _queueModifier.IsPressed();
 
         public bool WasCycleFormationPressedThisFrame => _cycleFormation.WasPressedThisFrame();
+
+        public bool WasAggressiveStancePressedThisFrame => _aggressiveStance.WasPressedThisFrame();
+
+        public bool WasDefensiveStancePressedThisFrame => _defensiveStance.WasPressedThisFrame();
+
+        public bool WasHoldStancePressedThisFrame => _holdStance.WasPressedThisFrame();
 
         public void Enable()
         {

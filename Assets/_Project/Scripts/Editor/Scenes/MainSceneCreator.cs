@@ -1,10 +1,12 @@
 using System;
 using System.Linq;
 using Stilargo.Gameplay.CameraControl;
+using Stilargo.Gameplay.Combat;
 using Stilargo.Gameplay.Composition;
 using Stilargo.Gameplay.Navigation;
 using Stilargo.Gameplay.Orders;
 using Stilargo.Gameplay.Selection;
+using Stilargo.Gameplay.Stances;
 using Stilargo.Gameplay.Units;
 using Stilargo.Editor.Rendering;
 using Stilargo.Infrastructure.Composition;
@@ -41,6 +43,44 @@ namespace Stilargo.Editor.Scenes
         private static readonly Color UnitColor = new Color(0.25f, 0.55f, 0.95f);
         private static readonly Color SelectionMarkerColor = new Color(0.3f, 1f, 0.4f);
         private static readonly Color WaypointPathColor = new Color(1f, 0.9f, 0.2f);
+
+        // Enemies read as hostile red against the blue squad; within PBR albedo range (no channel near 0 or 1).
+        private static readonly Color EnemyColor = new Color(0.72f, 0.16f, 0.13f);
+        private static readonly Color EnemyMarkerColor = new Color(0.94f, 0.22f, 0.16f);
+        private static readonly Color PlayerTracerColor = new Color(0.94f, 0.86f, 0.55f);
+        private static readonly Color EnemyTracerColor = new Color(0.94f, 0.42f, 0.2f);
+
+        private const string WeaponsFolder = SettingsFolder + "/Weapons";
+        private const string PlayerWeaponPath = WeaponsFolder + "/PlayerRifle.asset";
+        private const string EnemyWeaponPath = WeaponsFolder + "/EnemyRifle.asset";
+        private const string EnemyMaterialPath = MaterialsFolder + "/Greybox_Enemy.mat";
+        private const string EnemyMarkerMaterialPath = MaterialsFolder + "/Greybox_EnemyMarker.mat";
+        private const string PlayerTracerMaterialPath = MaterialsFolder + "/Greybox_PlayerTracer.mat";
+        private const string EnemyTracerMaterialPath = MaterialsFolder + "/Greybox_EnemyTracer.mat";
+
+        private const string EnemyName = "Enemy";
+        private const string EnemyMarkerName = "Enemy Marker";
+        private const string MuzzleName = "Muzzle";
+
+        private const string EnemiesField = "_enemies";
+        private const string PlayerSideField = "_playerSide";
+        private const string EnemySideField = "_enemySide";
+        private const string SideWeaponField = "_weapon";
+        private const string SideMaxHealthField = "_maxHealth";
+        private const string StanceControllerField = "_stanceController";
+        private const string StanceLabelViewField = "_stanceLabelView";
+        private const string LineRendererField = "_lineRenderer";
+        private const string WeaponDamageField = "_damage";
+
+        // Enemies stand in a row beyond the squad, between the landmark boxes, out of sight at the start.
+        private static readonly float[] EnemyColumnsX = { -14f, -8f, 8f, 14f };
+        private const float EnemyRowZ = 40f;
+        private const float EnemyMaxHealth = 60f;
+        private const float PlayerWeaponDamage = 10f;
+        private const float EnemyWeaponDamage = 6f;
+        private const float EnemyMarkerDiameter = 1.6f;
+        private const float MuzzleHeightAboveCentre = 0.4f;
+        private const float TracerWidth = 0.06f;
 
         private const string BootstrapName = "Bootstrap";
         private const string ControlsName = "Player Controls";
@@ -121,8 +161,10 @@ namespace Stilargo.Editor.Scenes
             PhotorealSceneDefaults.CreateGlobalVolume();
             GroundNavMeshInstaller groundInstaller = CreateWalkableWorld();
             SelectableUnit[] units = CreateUnits();
+            CombatUnit[] enemies = CreateEnemies();
             RtsCameraRig rig = CreateCamera();
             CombatInstaller combatInstaller = CreateCombatInstaller(rig, units);
+            AssignCombat(combatInstaller, enemies);
             CreateBootstrapper(groundInstaller, combatInstaller);
 
             EnsureFolder(System.IO.Path.GetDirectoryName(ScenePath));
@@ -225,21 +267,118 @@ namespace Stilargo.Editor.Scenes
             fields.FindProperty(SelectionMarkerField).objectReferenceValue = CreateSelectionMarker(unit.transform, materials.Marker);
             fields.FindProperty(PathViewField).objectReferenceValue = CreateWaypointPath(unit.transform, materials.Path);
             fields.ApplyModifiedPropertiesWithoutUndo();
+
+            unit.AddComponent<CombatUnit>();
+            CreateMuzzle(unit.transform, LoadOrCreateUnlitMaterial(PlayerTracerMaterialPath, PlayerTracerColor));
             return selectable;
+        }
+
+        private static CombatUnit[] CreateEnemies()
+        {
+            var enemies = new CombatUnit[EnemyColumnsX.Length];
+            for (int index = 0; index < enemies.Length; index++)
+            {
+                var position = new Vector3(EnemyColumnsX[index], UnitHalfHeight, EnemyRowZ);
+                enemies[index] = CreateEnemy($"{EnemyName} {index + 1}", position);
+            }
+
+            return enemies;
+        }
+
+        /// <summary>An enemy is a unit without selection or orders, with an always-visible red ring so it reads as hostile.</summary>
+        private static CombatUnit CreateEnemy(string enemyName, Vector3 position)
+        {
+            GameObject enemy = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            enemy.name = enemyName;
+            enemy.transform.position = position;
+            enemy.GetComponent<Renderer>().sharedMaterial = LoadOrCreateLitMaterial(EnemyMaterialPath, EnemyColor);
+
+            var agent = enemy.AddComponent<NavMeshAgent>();
+            agent.speed = UnitAgentSpeed;
+            agent.acceleration = UnitAgentAcceleration;
+            agent.baseOffset = UnitHalfHeight;
+            agent.enabled = false;
+
+            Material marker = LoadOrCreateUnlitMaterial(EnemyMarkerMaterialPath, EnemyMarkerColor);
+            CreateGroundRing(enemy.transform, marker, EnemyMarkerDiameter).name = EnemyMarkerName;
+            CreateMuzzle(enemy.transform, LoadOrCreateUnlitMaterial(EnemyTracerMaterialPath, EnemyTracerColor));
+            return enemy.AddComponent<CombatUnit>();
+        }
+
+        private static void CreateMuzzle(Transform unit, Material material)
+        {
+            var muzzle = new GameObject(MuzzleName);
+            muzzle.transform.SetParent(unit, false);
+            muzzle.transform.localPosition = new Vector3(0f, MuzzleHeightAboveCentre, 0f);
+
+            var line = muzzle.AddComponent<LineRenderer>();
+            line.useWorldSpace = true;
+            line.positionCount = 0;
+            line.widthMultiplier = TracerWidth;
+            line.sharedMaterial = material;
+            line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+            var view = muzzle.AddComponent<HitEffectView>();
+            var fields = new SerializedObject(view);
+            fields.FindProperty(LineRendererField).objectReferenceValue = line;
+            fields.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void AssignCombat(CombatInstaller installer, CombatUnit[] enemies)
+        {
+            var fields = new SerializedObject(installer);
+            SerializedProperty enemyList = fields.FindProperty(EnemiesField);
+            enemyList.arraySize = enemies.Length;
+            for (int index = 0; index < enemies.Length; index++)
+            {
+                enemyList.GetArrayElementAtIndex(index).objectReferenceValue = enemies[index];
+            }
+
+            fields.FindProperty(PlayerSideField).FindPropertyRelative(SideWeaponField).objectReferenceValue = LoadOrCreateWeapon(PlayerWeaponPath, PlayerWeaponDamage);
+            SerializedProperty enemySide = fields.FindProperty(EnemySideField);
+            enemySide.FindPropertyRelative(SideWeaponField).objectReferenceValue = LoadOrCreateWeapon(EnemyWeaponPath, EnemyWeaponDamage);
+            enemySide.FindPropertyRelative(SideMaxHealthField).floatValue = EnemyMaxHealth;
+            fields.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        /// <summary>Only a newly created weapon gets <paramref name="damage"/>; an existing asset keeps its tuned values.</summary>
+        private static WeaponDefinition LoadOrCreateWeapon(string path, float damage)
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<WeaponDefinition>(path);
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            EnsureFolder(WeaponsFolder);
+            var weapon = ScriptableObject.CreateInstance<WeaponDefinition>();
+            AssetDatabase.CreateAsset(weapon, path);
+            var fields = new SerializedObject(weapon);
+            fields.FindProperty(WeaponDamageField).floatValue = damage;
+            fields.ApplyModifiedPropertiesWithoutUndo();
+
+            AssetDatabase.SaveAssets();
+            return weapon;
         }
 
         private static GameObject CreateSelectionMarker(Transform unit, Material material)
         {
-            GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            GameObject marker = CreateGroundRing(unit, material, SelectionMarkerDiameter);
             marker.name = SelectionMarkerName;
+            marker.SetActive(false);
+            return marker;
+        }
+
+        private static GameObject CreateGroundRing(Transform unit, Material material, float diameter)
+        {
+            GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
 
             // No collider: clicks must hit the unit's capsule, and the NavMesh bake must not see the ring.
             UnityEngine.Object.DestroyImmediate(marker.GetComponent<Collider>());
             marker.GetComponent<Renderer>().sharedMaterial = material;
             marker.transform.SetParent(unit, false);
             marker.transform.localPosition = new Vector3(0f, -UnitHalfHeight, 0f);
-            marker.transform.localScale = new Vector3(SelectionMarkerDiameter, SelectionMarkerThickness, SelectionMarkerDiameter);
-            marker.SetActive(false);
+            marker.transform.localScale = new Vector3(diameter, SelectionMarkerThickness, diameter);
             return marker;
         }
 
@@ -307,6 +446,8 @@ namespace Stilargo.Editor.Scenes
             fields.FindProperty(SelectionBoxViewField).objectReferenceValue = controls.AddComponent<SelectionBoxView>();
             fields.FindProperty(MoveOrderControllerField).objectReferenceValue = controls.AddComponent<MoveOrderController>();
             fields.FindProperty(FormationLabelViewField).objectReferenceValue = controls.AddComponent<FormationLabelView>();
+            fields.FindProperty(StanceControllerField).objectReferenceValue = controls.AddComponent<StanceController>();
+            fields.FindProperty(StanceLabelViewField).objectReferenceValue = controls.AddComponent<StanceLabelView>();
 
             SerializedProperty unitList = fields.FindProperty(UnitsField);
             unitList.arraySize = units.Length;

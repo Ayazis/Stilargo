@@ -29,5 +29,14 @@ namespace Stilargo.Core.Input
 
         /// <summary>True on the frame the player asks for the next formation.</summary>
         bool WasCycleFormationPressedThisFrame { get; }
+
+        /// <summary>True on the frame the player asks for the Aggressive stance.</summary>
+        bool WasAggressiveStancePressedThisFrame { get; }
+
+        /// <summary>True on the frame the player asks for the Defensive stance.</summary>
+        bool WasDefensiveStancePressedThisFrame { get; }
+
+        /// <summary>True on the frame the player asks for the Hold stance.</summary>
+        bool WasHoldStancePressedThisFrame { get; }
     }
 }
