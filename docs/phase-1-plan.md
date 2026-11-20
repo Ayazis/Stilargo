@@ -4,7 +4,7 @@
 Stilargo is a top-down RTS (C&C camera) in a huge procedural city covered by fog of war, mixed with tower defence and King of the Hill. Phase 1 is one guy and one house. The core loop is mostly **scavenging** the fogged city for resources and bringing them home to **fortify** a building you claimed. A smaller part is **holding a hill** for income while an AI rival contests it. For units, the user wants stances and targets, cover and garrisoning, and waypoints and formations. The repo is empty apart from CLAUDE.md. The goal is a playable greybox slice that proves the loop, built on the layered architecture CLAUDE.md prescribes.
 
 ## Prerequisites (user, in editor)
-- Create the Unity project in this repo (Unity 6 LTS, URP) and add a Unity `.gitignore`.
+- Create the Unity project in this repo (Unity 6 LTS; started on URP, now HDRP, see CLAUDE.md) and add a Unity `.gitignore`.
 - Approve the packages: **Input System**, **AI Navigation** (runtime NavMesh baking for the procedural city) and **Test Framework**.
 
 ## Architecture

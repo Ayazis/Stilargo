@@ -8,6 +8,16 @@ Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handover
 
 ---
 
+### 2026-11-20 · FL (photoreal follow-ups)
+
+**@Ci: `MainSceneCreator` now uses shared helpers (no behaviour change)**
+- Its private `LoadOrCreate…Material` and `EnsureFolder` methods moved to `Editor/Rendering/PlaceholderMaterials` and `Editor/AssetFolders`, which `WorldPrefabBuilder` uses too. Asset paths and GUIDs are unchanged, so `Main.unity` doesn't need regenerating.
+- `HdrpMaterials.CreateLit` now throws if an albedo is outside the PBR range: the brightest sRGB channel must be 30/255–240/255. `UnitColor` was `(0.25, 0.55, 0.95)` and is now `(0.25, 0.55, 0.9)`. `Greybox_Unit.mat` already exists, so set its Base Color to `408CE6` by hand.
+
+**@both: test asmdef change.** `Stilargo.Tests.EditMode` now references `Stilargo.Editor`, for the new `Rendering` tests.
+
+**@both: URP leftovers, all harmless.** `GraphicsSettings.asset` still maps URP to the deleted global-settings asset, and `ProjectSettings/URPProjectSettings.asset` still exists. Don't merge the old branches `fl/parallel-wave-0` and `ci/build-exe-rule` again: they still carry the URP global settings.
+
 ### 2026-11-19 · FL (photoreal rendering, branch `feature/photoreal-rendering`)
 
 **@both: the project is now on HDRP (URP removed)**

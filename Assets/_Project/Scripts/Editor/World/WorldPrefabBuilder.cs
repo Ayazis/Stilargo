@@ -27,13 +27,13 @@ namespace Stilargo.Editor.World
 
         private static readonly Color GroundColor = new Color(0.25f, 0.25f, 0.27f);
         private static readonly Color BuildingColor = new Color(0.7f, 0.68f, 0.62f);
-        private static readonly Color LootColor = new Color(1f, 0.8f, 0.1f);
+        private static readonly Color LootColor = new Color(0.9f, 0.7f, 0.1f);
         private static readonly Color HomeColor = new Color(0.2f, 0.75f, 0.3f);
 
         [MenuItem("Stilargo/Build World Prefab")]
         public static GameObject Build()
         {
-            EnsureFolder();
+            AssetFolders.Ensure(Root);
             GameObject root = new GameObject("World", typeof(WorldInstaller), typeof(FogTicker));
             try
             {
@@ -120,32 +120,14 @@ namespace Stilargo.Editor.World
             return asset;
         }
 
-        private static Material LoadOrCreateLitMaterial(string name, Color color)
+        private static Material LoadOrCreateLitMaterial(string name, Color albedo)
         {
-            string path = $"{Root}/{name}.mat";
-            Material existing = AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (existing != null)
-            {
-                return existing;
-            }
-
-            Material material = HdrpMaterials.CreateLit(color);
-            AssetDatabase.CreateAsset(material, path);
-            return material;
+            return PlaceholderMaterials.LoadOrCreateLit($"{Root}/{name}.mat", albedo);
         }
 
         private static Material LoadOrCreateFogMaterial()
         {
-            string path = $"{Root}/Fog.mat";
-            Material existing = AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (existing != null)
-            {
-                return existing;
-            }
-
-            Material material = HdrpMaterials.CreateTransparentUnlit();
-            AssetDatabase.CreateAsset(material, path);
-            return material;
+            return PlaceholderMaterials.LoadOrCreateTransparentUnlit($"{Root}/Fog.mat");
         }
 
         private static GameObject LoadOrCreateCubePrefab(string name, Material material)
@@ -187,15 +169,6 @@ namespace Stilargo.Editor.World
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(instance, path);
             UnityEngine.Object.DestroyImmediate(instance);
             return prefab;
-        }
-
-
-        private static void EnsureFolder()
-        {
-            if (!AssetDatabase.IsValidFolder(Root))
-            {
-                AssetDatabase.CreateFolder("Assets/_Project", "World");
-            }
         }
     }
 }

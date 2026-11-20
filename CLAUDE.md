@@ -37,7 +37,7 @@ The user plays the game as a Windows exe, not in the Unity editor. When a featur
 
 ## Visual fidelity (photoreal target)
 
-- Pipeline is HDRP (`Assets/_Project/Settings/HdrpPipeline.asset`). Create materials only through `HdrpMaterials` (`HDRP/Lit`, `HDRP/Unlit`); never URP, Built-in or legacy shaders.
+- Pipeline is HDRP (`Assets/_Project/Settings/HdrpPipeline.asset`). Create materials only through `HdrpMaterials` (`HDRP/Lit`, `HDRP/Unlit`); never URP, Built-in or legacy shaders. Builders save generated placeholders with `PlaceholderMaterials`, and `CreateLit` rejects albedo outside the PBR range (`PbrAlbedo`).
 - Linear color space, physical units: 1 unit = 1 m, PBR-valid albedo (no pure black/white), lights in lux/lumen with color temperature (Kelvin). The sun is ~100,000 lux and exposure is automatic.
 - Project-wide rendering comes from `Stilargo → Apply Photoreal Rendering Settings` (`Editor/Rendering/PhotorealRenderingSetup.cs`). It writes the pipeline asset and `Settings/PhotorealVolumeProfile.asset` (physically based sky, exposure, fog, SSAO, SSR, contact shadows, ACES). Change settings there, not by hand.
 - Scene builders use `PhotorealSceneDefaults` for the camera (TAA), the sun and the global volume.

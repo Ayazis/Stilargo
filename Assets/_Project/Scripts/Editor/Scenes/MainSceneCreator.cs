@@ -38,7 +38,7 @@ namespace Stilargo.Editor.Scenes
         // Distinct colours so the ground, boxes, units and their markers can be told apart; Unity's default material is plain white.
         private static readonly Color GroundColor = new Color(0.22f, 0.24f, 0.27f);
         private static readonly Color LandmarkColor = new Color(0.85f, 0.45f, 0.15f);
-        private static readonly Color UnitColor = new Color(0.25f, 0.55f, 0.95f);
+        private static readonly Color UnitColor = new Color(0.25f, 0.55f, 0.9f);
         private static readonly Color SelectionMarkerColor = new Color(0.3f, 1f, 0.4f);
         private static readonly Color WaypointPathColor = new Color(1f, 0.9f, 0.2f);
 
@@ -125,7 +125,7 @@ namespace Stilargo.Editor.Scenes
             CombatInstaller combatInstaller = CreateCombatInstaller(rig, units);
             CreateBootstrapper(groundInstaller, combatInstaller);
 
-            EnsureFolder(System.IO.Path.GetDirectoryName(ScenePath));
+            AssetFolders.Ensure(System.IO.Path.GetDirectoryName(ScenePath));
             if (!EditorSceneManager.SaveScene(scene, ScenePath))
             {
                 throw new InvalidOperationException($"Could not save {ScenePath}.");
@@ -153,8 +153,8 @@ namespace Stilargo.Editor.Scenes
             surface.collectObjects = CollectObjects.Children;
             surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
 
-            CreateGround(world.transform, LoadOrCreateLitMaterial(GroundMaterialPath, GroundColor));
-            CreateLandmarks(world.transform, LoadOrCreateLitMaterial(LandmarkMaterialPath, LandmarkColor));
+            CreateGround(world.transform, PlaceholderMaterials.LoadOrCreateLit(GroundMaterialPath, GroundColor));
+            CreateLandmarks(world.transform, PlaceholderMaterials.LoadOrCreateLit(LandmarkMaterialPath, LandmarkColor));
             return world.AddComponent<GroundNavMeshInstaller>();
         }
 
@@ -185,9 +185,9 @@ namespace Stilargo.Editor.Scenes
 
         private static SelectableUnit[] CreateUnits()
         {
-            Material body = LoadOrCreateLitMaterial(UnitMaterialPath, UnitColor);
-            Material marker = LoadOrCreateUnlitMaterial(SelectionMarkerMaterialPath, SelectionMarkerColor);
-            Material path = LoadOrCreateUnlitMaterial(WaypointPathMaterialPath, WaypointPathColor);
+            Material body = PlaceholderMaterials.LoadOrCreateLit(UnitMaterialPath, UnitColor);
+            Material marker = PlaceholderMaterials.LoadOrCreateUnlit(SelectionMarkerMaterialPath, SelectionMarkerColor);
+            Material path = PlaceholderMaterials.LoadOrCreateUnlit(WaypointPathMaterialPath, WaypointPathColor);
 
             var units = new SelectableUnit[UnitColumns * UnitRows];
             for (int row = 0; row < UnitRows; row++)
@@ -260,30 +260,6 @@ namespace Stilargo.Editor.Scenes
             return pathObject.AddComponent<WaypointPathView>();
         }
 
-        private static Material LoadOrCreateLitMaterial(string path, Color color)
-        {
-            return LoadOrCreateMaterial(path, () => HdrpMaterials.CreateLit(color));
-        }
-
-        private static Material LoadOrCreateUnlitMaterial(string path, Color color)
-        {
-            return LoadOrCreateMaterial(path, () => HdrpMaterials.CreateUnlit(color));
-        }
-
-        private static Material LoadOrCreateMaterial(string path, Func<Material> create)
-        {
-            var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (existing != null)
-            {
-                return existing;
-            }
-
-            Material material = create();
-            EnsureFolder(MaterialsFolder);
-            AssetDatabase.CreateAsset(material, path);
-            return material;
-        }
-
         private static RtsCameraRig CreateCamera()
         {
             var cameraObject = new GameObject(CameraName) { tag = MainCameraTag };
@@ -339,7 +315,7 @@ namespace Stilargo.Editor.Scenes
                 return existing;
             }
 
-            EnsureFolder(SettingsFolder);
+            AssetFolders.Ensure(SettingsFolder);
             var settings = ScriptableObject.CreateInstance<CameraSettings>();
             AssetDatabase.CreateAsset(settings, CameraSettingsPath);
             AssetDatabase.SaveAssets();
@@ -356,19 +332,6 @@ namespace Stilargo.Editor.Scenes
             EditorBuildSettings.scenes = others
                 .Prepend(new EditorBuildSettingsScene(ScenePath, true))
                 .ToArray();
-        }
-
-        private static void EnsureFolder(string folder)
-        {
-            string normalized = folder.Replace('\\', '/');
-            if (AssetDatabase.IsValidFolder(normalized))
-            {
-                return;
-            }
-
-            string parent = System.IO.Path.GetDirectoryName(normalized).Replace('\\', '/');
-            EnsureFolder(parent);
-            AssetDatabase.CreateFolder(parent, System.IO.Path.GetFileName(normalized));
         }
     }
 }

@@ -22,6 +22,7 @@ namespace Stilargo.Editor.Rendering
 
         public static Material CreateLit(Color color)
         {
+            PbrAlbedo.Require(color);
             var material = new Material(RequireShader(LitShaderName));
             ApplyLit(material, color);
             return material;
