@@ -55,6 +55,15 @@ namespace Stilargo.Core.City
             return _roadCells[(position.Y * Width) + position.X];
         }
 
+        /// <summary>True when the world point (metres, city corner at the origin) lies on a road cell.</summary>
+        public bool IsRoadAt(float worldX, float worldZ)
+        {
+            GridPosition cell = new GridPosition(
+                (int)Math.Floor(worldX / CellSize),
+                (int)Math.Floor(worldZ / CellSize));
+            return IsRoad(cell);
+        }
+
         public IEnumerable<GridPosition> RoadCells()
         {
             for (int y = 0; y < Height; y++)

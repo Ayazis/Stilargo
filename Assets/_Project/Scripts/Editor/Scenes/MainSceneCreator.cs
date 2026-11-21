@@ -3,14 +3,17 @@ using System.Linq;
 using Stilargo.Gameplay.CameraControl;
 using Stilargo.Gameplay.Combat;
 using Stilargo.Gameplay.Composition;
-using Stilargo.Gameplay.Navigation;
+using Stilargo.Gameplay.Economy;
+using Stilargo.Gameplay.Fog;
 using Stilargo.Gameplay.Orders;
+using Stilargo.Gameplay.Scavenging;
 using Stilargo.Gameplay.Selection;
 using Stilargo.Gameplay.Stances;
 using Stilargo.Gameplay.Units;
+using Stilargo.Gameplay.World;
 using Stilargo.Editor.Rendering;
+using Stilargo.Editor.World;
 using Stilargo.Infrastructure.Composition;
-using Unity.AI.Navigation;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -31,15 +34,11 @@ namespace Stilargo.Editor.Scenes
         private const string SettingsFolder = "Assets/_Project/Settings";
         private const string CameraSettingsPath = SettingsFolder + "/CameraSettings.asset";
         private const string MaterialsFolder = "Assets/_Project/Materials";
-        private const string GroundMaterialPath = MaterialsFolder + "/Greybox_Ground.mat";
-        private const string LandmarkMaterialPath = MaterialsFolder + "/Greybox_Landmark.mat";
         private const string UnitMaterialPath = MaterialsFolder + "/Greybox_Unit.mat";
         private const string SelectionMarkerMaterialPath = MaterialsFolder + "/Greybox_SelectionMarker.mat";
         private const string WaypointPathMaterialPath = MaterialsFolder + "/Greybox_WaypointPath.mat";
 
-        // Distinct colours so the ground, boxes, units and their markers can be told apart; Unity's default material is plain white.
-        private static readonly Color GroundColor = new Color(0.22f, 0.24f, 0.27f);
-        private static readonly Color LandmarkColor = new Color(0.85f, 0.45f, 0.15f);
+        // Distinct colours so units and their markers stand out from the city; Unity's default material is plain white.
         private static readonly Color UnitColor = new Color(0.25f, 0.55f, 0.95f);
         private static readonly Color SelectionMarkerColor = new Color(0.3f, 1f, 0.4f);
         private static readonly Color WaypointPathColor = new Color(1f, 0.9f, 0.2f);
@@ -72,9 +71,9 @@ namespace Stilargo.Editor.Scenes
         private const string LineRendererField = "_lineRenderer";
         private const string WeaponDamageField = "_damage";
 
-        // Enemies stand in a row beyond the squad, between the landmark boxes, out of sight at the start.
-        private static readonly float[] EnemyColumnsX = { -14f, -8f, 8f, 14f };
-        private const float EnemyRowZ = 40f;
+        // Enemies stand in a row on the next street north of home: out of vision at the start, one block away.
+        private static readonly float[] EnemyOffsetsX = { -6f, -2f, 2f, 6f };
+        private const float EnemyOffsetZ = 28f;
         private const float EnemyMaxHealth = 60f;
         private const float PlayerWeaponDamage = 10f;
         private const float EnemyWeaponDamage = 6f;
@@ -87,9 +86,7 @@ namespace Stilargo.Editor.Scenes
         private const string CameraName = "Main Camera";
         private const string MainCameraTag = "MainCamera";
         private const string LightName = "Sun";
-        private const string WalkableWorldName = "Walkable World";
-        private const string GroundName = "Ground";
-        private const string LandmarkName = "Landmark";
+        private const string UnitWorldName = "Unit World Links";
         private const string UnitName = "Unit";
         private const string SelectionMarkerName = "Selection Marker";
         private const string WaypointPathName = "Waypoint Path";
@@ -105,23 +102,23 @@ namespace Stilargo.Editor.Scenes
         private const string FormationLabelViewField = "_formationLabelView";
         private const string SelectionMarkerField = "_selectionMarker";
         private const string PathViewField = "_pathView";
+        private const string WorldField = "_world";
+        private const string VisionSourcesField = "_visionSources";
+        private const string ScavengersField = "_scavengers";
+        private const string FogHideablesField = "_fogHideables";
+        private const string WalletLabelViewField = "_walletLabelView";
+        private const string CameraBoundsMinField = "_boundsMin";
+        private const string CameraBoundsMaxField = "_boundsMax";
 
-        // Unity's plane primitive is 10 x 10 units; scale it to cover the default ±100 camera bounds.
-        private const float GroundScale = 20f;
         private const float StartHeight = 30f;
         private const float SunPitchDegrees = 50f;
         private const float SunYawDegrees = -30f;
 
-        // A few boxes on a grid so panning and zooming are visible, and so units have obstacles to path around.
-        private const int LandmarkGridHalfCount = 2;
-        private const float LandmarkSpacing = 40f;
-        private const float LandmarkSize = 6f;
-
-        // A small squad placed in a loose grid in front of the camera's start position.
+        // A small squad in a loose grid on the street through home. The roads are 4 m wide, so rows stay within ±1 m.
         private const int UnitColumns = 3;
         private const int UnitRows = 2;
-        private const float UnitSpacing = 3f;
-        private const float UnitStartForward = 12f;
+        private const float UnitColumnSpacing = 3f;
+        private const float UnitRowSpacing = 2f;
         private const float UnitHalfHeight = 1f;
         private const float UnitAgentSpeed = 8f;
         private const float UnitAgentAcceleration = 40f;
@@ -159,13 +156,15 @@ namespace Stilargo.Editor.Scenes
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             CreateSun();
             PhotorealSceneDefaults.CreateGlobalVolume();
-            GroundNavMeshInstaller groundInstaller = CreateWalkableWorld();
-            SelectableUnit[] units = CreateUnits();
-            CombatUnit[] enemies = CreateEnemies();
-            RtsCameraRig rig = CreateCamera();
+            WorldInstaller world = CreateWorld();
+            CitySite site = CitySite.Of(world);
+            SelectableUnit[] units = CreateUnits(site);
+            CombatUnit[] enemies = CreateEnemies(site);
+            RtsCameraRig rig = CreateCamera(site);
             CombatInstaller combatInstaller = CreateCombatInstaller(rig, units);
             AssignCombat(combatInstaller, enemies);
-            CreateBootstrapper(groundInstaller, combatInstaller);
+            UnitWorldInstaller unitWorldInstaller = CreateUnitWorldInstaller(world, units, enemies);
+            CreateBootstrapper(combatInstaller.gameObject, new Installer[] { world, combatInstaller, unitWorldInstaller });
 
             EnsureFolder(System.IO.Path.GetDirectoryName(ScenePath));
             if (!EditorSceneManager.SaveScene(scene, ScenePath))
@@ -184,48 +183,28 @@ namespace Stilargo.Editor.Scenes
         }
 
         /// <summary>
-        /// Temporary walkable ground for Main until FL's city NavMesh is wired in.
-        /// It bakes only its own children, so units are not baked in as obstacles, and from
-        /// physics colliders, so the build doesn't depend on mesh read access.
+        /// FL's World prefab: it generates the city, bakes its NavMesh and sets up fog and loot at startup.
+        /// It stays a prefab instance, so rebuilding the prefab updates Main without touching this scene.
         /// </summary>
-        private static GroundNavMeshInstaller CreateWalkableWorld()
+        private static WorldInstaller CreateWorld()
         {
-            var world = new GameObject(WalkableWorldName);
-            var surface = world.AddComponent<NavMeshSurface>();
-            surface.collectObjects = CollectObjects.Children;
-            surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
-
-            CreateGround(world.transform, LoadOrCreateLitMaterial(GroundMaterialPath, GroundColor));
-            CreateLandmarks(world.transform, LoadOrCreateLitMaterial(LandmarkMaterialPath, LandmarkColor));
-            return world.AddComponent<GroundNavMeshInstaller>();
-        }
-
-        private static void CreateGround(Transform parent, Material material)
-        {
-            GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            ground.name = GroundName;
-            ground.transform.SetParent(parent, false);
-            ground.transform.localScale = new Vector3(GroundScale, 1f, GroundScale);
-            ground.GetComponent<Renderer>().sharedMaterial = material;
-        }
-
-        private static void CreateLandmarks(Transform parent, Material material)
-        {
-            for (int x = -LandmarkGridHalfCount; x <= LandmarkGridHalfCount; x++)
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(WorldPrefabBuilder.PrefabPath);
+            if (prefab == null)
             {
-                for (int z = -LandmarkGridHalfCount; z <= LandmarkGridHalfCount; z++)
-                {
-                    GameObject box = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                    box.name = $"{LandmarkName} {x},{z}";
-                    box.transform.SetParent(parent, false);
-                    box.transform.localScale = Vector3.one * LandmarkSize;
-                    box.transform.position = new Vector3(x * LandmarkSpacing, LandmarkSize / 2f, z * LandmarkSpacing);
-                    box.GetComponent<Renderer>().sharedMaterial = material;
-                }
+                prefab = WorldPrefabBuilder.Build();
             }
+
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+            WorldInstaller world = instance.GetComponent<WorldInstaller>();
+            if (world == null)
+            {
+                throw new InvalidOperationException($"{WorldPrefabBuilder.PrefabPath} has no {nameof(WorldInstaller)}.");
+            }
+
+            return world;
         }
 
-        private static SelectableUnit[] CreateUnits()
+        private static SelectableUnit[] CreateUnits(CitySite site)
         {
             Material body = LoadOrCreateLitMaterial(UnitMaterialPath, UnitColor);
             Material marker = LoadOrCreateUnlitMaterial(SelectionMarkerMaterialPath, SelectionMarkerColor);
@@ -236,10 +215,11 @@ namespace Stilargo.Editor.Scenes
             {
                 for (int column = 0; column < UnitColumns; column++)
                 {
-                    float x = (column - (UnitColumns - 1) / 2f) * UnitSpacing;
-                    float z = UnitStartForward + row * UnitSpacing;
+                    float x = (column - (UnitColumns - 1) / 2f) * UnitColumnSpacing;
+                    float z = (row - (UnitRows - 1) / 2f) * UnitRowSpacing;
+                    Vector3 position = site.RoadPointNearHome(new Vector3(x, 0f, z)) + Vector3.up * UnitHalfHeight;
                     int index = row * UnitColumns + column;
-                    units[index] = CreateUnit($"{UnitName} {index + 1}", new Vector3(x, UnitHalfHeight, z), new UnitMaterials(body, marker, path));
+                    units[index] = CreateUnit($"{UnitName} {index + 1}", position, new UnitMaterials(body, marker, path));
                 }
             }
 
@@ -269,23 +249,26 @@ namespace Stilargo.Editor.Scenes
             fields.ApplyModifiedPropertiesWithoutUndo();
 
             unit.AddComponent<CombatUnit>();
+            unit.AddComponent<VisionSourceComponent>();
+            unit.AddComponent<ScavengerComponent>();
             CreateMuzzle(unit.transform, LoadOrCreateUnlitMaterial(PlayerTracerMaterialPath, PlayerTracerColor));
             return selectable;
         }
 
-        private static CombatUnit[] CreateEnemies()
+        private static CombatUnit[] CreateEnemies(CitySite site)
         {
-            var enemies = new CombatUnit[EnemyColumnsX.Length];
+            var enemies = new CombatUnit[EnemyOffsetsX.Length];
             for (int index = 0; index < enemies.Length; index++)
             {
-                var position = new Vector3(EnemyColumnsX[index], UnitHalfHeight, EnemyRowZ);
+                var offset = new Vector3(EnemyOffsetsX[index], 0f, EnemyOffsetZ);
+                Vector3 position = site.RoadPointNearHome(offset) + Vector3.up * UnitHalfHeight;
                 enemies[index] = CreateEnemy($"{EnemyName} {index + 1}", position);
             }
 
             return enemies;
         }
 
-        /// <summary>An enemy is a unit without selection or orders, with an always-visible red ring so it reads as hostile.</summary>
+        /// <summary>An enemy is a unit without selection or orders, with a red ring so it reads as hostile. The fog hides it unless seen.</summary>
         private static CombatUnit CreateEnemy(string enemyName, Vector3 position)
         {
             GameObject enemy = GameObject.CreatePrimitive(PrimitiveType.Capsule);
@@ -302,6 +285,7 @@ namespace Stilargo.Editor.Scenes
             Material marker = LoadOrCreateUnlitMaterial(EnemyMarkerMaterialPath, EnemyMarkerColor);
             CreateGroundRing(enemy.transform, marker, EnemyMarkerDiameter).name = EnemyMarkerName;
             CreateMuzzle(enemy.transform, LoadOrCreateUnlitMaterial(EnemyTracerMaterialPath, EnemyTracerColor));
+            enemy.AddComponent<FogHideable>();
             return enemy.AddComponent<CombatUnit>();
         }
 
@@ -423,13 +407,44 @@ namespace Stilargo.Editor.Scenes
             return material;
         }
 
-        private static RtsCameraRig CreateCamera()
+        /// <summary>
+        /// The rig works out its focus from where the camera stands, so start it behind home at the configured
+        /// pitch to look straight at the squad.
+        /// </summary>
+        private static RtsCameraRig CreateCamera(CitySite site)
         {
+            CameraSettings settings = LoadOrCreateCameraSettings();
+            FitCameraBoundsToCity(settings, site);
+
             var cameraObject = new GameObject(CameraName) { tag = MainCameraTag };
             PhotorealSceneDefaults.ConfigureCamera(cameraObject.AddComponent<Camera>());
             cameraObject.AddComponent<AudioListener>();
-            cameraObject.transform.position = new Vector3(0f, StartHeight, 0f);
+            float pitchRadians = settings.PitchDegrees * Mathf.Deg2Rad;
+            float behindFocus = StartHeight * Mathf.Cos(pitchRadians) / Mathf.Sin(pitchRadians);
+            cameraObject.transform.position = site.Home + new Vector3(0f, StartHeight, -behindFocus);
             return cameraObject.AddComponent<RtsCameraRig>();
+        }
+
+        /// <summary>The camera may pan over the whole city and no further. Only the bounds are written; other tuning stays.</summary>
+        private static void FitCameraBoundsToCity(CameraSettings settings, CitySite site)
+        {
+            var fields = new SerializedObject(settings);
+            fields.FindProperty(CameraBoundsMinField).vector2Value = Vector2.zero;
+            fields.FindProperty(CameraBoundsMaxField).vector2Value = site.Size;
+            fields.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.SaveAssets();
+        }
+
+        private static UnitWorldInstaller CreateUnitWorldInstaller(WorldInstaller world, SelectableUnit[] units, CombatUnit[] enemies)
+        {
+            var links = new GameObject(UnitWorldName);
+            var installer = links.AddComponent<UnitWorldInstaller>();
+            SerializedFields.Assign(installer, WorldField, world);
+            SerializedFields.AssignArray(installer, VisionSourcesField, units.Select(unit => unit.GetComponent<VisionSourceComponent>()).ToArray());
+            SerializedFields.AssignArray(installer, ScavengersField, units.Select(unit => unit.GetComponent<ScavengerComponent>()).ToArray());
+            SerializedFields.AssignArray(installer, FogHideablesField, enemies.Select(enemy => enemy.GetComponent<FogHideable>()).ToArray());
+            SerializedFields.Assign(installer, WalletLabelViewField, links.AddComponent<WalletLabelView>());
+            return installer;
         }
 
         private static CombatInstaller CreateCombatInstaller(RtsCameraRig rig, SelectableUnit[] units)
@@ -460,16 +475,14 @@ namespace Stilargo.Editor.Scenes
             return combatInstaller;
         }
 
-        /// <summary>The ground installer comes first: it bakes the NavMesh that the combat installer's units are placed on.</summary>
-        private static void CreateBootstrapper(GroundNavMeshInstaller groundInstaller, CombatInstaller combatInstaller)
+        /// <summary>
+        /// Runs in list order. The world comes first: it bakes the NavMesh the combat installer's units are placed on,
+        /// and creates the fog and loot that the unit-world links hand to those units.
+        /// </summary>
+        private static void CreateBootstrapper(GameObject bootstrap, Installer[] installers)
         {
-            var bootstrapper = combatInstaller.gameObject.AddComponent<GameBootstrapper>();
-            var fields = new SerializedObject(bootstrapper);
-            SerializedProperty installers = fields.FindProperty(InstallersField);
-            installers.arraySize = 2;
-            installers.GetArrayElementAtIndex(0).objectReferenceValue = groundInstaller;
-            installers.GetArrayElementAtIndex(1).objectReferenceValue = combatInstaller;
-            fields.ApplyModifiedPropertiesWithoutUndo();
+            var bootstrapper = bootstrap.AddComponent<GameBootstrapper>();
+            SerializedFields.AssignArray(bootstrapper, InstallersField, installers);
         }
 
         private static CameraSettings LoadOrCreateCameraSettings()
@@ -487,11 +500,15 @@ namespace Stilargo.Editor.Scenes
             return settings;
         }
 
-        /// <summary>Puts Main first in Build Settings, because the first scene is the one the exe loads at startup.</summary>
+        /// <summary>
+        /// Puts Main first in Build Settings, because the first scene is the one the exe loads at startup.
+        /// Entries for deleted scenes are dropped, since a build fails on them.
+        /// </summary>
         private static void AddToBuildSettings()
         {
             EditorBuildSettingsScene[] others = EditorBuildSettings.scenes
                 .Where(buildScene => buildScene.path != ScenePath)
+                .Where(buildScene => AssetDatabase.LoadAssetAtPath<SceneAsset>(buildScene.path) != null)
                 .ToArray();
 
             EditorBuildSettings.scenes = others
