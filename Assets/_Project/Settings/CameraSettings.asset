@@ -17,6 +17,6 @@ MonoBehaviour:
   _heightPerZoomStep: 4
   _minHeight: 10
   _maxHeight: 60
-  _boundsMin: {x: -100, y: -100}
-  _boundsMax: {x: 100, y: 100}
+  _boundsMin: {x: 0, y: 0}
+  _boundsMax: {x: 116, y: 116}
   _pitchDegrees: 60

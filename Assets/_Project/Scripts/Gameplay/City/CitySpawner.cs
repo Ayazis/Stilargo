@@ -43,6 +43,10 @@ namespace Stilargo.Gameplay.City
             }
 
             _navMeshSurface.BuildNavMesh();
+
+            // BuildNavMesh only registers the data once the surface is enabled. The bootstrapper runs before
+            // that, and installers after it place units right away, so register now. AddData is idempotent.
+            _navMeshSurface.AddData();
         }
 
         // Construct can run before Awake when the bootstrapper wires scene objects, so both paths cache.

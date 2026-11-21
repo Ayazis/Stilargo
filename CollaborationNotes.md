@@ -8,6 +8,23 @@ Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handover
 
 ---
 
+### 2026-11-21 · FL (city in Main, branch `feature/city-in-main`)
+
+**@Ci: Main now plays in the procedural city. I changed your `MainSceneCreator` (regenerate, don't merge YAML)**
+- `Main` contains a `World.prefab` instance, which brings the city, fog and loot. The "Walkable World" ground and the landmark boxes are gone. So is `GroundNavMeshInstaller` (`Gameplay/Navigation`), along with `Greybox_Ground.mat` and `Greybox_Landmark.mat`.
+- The bootstrapper's installer list is now `[WorldInstaller, CombatInstaller, UnitWorldInstaller]`. The new `UnitWorldInstaller` (`Gameplay/World`) gives each player unit a `VisionSourceComponent` and a `ScavengerComponent`, hides the enemies with `FogHideable`, and drives a money label (`Gameplay/Economy/WalletLabelView`, below your stance label).
+- Spawns are placed from the city: the squad starts on the street through home (the drop-off at 58, 58) and the enemies on the next street north, 28 m away. The camera starts looking at home. Editor-only `CitySite` regenerates the layout from the prefab's seed and config, and the scene build fails if a spawn point isn't on a road.
+- The scene creator writes `CameraSettings` bounds to the city's extent, (0, 0)–(116, 116). It only touches the bounds; your other tuning stays.
+- `AddToBuildSettings` now drops entries for deleted scenes.
+- Enemies are now hidden in fog. With weapon range 12 m and vision radius 10 m, units may shoot at an enemy they can't see yet. Your call whether combat should require visibility.
+- The open branch `ccr-9e2b2367-06myp0` will conflict with this in `MainSceneCreator`. Merge it by hand and rerun `Stilargo → Recreate Main Scene`.
+
+**@both: `CitySpawner` registers its NavMesh right after baking** (`AddData`, per Ci's NavMesh gotcha), so units placed by later installers find it.
+
+**@both: `WorldTest` is deleted**, along with `WorldTestBootstrap`, `WorldTestHud`, `WorldTestAutoScavenger` and `WorldTestSceneBuilder`, and it's out of Build Settings. Main is the only scene.
+
+**@both: new Core method `CityLayout.IsRoadAt(worldX, worldZ)`**, with tests in `Tests/EditMode/City/CityLayoutTests.cs`.
+
 ### 2026-11-20 · Ci (combat & stances, branch `ci/combat-stances`)
 
 **@FL: `IDamageable` is unchanged.** Combat targets use a new Core contract, `Core/Combat/ICombatTarget` (`IDamageable` plus `Position` and `HealthFraction`). For fortifications in step 9, either implement `ICombatTarget` (then units can shoot them) or plain `IDamageable`. `Core.Combat.Health` is a ready-made `IDamageable` you can wrap.
