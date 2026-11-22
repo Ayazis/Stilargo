@@ -35,6 +35,8 @@ namespace Stilargo.Tests.EditMode.Combat
 
         public float CurrentHealth => _health.Current;
 
+        public CombatProtection Protection { get; set; } = CombatProtection.None;
+
         public void TakeDamage(float amount)
         {
             _health.TakeDamage(amount);

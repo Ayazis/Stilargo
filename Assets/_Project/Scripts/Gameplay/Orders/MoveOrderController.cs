@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Stilargo.Core.Formations;
 using Stilargo.Core.Input;
 using Stilargo.Core.Orders;
@@ -29,9 +30,13 @@ namespace Stilargo.Gameplay.Orders
         private UnitSelection _selection;
         private FormationCycle _cycle;
         private GroupMoveOrder _order;
+        private readonly List<IPointerCommandHandler> _handlers = new List<IPointerCommandHandler>();
 
         /// <summary>Raised with the destination each time a move order is given.</summary>
         public event Action<Vector3> MoveOrdered;
+
+        /// <summary>Raised with the ordered units just before a move order (new or queued) is given to them.</summary>
+        public event Action<IReadOnlyList<ISelectable>> UnitsMoveOrdered;
 
         /// <summary>Display name of the current formation, e.g. "Line".</summary>
         public string CurrentFormationName
@@ -71,6 +76,17 @@ namespace Stilargo.Gameplay.Orders
             _order = new GroupMoveOrder(_cycle.Current);
         }
 
+        /// <summary>Handlers are asked in the order they were added; the first that handles a click wins.</summary>
+        public void AddHandler(IPointerCommandHandler handler)
+        {
+            if (handler == null)
+            {
+                throw new ArgumentNullException(nameof(handler));
+            }
+
+            _handlers.Add(handler);
+        }
+
         private void Update()
         {
             if (_input == null)
@@ -85,17 +101,32 @@ namespace Stilargo.Gameplay.Orders
 
             if (_input.WasCommandPressedThisFrame && _selection.Selected.Count > 0)
             {
-                TryOrderMove();
+                TryOrderCommand();
             }
         }
 
-        private void TryOrderMove()
+        private void TryOrderCommand()
         {
-            if (!TryFindGroundPoint(out Vector3 destination))
+            Ray ray = _camera.ScreenPointToRay(_input.PointerScreenPosition.ToScreenPoint());
+            foreach (IPointerCommandHandler handler in _handlers)
+            {
+                if (handler.TryHandle(ray, _selection.Selected))
+                {
+                    return;
+                }
+            }
+
+            TryOrderMove(ray);
+        }
+
+        private void TryOrderMove(Ray ray)
+        {
+            if (!TryFindGroundPoint(ray, out Vector3 destination))
             {
                 return;
             }
 
+            UnitsMoveOrdered?.Invoke(_selection.Selected);
             if (_input.IsQueueModifierHeld)
             {
                 _order.QueueMove(_selection.Selected, destination.ToNumerics());
@@ -108,11 +139,9 @@ namespace Stilargo.Gameplay.Orders
             MoveOrdered?.Invoke(destination);
         }
 
-        private bool TryFindGroundPoint(out Vector3 point)
+        private bool TryFindGroundPoint(Ray ray, out Vector3 point)
         {
             point = default;
-            Ray ray = _camera.ScreenPointToRay(_input.PointerScreenPosition.ToScreenPoint());
-
             if (!Physics.Raycast(ray, out RaycastHit hit))
             {
                 return false;

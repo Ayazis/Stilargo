@@ -11,5 +11,8 @@ namespace Stilargo.Core.Combat
 
         /// <summary>Remaining health as a fraction in [0, 1].</summary>
         float HealthFraction { get; }
+
+        /// <summary>Cover and garrison protection against shots aimed at this target.</summary>
+        CombatProtection Protection { get; }
     }
 }

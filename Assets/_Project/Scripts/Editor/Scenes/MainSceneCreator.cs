@@ -2,6 +2,9 @@ using System;
 using System.Linq;
 using Stilargo.Gameplay.CameraControl;
 using Stilargo.Gameplay.Combat;
+using Stilargo.Gameplay.Cover;
+using Stilargo.Gameplay.Garrison;
+using Stilargo.Gameplay.GarrisonViews;
 using Stilargo.Gameplay.Composition;
 using Stilargo.Gameplay.Economy;
 using Stilargo.Gameplay.Fog;
@@ -56,6 +59,16 @@ namespace Stilargo.Editor.Scenes
         private const string EnemyMarkerMaterialPath = MaterialsFolder + "/Greybox_EnemyMarker.mat";
         private const string PlayerTracerMaterialPath = MaterialsFolder + "/Greybox_PlayerTracer.mat";
         private const string EnemyTracerMaterialPath = MaterialsFolder + "/Greybox_EnemyTracer.mat";
+        private const string CoverMaterialPath = MaterialsFolder + "/Greybox_Cover.mat";
+        private const string GarrisonSlotMaterialPath = MaterialsFolder + "/Greybox_GarrisonSlot.mat";
+        private const string CoverGarrisonName = "Cover And Garrisons";
+        private const string CoverPointViewField = "_coverPointView";
+        private const string SlotMarkerViewField = "_slotMarkerView";
+        private const string ViewMaterialField = "_material";
+
+        // Muted sandbag burlap and a calm teal marker; both inside the PBR albedo range.
+        private static readonly Color CoverColor = new Color(138f / 255f, 125f / 255f, 99f / 255f);
+        private static readonly Color GarrisonSlotColor = new Color(63f / 255f, 167f / 255f, 176f / 255f);
 
         private const string EnemyName = "Enemy";
         private const string EnemyMarkerName = "Enemy Marker";
@@ -161,10 +174,11 @@ namespace Stilargo.Editor.Scenes
             SelectableUnit[] units = CreateUnits(site);
             CombatUnit[] enemies = CreateEnemies(site);
             RtsCameraRig rig = CreateCamera(site);
-            CombatInstaller combatInstaller = CreateCombatInstaller(rig, units);
+            CombatInstaller combatInstaller = CreateCombatInstaller(rig, units, world);
             AssignCombat(combatInstaller, enemies);
+            CoverGarrisonInstaller coverGarrisonInstaller = CreateCoverGarrisonInstaller(combatInstaller, world, enemies);
             UnitWorldInstaller unitWorldInstaller = CreateUnitWorldInstaller(world, units, enemies);
-            CreateBootstrapper(combatInstaller.gameObject, new Installer[] { world, combatInstaller, unitWorldInstaller });
+            CreateBootstrapper(combatInstaller.gameObject, new Installer[] { world, combatInstaller, coverGarrisonInstaller, unitWorldInstaller });
 
             EnsureFolder(System.IO.Path.GetDirectoryName(ScenePath));
             if (!EditorSceneManager.SaveScene(scene, ScenePath))
@@ -251,6 +265,7 @@ namespace Stilargo.Editor.Scenes
             unit.AddComponent<CombatUnit>();
             unit.AddComponent<VisionSourceComponent>();
             unit.AddComponent<ScavengerComponent>();
+            unit.AddComponent<GarrisonOccupant>();
             CreateMuzzle(unit.transform, LoadOrCreateUnlitMaterial(PlayerTracerMaterialPath, PlayerTracerColor));
             return selectable;
         }
@@ -447,13 +462,14 @@ namespace Stilargo.Editor.Scenes
             return installer;
         }
 
-        private static CombatInstaller CreateCombatInstaller(RtsCameraRig rig, SelectableUnit[] units)
+        private static CombatInstaller CreateCombatInstaller(RtsCameraRig rig, SelectableUnit[] units, WorldInstaller world)
         {
             var controls = new GameObject(ControlsName);
             var bootstrap = new GameObject(BootstrapName);
             var combatInstaller = bootstrap.AddComponent<CombatInstaller>();
 
             var fields = new SerializedObject(combatInstaller);
+            fields.FindProperty(WorldField).objectReferenceValue = world;
             fields.FindProperty(CameraRigField).objectReferenceValue = rig;
             fields.FindProperty(CameraSettingsField).objectReferenceValue = LoadOrCreateCameraSettings();
             fields.FindProperty(CameraField).objectReferenceValue = rig.GetComponent<Camera>();
@@ -473,6 +489,33 @@ namespace Stilargo.Editor.Scenes
 
             fields.ApplyModifiedPropertiesWithoutUndo();
             return combatInstaller;
+        }
+
+        /// <summary>Cover points and garrison slots come from the city at startup; this only adds their installer and views.</summary>
+        private static CoverGarrisonInstaller CreateCoverGarrisonInstaller(CombatInstaller combatInstaller, WorldInstaller world, CombatUnit[] enemies)
+        {
+            var combatFields = new SerializedObject(combatInstaller);
+            var holder = new GameObject(CoverGarrisonName);
+            var installer = holder.AddComponent<CoverGarrisonInstaller>();
+            var coverView = holder.AddComponent<CoverPointView>();
+            var slotView = holder.AddComponent<GarrisonSlotMarkerView>();
+            SerializedFields.Assign(coverView, ViewMaterialField, LoadOrCreateLitMaterial(CoverMaterialPath, CoverColor));
+            SerializedFields.Assign(slotView, ViewMaterialField, LoadOrCreateUnlitMaterial(GarrisonSlotMaterialPath, GarrisonSlotColor));
+
+            SerializedFields.Assign(installer, WorldField, world);
+            SerializedFields.Assign(installer, MoveOrderControllerField, combatFields.FindProperty(MoveOrderControllerField).objectReferenceValue);
+            SerializedProperty units = combatFields.FindProperty(UnitsField);
+            var unitObjects = new UnityEngine.Object[units.arraySize];
+            for (int index = 0; index < unitObjects.Length; index++)
+            {
+                unitObjects[index] = units.GetArrayElementAtIndex(index).objectReferenceValue;
+            }
+
+            SerializedFields.AssignArray(installer, UnitsField, unitObjects);
+            SerializedFields.AssignArray(installer, EnemiesField, enemies);
+            SerializedFields.Assign(installer, CoverPointViewField, coverView);
+            SerializedFields.Assign(installer, SlotMarkerViewField, slotView);
+            return installer;
         }
 
         /// <summary>
