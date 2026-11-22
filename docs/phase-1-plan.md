@@ -92,13 +92,17 @@ The split follows the code: **Ci** takes units and combat, and **FL** takes the 
   - Ci: `IDamageable`, `IPlayerInput`, `IUnitOrders`, plus `GameBootstrapper` and the `Main` scene.
 - Until the other person's contract is merged, code against a local fake in your test folder, never a copy of the contract. A contract changes only through a PR that the other person approves.
 
-| Order | Ci: units & combat | FL: world & economy |
-|---|---|---|
-| 1 | 2. Input + RTS camera | 3. Procedural city + NavMesh |
-| 2 | 4. Selection, waypoints, formations | 7. Fog of war |
-| 3 | 5. Combat, stances, target priority | 8. Scavenging & economy (uses `IUnitOrders`) |
-| 4 | 6. Cover & garrison (uses `CityLayout`) | 9. Claim & fortify (uses `IDamageable`, `Wallet`) |
-| 5 | 10. Hill + rival AI | 11. Minimal UI |
+Update the status cell in the PR that finishes a step. "Done" means merged into `main`.
+
+| Order | Ci: units & combat | Status | FL: world & economy | Status |
+|---|---|---|---|---|
+| 1 | 2. Input + RTS camera | Done (PR 6) | 3. Procedural city + NavMesh | Done (PR 4) |
+| 2 | 4. Selection, waypoints, formations | Done (PR 8) | 7. Fog of war | Done (PR 4) |
+| 3 | 5. Combat, stances, target priority | Done (PR 10) | 8. Scavenging & economy (uses `IUnitOrders`) | Done (PR 5) |
+| 4 | 6. Cover & garrison (uses `CityLayout`) | Done (PR 12) | 9. Claim & fortify (uses `IDamageable`, `Wallet`) | Not started |
+| 5 | 10. Hill + rival AI | Not started | 11. Minimal UI | Not started |
+
+Step 1 (skeleton) is done. The city has been in `Main` since PR 11.
 
 **Ownership rules**
 - `GameBootstrapper` and the `Main` scene each have a single owner, and scene YAML merges badly. Each person adds their own installer, `CombatInstaller` or `WorldInstaller`, and the bootstrapper calls both. Only Ci touches the scene, and FL gets things into it with prefabs.

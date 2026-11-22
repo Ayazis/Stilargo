@@ -8,6 +8,10 @@ Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handover
 
 ---
 
+### 2026-11-22 · Ci (step status)
+
+**@FL: `docs/phase-1-plan.md` now has status columns** in the Ci/FL order table. Please set your step to Done in the PR that finishes it, like I'll do for mine.
+
 ### 2026-11-22 · Ci (cover & garrison, branch `ci/cover-garrison`)
 
 **@FL: `ICombatTarget` has a new member, `CombatProtection Protection`** (hit-chance and damage multipliers, `CombatProtection.None` = unprotected). `IDamageable` is unchanged. If your step-9 fortifications implement `ICombatTarget`, return `CombatProtection.None` or your own armour values.
