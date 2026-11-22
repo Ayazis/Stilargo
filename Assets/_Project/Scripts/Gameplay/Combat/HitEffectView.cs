@@ -87,6 +87,7 @@ namespace Stilargo.Gameplay.Combat
             }
 
             _combat.Fired += OnFired;
+            _combat.Missed += OnFired;
             _isSubscribed = true;
         }
 
@@ -98,6 +99,7 @@ namespace Stilargo.Gameplay.Combat
             }
 
             _combat.Fired -= OnFired;
+            _combat.Missed -= OnFired;
             _isSubscribed = false;
         }
     }

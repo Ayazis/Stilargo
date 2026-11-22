@@ -33,8 +33,23 @@ namespace Stilargo.Core.Combat
         /// <summary>Raised when the weapon actually hit a target.</summary>
         public event Action<ICombatTarget> Fired;
 
+        /// <summary>Raised when the weapon fired at a target but missed.</summary>
+        public event Action<ICombatTarget> Missed;
+
         /// <summary>Null until <see cref="SetStance"/> is called.</summary>
         public IStance Stance { get; private set; }
+
+        /// <summary>What the unit gains from where it stands; <see cref="PositionBonus.None"/> until set.</summary>
+        public PositionBonus Bonus { get; private set; } = PositionBonus.None;
+
+        public CombatProtection Protection => Bonus.Protection;
+
+        public void SetPositionBonus(PositionBonus bonus)
+        {
+            _weapon.SetRangeBonus(bonus.RangeMetres);
+            _awareness.SetSightBonus(bonus.SightMetres);
+            Bonus = bonus;
+        }
 
         public void SetStance(IStance stance)
         {
@@ -107,9 +122,15 @@ namespace Stilargo.Core.Combat
                 return;
             }
 
-            if (_weapon.TryFire(unitPosition, target))
+            FireOutcome outcome = _weapon.TryFire(unitPosition, target);
+
+            if (outcome == FireOutcome.Hit)
             {
                 Fired?.Invoke(target);
+            }
+            else if (outcome == FireOutcome.Missed)
+            {
+                Missed?.Invoke(target);
             }
         }
 
@@ -145,7 +166,7 @@ namespace Stilargo.Core.Combat
                 return false;
             }
 
-            return GroundDistance.Between(unitPosition, enemy.Position) <= _awareness.SightRange;
+            return _awareness.CanSee(unitPosition, enemy.Position);
         }
     }
 }

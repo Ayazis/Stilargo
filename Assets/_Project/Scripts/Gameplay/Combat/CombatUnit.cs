@@ -25,6 +25,7 @@ namespace Stilargo.Gameplay.Combat
         private Health _health;
         private IUnitOrders _orders;
         private IReadOnlyList<ICombatTarget> _enemies;
+        private readonly List<IPositionBonusSource> _bonusSources = new List<IPositionBonusSource>();
         private System.Numerics.Vector3 _anchor;
         private Vector3 _combatDestination;
         private bool _isMovingForCombat;
@@ -38,6 +39,8 @@ namespace Stilargo.Gameplay.Combat
         public System.Numerics.Vector3 Position => transform.position.ToNumerics();
 
         public float HealthFraction => _health.Fraction;
+
+        public CombatProtection Protection => IsConstructed ? _combat.Protection : CombatProtection.None;
 
         public bool IsAlive => IsConstructed && _health.IsAlive;
 
@@ -85,6 +88,17 @@ namespace Stilargo.Gameplay.Combat
             Subscribe();
         }
 
+        /// <summary>Adds a source (cover, garrison) whose bonus is summed into this unit's combat every frame.</summary>
+        public void AddBonusSource(IPositionBonusSource source)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            _bonusSources.Add(source);
+        }
+
         public void TakeDamage(float amount)
         {
             _health.TakeDamage(amount);
@@ -98,9 +112,21 @@ namespace Stilargo.Gameplay.Combat
             }
 
             UpdateAnchorWhenOrdersFinish();
+            _combat.SetPositionBonus(CurrentBonus());
             UnitCombatPose pose = new UnitCombatPose(Position, _anchor);
             CombatSituation situation = new CombatSituation(pose, AreOrdersBusy, _enemies);
             Execute(_combat.Tick(Time.deltaTime, situation));
+        }
+
+        private PositionBonus CurrentBonus()
+        {
+            PositionBonus bonus = PositionBonus.None;
+            foreach (IPositionBonusSource source in _bonusSources)
+            {
+                bonus = bonus.Combine(source.CurrentBonus);
+            }
+
+            return bonus;
         }
 
         private void UpdateAnchorWhenOrdersFinish()
@@ -117,6 +143,13 @@ namespace Stilargo.Gameplay.Combat
 
         private void Execute(CombatCommand command)
         {
+            // A garrisoned unit's agent is off: it holds its slot and may only shoot.
+            if (!_agent.enabled)
+            {
+                _isMovingForCombat = false;
+                return;
+            }
+
             switch (command.Action)
             {
                 case CombatCommandAction.MoveTo:

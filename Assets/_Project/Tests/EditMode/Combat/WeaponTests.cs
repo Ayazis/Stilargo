@@ -30,9 +30,9 @@ namespace Stilargo.Tests.EditMode.Combat
         [Test]
         public void TryFire_InRange_AppliesDamageAndStartsCooldown()
         {
-            bool hasFired = _weapon.TryFire(Vector3.Zero, _target);
+            FireOutcome outcome = _weapon.TryFire(Vector3.Zero, _target);
 
-            Assert.That(hasFired, Is.True);
+            Assert.That(outcome, Is.EqualTo(FireOutcome.Hit));
             Assert.That(_target.CurrentHealth, Is.EqualTo(TargetHealth - Damage));
             Assert.That(_weapon.IsReady, Is.False);
         }
@@ -43,7 +43,7 @@ namespace Stilargo.Tests.EditMode.Combat
             _weapon.TryFire(Vector3.Zero, _target);
             _weapon.Tick(Cooldown / 2f);
 
-            Assert.That(_weapon.TryFire(Vector3.Zero, _target), Is.False);
+            Assert.That(_weapon.TryFire(Vector3.Zero, _target), Is.EqualTo(FireOutcome.NotFired));
             Assert.That(_target.CurrentHealth, Is.EqualTo(TargetHealth - Damage));
         }
 
@@ -54,7 +54,7 @@ namespace Stilargo.Tests.EditMode.Combat
             _weapon.Tick(Cooldown);
 
             Assert.That(_weapon.IsReady, Is.True);
-            Assert.That(_weapon.TryFire(Vector3.Zero, _target), Is.True);
+            Assert.That(_weapon.TryFire(Vector3.Zero, _target), Is.EqualTo(FireOutcome.Hit));
             Assert.That(_weapon.IsReady, Is.False);
         }
 
@@ -70,7 +70,7 @@ namespace Stilargo.Tests.EditMode.Combat
         {
             _target.Position = new Vector3(0f, 0f, Range + 1f);
 
-            Assert.That(_weapon.TryFire(Vector3.Zero, _target), Is.False);
+            Assert.That(_weapon.TryFire(Vector3.Zero, _target), Is.EqualTo(FireOutcome.NotFired));
             Assert.That(_weapon.IsReady, Is.True);
         }
 
@@ -79,7 +79,7 @@ namespace Stilargo.Tests.EditMode.Combat
         {
             _target.TakeDamage(TargetHealth);
 
-            Assert.That(_weapon.TryFire(Vector3.Zero, _target), Is.False);
+            Assert.That(_weapon.TryFire(Vector3.Zero, _target), Is.EqualTo(FireOutcome.NotFired));
             Assert.That(_weapon.IsReady, Is.True);
         }
     }

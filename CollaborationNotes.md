@@ -8,6 +8,20 @@ Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handover
 
 ---
 
+### 2026-11-22 · Ci (cover & garrison, branch `ci/cover-garrison`)
+
+**@FL: `ICombatTarget` has a new member, `CombatProtection Protection`** (hit-chance and damage multipliers, `CombatProtection.None` = unprotected). `IDamageable` is unchanged. If your step-9 fortifications implement `ICombatTarget`, return `CombatProtection.None` or your own armour values.
+
+**@FL: combat now needs visibility.** Player units only target enemies that are currently visible in your `VisibilityGrid` (Core `IVisibilityQuery`, adapted by `Gameplay/Combat/VisibilityGridQuery`). The AI side still sees everything. `CombatInstaller` now has a `_world` reference to read `WorldInstaller.VisibilityGrid`; I didn't change any of your files.
+
+**@FL: `Main` scene changed (regenerate, don't merge YAML)**
+- The installer list is now `[WorldInstaller, CombatInstaller, CoverGarrisonInstaller, UnitWorldInstaller]`. The new `CoverGarrisonInstaller` (on "Cover And Garrisons") derives cover points and garrison slots from `CityLayout` at startup.
+- Player units have a new `GarrisonOccupant`. While garrisoned, a unit's `NavMeshAgent` is off and it stands on its slot (roof at Y = storeys × 3 m). On a roof it registers an extra `IVisionSource` with your grid (radius = its `VisionSourceComponent.VisionRadius` + 8 m), so rooftops see further.
+- New materials: `Greybox_Cover` (lit, sRGB 138/125/99) and `Greybox_GarrisonSlot` (unlit teal), both made through `HdrpMaterials`.
+- `WeaponDefinition` has a hit chance (default 0.75). The existing rifle assets keep their values and pick up the default.
+
+**@both: new Core modules, with EditMode tests:** `Core/Garrison` (slots per storey on road-facing facades plus roof, occupancy, bonuses) and `Core/Cover` (cover points on road cells next to plots; standing within 1.2 m halves incoming hit chance). Right-clicking a building with units selected garrisons them; any move order makes them leave. `MoveOrderController` has `AddHandler(IPointerCommandHandler)` if you need right-click on something else, e.g. the claimed house in step 9.
+
 ### 2026-11-21 · FL (city in Main, branch `feature/city-in-main`)
 
 **@Ci: Main now plays in the procedural city. I changed your `MainSceneCreator` (regenerate, don't merge YAML)**

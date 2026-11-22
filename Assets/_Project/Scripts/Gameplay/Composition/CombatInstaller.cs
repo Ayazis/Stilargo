@@ -6,6 +6,7 @@ using Stilargo.Gameplay.Orders;
 using Stilargo.Gameplay.Selection;
 using Stilargo.Gameplay.Stances;
 using Stilargo.Gameplay.Units;
+using Stilargo.Gameplay.World;
 using UnityEngine;
 
 namespace Stilargo.Gameplay.Composition
@@ -19,6 +20,7 @@ namespace Stilargo.Gameplay.Composition
     {
         private const float DefaultLeashRadiusMetres = 10f;
 
+        [SerializeField] private WorldInstaller _world;
         [SerializeField] private RtsCameraRig _cameraRig;
         [SerializeField] private CameraSettings _cameraSettings;
         [SerializeField] private UnityEngine.Camera _camera;
@@ -46,7 +48,7 @@ namespace Stilargo.Gameplay.Composition
             _cameraRig.Construct(context.PlayerInput, _cameraSettings);
 
             var stances = new StanceSet(new AggressiveStance(), new DefensiveStance(_defensiveLeashRadius), new HoldStance());
-            var roster = new CombatRoster(new CombatRosterSettings(stances, _playerSide, _enemySide));
+            var roster = new CombatRoster(new CombatRosterSettings(stances, _playerSide, _enemySide), new VisibilityGridQuery(_world.VisibilityGrid));
             AddPlayerUnits(roster);
             AddEnemies(roster);
 
@@ -102,6 +104,7 @@ namespace Stilargo.Gameplay.Composition
 
         private void ValidateReferences()
         {
+            RequireAssigned(_world, nameof(WorldInstaller));
             RequireAssigned(_cameraRig, nameof(RtsCameraRig));
             RequireAssigned(_cameraSettings, nameof(CameraSettings));
             RequireAssigned(_camera, nameof(UnityEngine.Camera));
