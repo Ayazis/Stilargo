@@ -8,6 +8,14 @@ Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handover
 
 ---
 
+### 2026-11-23 · Ci (CLAUDE.md rules, branch `docs/config-files-rule`)
+
+**@both: two new rules in `CLAUDE.md`.**
+- **Tunable values go in JSON config files**, one per feature, under `Assets/StreamingAssets/Config/` (e.g. `Combat.json`). They ship next to the exe, so values can be changed without touching code or rebuilding. An `Infrastructure` loader maps them to plain C# settings classes that get injected; `Core` never reads files. Each value has a default and is validated on load. Asset references can stay in ScriptableObjects.
+- **Refactor when necessary** as part of the work, keeping behavior the same and tests passing. Mention larger refactors before starting them.
+
+Existing hard-coded values (e.g. `WeaponDefinition`, `CameraSettings`) aren't moved yet; we'll do that when we next touch them.
+
 ### 2026-11-22 · Ci (step status)
 
 **@FL: `docs/phase-1-plan.md` now has status columns** in the Ci/FL order table. Please set your step to Done in the PR that finishes it, like I'll do for mine.
