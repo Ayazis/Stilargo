@@ -8,6 +8,18 @@ Unity game in C#. Follow SOLID and Clean Code.
 - Small, focused changes. Ask before adding packages or making architecture decisions.
 - Don't hand-edit Unity-managed files (`Library/`, `*.csproj`, `.meta`) or scene/prefab YAML; list editor steps for the user instead.
 - New logic gets EditMode tests. No commits unless asked.
+- **Refactor when necessary.** If a change makes code unclear, duplicated or breaks the rules below, clean it up as part of the work (keep behavior the same, tests green). Mention larger refactors to the user before starting them.
+
+## Tunable values in config files
+
+Gameplay parameters that someone may want to tweak (speeds, damage, ranges, timers, costs, spawn counts, etc.) go in data files, not in code, so they can be changed without touching C#.
+
+- Use JSON files under `Assets/StreamingAssets/Config/` (one file per feature, e.g. `Combat.json`). These ship next to the exe and can be edited there without rebuilding.
+- Load them through a small loader in `Infrastructure` that maps JSON to plain C# settings classes; inject those settings into `Core`/`Gameplay` code. `Core` never reads files itself.
+- Every value has a sensible default and is validated on load; fail fast with a clear message on missing or invalid values.
+- Name keys clearly and include units in the name where useful (`moveSpeedMetersPerSecond`, `cooldownSeconds`).
+- Values that are tied to authored assets (prefab references, materials) can stay in ScriptableObjects.
+- If it's unclear whether a value belongs in config or code, ask the user.
 
 ## Collaboration
 
