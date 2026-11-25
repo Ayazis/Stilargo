@@ -14,7 +14,6 @@ namespace Stilargo.Tests.EditMode.Hill
             Assert.AreEqual(HillSettings.DefaultCenterXMetres, settings.CenterXMetres);
             Assert.AreEqual(HillSettings.DefaultCenterZMetres, settings.CenterZMetres);
             Assert.AreEqual(HillSettings.DefaultRadiusMetres, settings.RadiusMetres);
-            Assert.AreEqual(HillSettings.DefaultIncomeMoneyPerSecond, settings.IncomeMoneyPerSecond);
             Assert.AreEqual(HillSettings.DefaultHoldDurationSeconds, settings.HoldDurationSeconds);
         }
 
@@ -30,19 +29,6 @@ namespace Stilargo.Tests.EditMode.Hill
         public void Constructor_NonFiniteCenter_Throws(float coordinate)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new HillSettings(coordinate, 0f, 1f));
-        }
-
-        [Test]
-        public void WithIncome_Zero_IsAllowed()
-        {
-            Assert.AreEqual(0f, new HillSettings(0f, 0f, 1f).WithIncome(0f).IncomeMoneyPerSecond);
-        }
-
-        [TestCase(-1f)]
-        [TestCase(float.NaN)]
-        public void WithIncome_Invalid_Throws(float income)
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new HillSettings(0f, 0f, 1f).WithIncome(income));
         }
 
         [TestCase(0f)]

@@ -44,9 +44,9 @@ namespace Stilargo.Gameplay.Fortification
             }
 
             _claim.Claimed -= HandleClaimed;
-            if (_claim.IsClaimed)
+            foreach (ClaimedHouse house in _claim.Houses)
             {
-                _claim.House.FortificationBuilt -= HandleBuilt;
+                house.FortificationBuilt -= HandleBuilt;
             }
         }
 

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Numerics;
 using NUnit.Framework;
 using Stilargo.Core.Combat;
-using Stilargo.Core.Economy;
 using Stilargo.Core.Hill;
 using Stilargo.Tests.EditMode.Combat;
 
@@ -12,7 +11,6 @@ namespace Stilargo.Tests.EditMode.Hill
     public sealed class HillControlTests
     {
         private const float Radius = 5f;
-        private const float IncomePerSecond = 2f;
         private const float HoldSeconds = 10f;
         private const float UnitHealth = 10f;
 
@@ -20,15 +18,13 @@ namespace Stilargo.Tests.EditMode.Hill
         private static readonly Vector3 OffHill = new Vector3(50f, 0f, 50f);
         private static readonly IReadOnlyList<ICombatTarget> Nobody = Array.Empty<ICombatTarget>();
 
-        private Wallet _wallet;
         private HillControl _hill;
 
         [SetUp]
         public void SetUp()
         {
-            _wallet = new Wallet();
-            HillSettings settings = new HillSettings(0f, 0f, Radius).WithIncome(IncomePerSecond).WithHoldDuration(HoldSeconds);
-            _hill = new HillControl(new HillZone(Vector3.Zero, Radius), settings, _wallet);
+            HillSettings settings = new HillSettings(0f, 0f, Radius).WithHoldDuration(HoldSeconds);
+            _hill = new HillControl(new HillZone(Vector3.Zero, Radius), settings);
         }
 
         [Test]
@@ -40,33 +36,30 @@ namespace Stilargo.Tests.EditMode.Hill
         }
 
         [Test]
-        public void Tick_OnlyPlayer_HoldsAndEarns()
+        public void Tick_OnlyPlayer_Holds()
         {
             _hill.Tick(3f, Units(OnHill), Nobody);
 
             Assert.AreEqual(HillState.HeldByPlayer, _hill.State);
-            Assert.AreEqual(6, _wallet.Balance);
             Assert.AreEqual(3f, _hill.HeldSeconds);
             Assert.AreEqual(HoldSeconds - 3f, _hill.RemainingHoldSeconds);
         }
 
         [Test]
-        public void Tick_OnlyRival_HeldByRivalAndPaysNobody()
+        public void Tick_OnlyRival_IsHeldByRival()
         {
             _hill.Tick(3f, Units(OffHill), Units(OnHill));
 
             Assert.AreEqual(HillState.HeldByRival, _hill.State);
-            Assert.AreEqual(0, _wallet.Balance);
             Assert.AreEqual(0f, _hill.HeldSeconds);
         }
 
         [Test]
-        public void Tick_BothOnHill_IsContestedAndNobodyEarns()
+        public void Tick_BothOnHill_IsContested()
         {
             _hill.Tick(3f, Units(OnHill), Units(OnHill));
 
             Assert.AreEqual(HillState.Contested, _hill.State);
-            Assert.AreEqual(0, _wallet.Balance);
             Assert.AreEqual(0f, _hill.HeldSeconds);
         }
 
@@ -79,16 +72,6 @@ namespace Stilargo.Tests.EditMode.Hill
             _hill.Tick(1f, Units(OnHill), new ICombatTarget[] { deadRival });
 
             Assert.AreEqual(HillState.HeldByPlayer, _hill.State);
-        }
-
-        [Test]
-        public void Tick_FractionalIncome_CarriesOver()
-        {
-            _hill.Tick(0.3f, Units(OnHill), Nobody);
-            Assert.AreEqual(0, _wallet.Balance);
-
-            _hill.Tick(0.3f, Units(OnHill), Nobody);
-            Assert.AreEqual(1, _wallet.Balance);
         }
 
         [Test]

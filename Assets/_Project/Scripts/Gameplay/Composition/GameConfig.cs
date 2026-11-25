@@ -1,6 +1,7 @@
 using System;
 using Stilargo.Core.Fortification;
 using Stilargo.Core.Hill;
+using Stilargo.Core.Income;
 using Stilargo.Core.Rival;
 
 namespace Stilargo.Gameplay.Composition
@@ -11,9 +12,10 @@ namespace Stilargo.Gameplay.Composition
     /// </summary>
     public sealed class GameConfig
     {
-        public GameConfig(FortificationSettings fortifications, HillRivalSettings hillRival)
+        public GameConfig(FortificationSettings fortifications, HillRivalSettings hillRival, HouseIncomeSettings houseIncome)
         {
             Fortifications = fortifications ?? throw new ArgumentNullException(nameof(fortifications));
+            HouseIncome = houseIncome ?? throw new ArgumentNullException(nameof(houseIncome));
             if (hillRival == null)
             {
                 throw new ArgumentNullException(nameof(hillRival));
@@ -31,5 +33,8 @@ namespace Stilargo.Gameplay.Composition
 
         /// <summary>From the <c>rival</c> section of <c>Hill.json</c>.</summary>
         public RivalSettings Rival { get; }
+
+        /// <summary>From <c>Income.json</c>.</summary>
+        public HouseIncomeSettings HouseIncome { get; }
     }
 }

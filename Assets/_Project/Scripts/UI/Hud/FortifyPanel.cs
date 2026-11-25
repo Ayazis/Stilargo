@@ -6,7 +6,8 @@ using UnityEngine.UIElements;
 namespace Stilargo.UI.Hud
 {
     /// <summary>
-    /// Offers the claim until a house is claimed, then the house health and one button per fortification.
+    /// Offers a claim while the squad stands in an unclaimed building. Once a house is claimed it shows the total
+    /// income, the selected house's health and upkeep, a repair button and one button per fortification.
     /// </summary>
     internal sealed class FortifyPanel : VisualElement
     {
@@ -15,7 +16,10 @@ namespace Stilargo.UI.Hud
         private readonly VisualElement _shopSection = new VisualElement();
         private readonly Label _claimHint = HudStyle.CreateLabel(FortifyMenu.ClaimHint);
         private readonly Button _claimButton;
+        private readonly Label _incomeLabel = HudStyle.CreateLabel(string.Empty);
         private readonly Label _healthLabel = HudStyle.CreateLabel(string.Empty);
+        private readonly Label _upkeepLabel = HudStyle.CreateLabel(string.Empty);
+        private readonly Button _repairButton;
         private readonly Label _messageLabel = HudStyle.CreateLabel(string.Empty);
         private readonly List<Button> _offerButtons = new List<Button>();
 
@@ -23,29 +27,33 @@ namespace Stilargo.UI.Hud
         {
             _menu = menu ?? throw new ArgumentNullException(nameof(menu));
             _claimButton = HudStyle.CreateButton(FortifyMenu.ClaimLabel, () => _menu.TryClaim());
+            _repairButton = HudStyle.CreateButton(UpkeepMenu.NothingToRepairLabel, () => _menu.Upkeep.Repair());
 
             _claimSection.Add(_claimHint);
             _claimSection.Add(_claimButton);
+            _shopSection.Add(_incomeLabel);
             _shopSection.Add(_healthLabel);
+            _shopSection.Add(_upkeepLabel);
+            _shopSection.Add(_repairButton);
             AddOfferButtons();
             _shopSection.Add(_messageLabel);
-            Add(_claimSection);
             Add(_shopSection);
+            Add(_claimSection);
         }
 
         public void Refresh()
         {
             bool isClaimed = _menu.IsClaimed;
-            SetVisible(_claimSection, !isClaimed);
+            bool canClaim = _menu.CanClaim;
+            SetVisible(_claimSection, !isClaimed || canClaim);
+            SetVisible(_claimHint, !isClaimed);
             SetVisible(_shopSection, isClaimed);
+            _claimButton.SetEnabled(canClaim);
 
             if (isClaimed)
             {
                 RefreshShop();
-                return;
             }
-
-            _claimButton.SetEnabled(_menu.CanClaim);
         }
 
         private void AddOfferButtons()
@@ -61,7 +69,12 @@ namespace Stilargo.UI.Hud
 
         private void RefreshShop()
         {
+            UpkeepMenu upkeep = _menu.Upkeep;
+            _incomeLabel.text = upkeep.IncomeText();
             _healthLabel.text = _menu.HouseHealthText();
+            _upkeepLabel.text = upkeep.HouseText();
+            _repairButton.text = upkeep.RepairLabel();
+            _repairButton.SetEnabled(upkeep.CanRepair());
             for (int index = 0; index < _offerButtons.Count; index++)
             {
                 _offerButtons[index].SetEnabled(_menu.IsOfferAvailable(index));

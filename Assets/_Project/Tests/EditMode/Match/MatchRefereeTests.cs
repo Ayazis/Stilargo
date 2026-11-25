@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Numerics;
 using NUnit.Framework;
 using Stilargo.Core.Combat;
-using Stilargo.Core.Economy;
 using Stilargo.Core.Fortification;
 using Stilargo.Core.Hill;
 using Stilargo.Core.Match;
@@ -25,7 +24,7 @@ namespace Stilargo.Tests.EditMode.Match
         public void SetUp()
         {
             HillSettings settings = new HillSettings(0f, 0f, 1f).WithHoldDuration(HoldSeconds);
-            _hill = new HillControl(new HillZone(Vector3.Zero, 1f), settings, new Wallet());
+            _hill = new HillControl(new HillZone(Vector3.Zero, 1f), settings);
             _claim = FortificationTestHouse.CreateClaim(FortificationTestHouse.CreateDropOff());
             _referee = new MatchReferee(_hill, _claim);
             _decisions = new List<MatchOutcome>();
@@ -69,6 +68,18 @@ namespace Stilargo.Tests.EditMode.Match
             claim.House.TakeDamage(claim.House.MaxHealth);
 
             Assert.AreEqual(MatchOutcome.Lost, referee.Outcome);
+        }
+
+        [Test]
+        public void OtherClaimedHouseDestroyed_DoesNotLose()
+        {
+            _claim.TryClaim(FortificationTestHouse.CreateBuilding());
+            _claim.TryClaim(FortificationTestHouse.CreateBuilding());
+            ClaimedHouse outpost = _claim.Houses[1];
+
+            outpost.TakeDamage(outpost.MaxHealth);
+
+            Assert.IsFalse(_referee.IsDecided);
         }
 
         [Test]
