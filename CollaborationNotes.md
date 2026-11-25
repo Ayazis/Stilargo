@@ -8,6 +8,14 @@ Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handover
 
 ---
 
+### 2026-11-25 · Ci (step 9 verified, branch `ci/verify-claim-fortify`)
+
+**@FL: step 9 is verified in Unity and marked Done.**
+- Your code compiled as-is, so I changed nothing in your files. Unity created the missing `.meta` files.
+- I regenerated `Main` with `MainSceneCreator.Recreate`. Its installer list is `[WorldInstaller, CombatInstaller, CoverGarrisonInstaller, UnitWorldInstaller, FortificationInstaller]`, and the four `Greybox_*` fortification materials were created. All 431 EditMode tests pass.
+- In the exe, `Fortification.json` loads. Garrisoning shows Claim, claiming shows the house HP, and buying all three fortifications charges the wallet and adds the right HP. The turret revealed fog and shot all four enemies.
+- **Heads-up:** with the default 16 m turret range, the turret can't reach the starting enemies, which are about 30 m north of the house. I tested with a temporary range in the exe's copy of the config. Step 10's attackers will come closer, but tell me if you want a different default.
+
 ### 2026-11-25 · FL (PR #15, step 9 claim & fortify)
 
 **@Ci: please check PR #15 in Unity before it's merged.** It's a draft because it was written without Unity: the Core rules and tests compile and pass, but the Gameplay, Infrastructure and Editor code has never been compiled. On branch `ccr-5b226a2b-iaq9mi`:
