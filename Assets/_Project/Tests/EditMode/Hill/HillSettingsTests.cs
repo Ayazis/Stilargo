@@ -1,0 +1,55 @@
+using System;
+using NUnit.Framework;
+using Stilargo.Core.Hill;
+
+namespace Stilargo.Tests.EditMode.Hill
+{
+    public sealed class HillSettingsTests
+    {
+        [Test]
+        public void Default_UsesTheDefaultConstants()
+        {
+            HillSettings settings = HillSettings.Default;
+
+            Assert.AreEqual(HillSettings.DefaultCenterXMetres, settings.CenterXMetres);
+            Assert.AreEqual(HillSettings.DefaultCenterZMetres, settings.CenterZMetres);
+            Assert.AreEqual(HillSettings.DefaultRadiusMetres, settings.RadiusMetres);
+            Assert.AreEqual(HillSettings.DefaultIncomeMoneyPerSecond, settings.IncomeMoneyPerSecond);
+            Assert.AreEqual(HillSettings.DefaultHoldDurationSeconds, settings.HoldDurationSeconds);
+        }
+
+        [TestCase(0f)]
+        [TestCase(float.NaN)]
+        public void Constructor_InvalidRadius_Throws(float radius)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new HillSettings(0f, 0f, radius));
+        }
+
+        [TestCase(float.NaN)]
+        [TestCase(float.NegativeInfinity)]
+        public void Constructor_NonFiniteCenter_Throws(float coordinate)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new HillSettings(coordinate, 0f, 1f));
+        }
+
+        [Test]
+        public void WithIncome_Zero_IsAllowed()
+        {
+            Assert.AreEqual(0f, new HillSettings(0f, 0f, 1f).WithIncome(0f).IncomeMoneyPerSecond);
+        }
+
+        [TestCase(-1f)]
+        [TestCase(float.NaN)]
+        public void WithIncome_Invalid_Throws(float income)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new HillSettings(0f, 0f, 1f).WithIncome(income));
+        }
+
+        [TestCase(0f)]
+        [TestCase(float.PositiveInfinity)]
+        public void WithHoldDuration_Invalid_Throws(float seconds)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new HillSettings(0f, 0f, 1f).WithHoldDuration(seconds));
+        }
+    }
+}

@@ -8,6 +8,7 @@ using Stilargo.Gameplay.GarrisonViews;
 using Stilargo.Gameplay.Composition;
 using Stilargo.Gameplay.Economy;
 using Stilargo.Gameplay.Fog;
+using Stilargo.Gameplay.Fortification;
 using Stilargo.Gameplay.Orders;
 using Stilargo.Gameplay.Scavenging;
 using Stilargo.Gameplay.Selection;
@@ -15,6 +16,7 @@ using Stilargo.Gameplay.Stances;
 using Stilargo.Gameplay.Units;
 using Stilargo.Gameplay.World;
 using Stilargo.Editor.Fortification;
+using Stilargo.Editor.Hill;
 using Stilargo.Editor.Rendering;
 using Stilargo.Editor.World;
 using Stilargo.Infrastructure.Composition;
@@ -179,8 +181,9 @@ namespace Stilargo.Editor.Scenes
             AssignCombat(combatInstaller, enemies);
             CoverGarrisonInstaller coverGarrisonInstaller = CreateCoverGarrisonInstaller(combatInstaller, world, enemies);
             UnitWorldInstaller unitWorldInstaller = CreateUnitWorldInstaller(world, units, enemies);
-            Installer fortificationInstaller = FortificationSceneSetup.Create(world, coverGarrisonInstaller, enemies);
-            CreateBootstrapper(combatInstaller.gameObject, new Installer[] { world, combatInstaller, coverGarrisonInstaller, unitWorldInstaller, fortificationInstaller });
+            FortificationInstaller fortificationInstaller = FortificationSceneSetup.Create(world, coverGarrisonInstaller, enemies);
+            Installer hillRivalInstaller = HillSceneSetup.Create(world, combatInstaller, fortificationInstaller);
+            CreateBootstrapper(combatInstaller.gameObject, new Installer[] { world, combatInstaller, coverGarrisonInstaller, unitWorldInstaller, fortificationInstaller, hillRivalInstaller });
 
             EnsureFolder(System.IO.Path.GetDirectoryName(ScenePath));
             if (!EditorSceneManager.SaveScene(scene, ScenePath))
@@ -303,7 +306,9 @@ namespace Stilargo.Editor.Scenes
             CreateGroundRing(enemy.transform, marker, EnemyMarkerDiameter).name = EnemyMarkerName;
             CreateMuzzle(enemy.transform, LoadOrCreateUnlitMaterial(EnemyTracerMaterialPath, EnemyTracerColor));
             enemy.AddComponent<FogHideable>();
-            return enemy.AddComponent<CombatUnit>();
+            var combatUnit = enemy.AddComponent<CombatUnit>();
+            HillSceneSetup.MakeAutonomous(combatUnit);
+            return combatUnit;
         }
 
         private static void CreateMuzzle(Transform unit, Material material)

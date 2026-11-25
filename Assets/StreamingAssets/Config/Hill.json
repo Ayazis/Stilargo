@@ -1,0 +1,20 @@
+{
+    "hill": {
+        "centerXMetres": 86,
+        "centerZMetres": 72,
+        "radiusMetres": 6,
+        "incomeMoneyPerSecond": 2,
+        "holdDurationSeconds": 180
+    },
+    "rival": {
+        "squadSize": 4,
+        "moveSpeedMetresPerSecond": 6,
+        "scavengeSeconds": 45,
+        "contestSeconds": 40,
+        "raidSeconds": 30,
+        "scavengeReachMetres": 2.5,
+        "scavengeRadiusMetres": 30,
+        "hillSpreadMetres": 2,
+        "arrivalToleranceMetres": 2
+    }
+}

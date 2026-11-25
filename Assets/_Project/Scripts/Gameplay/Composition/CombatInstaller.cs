@@ -1,4 +1,5 @@
 using System;
+using Stilargo.Core.Combat;
 using Stilargo.Core.Combat.Stances;
 using Stilargo.Gameplay.CameraControl;
 using Stilargo.Gameplay.Combat;
@@ -36,6 +37,19 @@ namespace Stilargo.Gameplay.Composition
         [SerializeField] private StanceController _stanceController;
         [SerializeField] private StanceLabelView _stanceLabelView;
 
+        private CombatRoster _roster;
+
+        /// <summary>Lets enemies shoot something that is not a unit, such as the claimed house. Call after <see cref="Install"/>.</summary>
+        public void AddPlayerTarget(ICombatTarget target)
+        {
+            if (_roster == null)
+            {
+                throw new InvalidOperationException($"Run {nameof(CombatInstaller)}.{nameof(Install)} before adding targets.");
+            }
+
+            _roster.AddPlayerTarget(target);
+        }
+
         public override void Install(GameContext context)
         {
             if (context == null)
@@ -51,6 +65,7 @@ namespace Stilargo.Gameplay.Composition
             var roster = new CombatRoster(new CombatRosterSettings(stances, _playerSide, _enemySide), new VisibilityGridQuery(_world.VisibilityGrid));
             AddPlayerUnits(roster);
             AddEnemies(roster);
+            _roster = roster;
 
             _selectionController.Construct(context.PlayerInput, _camera, roster.SelectableUnits);
             roster.AttachSelection(_selectionController.Selection);
@@ -76,7 +91,9 @@ namespace Stilargo.Gameplay.Composition
         {
             foreach (CombatUnit enemy in _enemies)
             {
-                roster.AddEnemyUnit(enemy, ChildComponentOf<HitEffectView>(enemy));
+                AutonomousUnit autonomous = ComponentOf<AutonomousUnit>(enemy);
+                autonomous.Construct();
+                roster.AddEnemyUnit(enemy, ChildComponentOf<HitEffectView>(enemy), autonomous.Orders);
             }
         }
 
