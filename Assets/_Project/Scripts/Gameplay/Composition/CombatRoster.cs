@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Stilargo.Core.Combat;
 using Stilargo.Core.Combat.Stances;
 using Stilargo.Core.Combat.Targeting;
+using Stilargo.Core.Orders;
 using Stilargo.Core.Selection;
 using Stilargo.Gameplay.Combat;
 using Stilargo.Gameplay.Units;
@@ -56,13 +57,27 @@ namespace Stilargo.Gameplay.Composition
             combatUnit.Died += () => RemovePlayerUnit(unit, combatUnit);
         }
 
-        public void AddEnemyUnit(CombatUnit combatUnit, HitEffectView hitEffect)
+        /// <param name="orders">The AI's move orders for this unit.</param>
+        public void AddEnemyUnit(CombatUnit combatUnit, HitEffectView hitEffect, IUnitOrders orders)
         {
             UnitCombat combat = CreateCombat(_settings.EnemySide, _enemyVisibility);
-            Construct(combatUnit, new CombatUnitSetup(combat, new Health(_settings.EnemySide.MaxHealth), _playerTargets), hitEffect);
+            var setup = new CombatUnitSetup(combat, new Health(_settings.EnemySide.MaxHealth), _playerTargets).WithOrders(orders);
+            Construct(combatUnit, setup, hitEffect);
 
             _enemyTargets.Add(combatUnit);
             combatUnit.Died += () => _enemyTargets.Remove(combatUnit);
+        }
+
+        /// <summary>Adds something enemies may shoot that is not a unit, such as the claimed house. It leaves when it dies.</summary>
+        public void AddPlayerTarget(ICombatTarget target)
+        {
+            if (target == null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+
+            _playerTargets.Add(target);
+            target.Died += () => _playerTargets.Remove(target);
         }
 
         private static void Construct(CombatUnit combatUnit, CombatUnitSetup setup, HitEffectView hitEffect)

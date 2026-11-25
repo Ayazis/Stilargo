@@ -8,6 +8,33 @@ Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handover
 
 ---
 
+### 2026-11-25 · Ci (hill + rival AI, step 10, branch `ci/hill-rival`)
+
+**@FL: what your step 11 UI can read.** It's all on `HillRivalInstaller` (`Gameplay/Hill`, on the "Hill And Rival" object), filled in by `Install`:
+- `Hill` (Core `HillControl`): `State` (`HillState`: `Empty`, `HeldByPlayer`, `HeldByRival`, `Contested`), the `StateChanged` event, `HeldSeconds`, `RemainingHoldSeconds`, `Settings.HoldDurationSeconds` and the `HoldCompleted` event. Income goes straight into your `Wallet`, so the money label updates by itself.
+- `Referee` (Core `MatchReferee`): `Outcome` (`MatchOutcome`: `Undecided`, `Won`, `Lost`), `IsDecided` and the `Decided` event.
+- `Rival` (Core `RivalBrain`): `Current.Name`, `IsDefeated` (whole squad dead) and the `StrategyChanged` event. `RivalWallet` holds the rival's scavenged money.
+- **Your HUD's hill timer is now live.** `Gameplay/Hill/HillStatus` implements your `IHillStatus` (it goes inactive once the match is decided). `Gameplay` can't reference `UI`, so I couldn't call `HudInstaller.UseHillStatus` from my installer. I added a small installer of my own, `UI/Hud/HillHudLink`, that runs between `HillRivalInstaller` and `HudInstaller` and makes that call. I didn't change any of your step 11 files.
+- My placeholder `HillHudView` still draws two lines in the **top-right** corner (who holds the hill, what the rival is doing), plus the centred win/lose box, which your HUD doesn't have yet. The timer is only in your HUD now. Replace or delete my view when your UI covers the rest. `MatchEndPause` sets `Time.timeScale = 0` once the match is decided.
+
+**@FL: I changed two of your files, adding members only.** `GameConfig` has two new properties, `Hill` and `Rival` (constructor now takes a `HillRivalSettings`), and `GameConfigLoader` loads `Hill.json` through the new `Infrastructure/Config/HillConfig` (`HillEntry`, `RivalEntry`), following `FortificationConfig`.
+
+**@both: new config file `Assets/StreamingAssets/Config/Hill.json`.** The `hill` section has the centre (X/Z in metres, it must be on a road: startup fails otherwise), radius, income per second and hold duration (180 s). The `rival` section has squad size, move speed, how long each strategy runs, scavenge reach, a scavenge radius (30 m: the rival only loots caches this close to its base, so it doesn't walk into our home), how far the squad spreads on the hill and an arrival tolerance.
+
+**@both: how it plays.**
+- The hill is a flat disc on the road east of home, about 31 m from both home and the rival's start. Its colour shows the state: grey free, blue yours, red the rival's, amber contested. You hold it when only your living units stand in it. Hold time adds up across separate holds; hold it for 3 minutes in total to win.
+- The four red enemies are now the rival's squad. A Core state machine (`Core/Rival`) runs one strategy at a time, each its own `IRivalStrategy` type: **Scavenging** takes your loot caches to the rival's base. **Contesting the hill** spreads the squad on it. **Raiding your house** marches them to the claimed house's entrance. Scavenging switches to the hill after its time is up or as soon as you hold the hill. After contesting, the rival raids if you have a house, and otherwise scavenges again. A raid turns back to the hill when you take it.
+- Once you claim a house, it joins the enemies' targets (`CombatInstaller.AddPlayerTarget`). Its `Died` event is the lose condition.
+- Enemies now have an `AutonomousUnit` that holds their move orders. `SelectableUnit` and `AutonomousUnit` share the new `NavMeshOrderDriver`, which I pulled out of `SelectableUnit` without changing its behaviour.
+
+**@FL: `Main` scene changed (regenerate, don't merge YAML).** After merging your PR #17, the installer list is now `[WorldInstaller, CombatInstaller, CoverGarrisonInstaller, UnitWorldInstaller, FortificationInstaller, HillRivalInstaller, HillHudLink, HudInstaller]`. `MainSceneCreator` calls `HillSceneSetup.Create(...)` and `HillSceneSetup.LinkToHud(...)` (`Editor/Hill`) next to your `HudSceneSetup.Create(...)`. I resolved the `MainSceneCreator` conflict by keeping both sides. New materials, all made through `HdrpMaterials`: `Greybox_HillEmpty`, `Greybox_HillHeldByPlayer`, `Greybox_HillHeldByRival` and `Greybox_HillContested`.
+
+**Verified in the exe:** loot pickup and delivery, garrison, claim, barricade, the rival raiding the house as soon as it was claimed (house 550 → 490 HP before our squad wiped the raiders out), holding the hill (marker turns blue, income flows) and the win screen. The lose path is covered by EditMode tests only.
+
+**@both: right-clicks behind tall buildings miss.** With the low camera, buildings often cover the road you aim at, so move orders get lost. Short hops work. This isn't from step 10, but it makes playtesting slow.
+
+**Open:** the default turret range (16 m) versus the enemy spawn distance is unchanged. Raiders now walk right up to the house entrance, so turrets reach them there.
+
 ### 2026-11-25 · Ci (step 9 verified, branch `ci/verify-claim-fortify`)
 
 **@FL: step 9 is verified in Unity and marked Done.**

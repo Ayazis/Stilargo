@@ -7,6 +7,8 @@ using Stilargo.Gameplay.Garrison;
 using Stilargo.Gameplay.GarrisonViews;
 using Stilargo.Gameplay.Composition;
 using Stilargo.Gameplay.Fog;
+using Stilargo.Gameplay.Fortification;
+using Stilargo.Gameplay.Hill;
 using Stilargo.Gameplay.Orders;
 using Stilargo.Gameplay.Scavenging;
 using Stilargo.Gameplay.Selection;
@@ -14,11 +16,12 @@ using Stilargo.Gameplay.Stances;
 using Stilargo.Gameplay.Units;
 using Stilargo.Gameplay.World;
 using Stilargo.Editor.Fortification;
+using Stilargo.Editor.Hill;
 using Stilargo.Editor.Hud;
-using Stilargo.Gameplay.Fortification;
 using Stilargo.Editor.Rendering;
 using Stilargo.Editor.World;
 using Stilargo.Infrastructure.Composition;
+using Stilargo.UI.Hud;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -178,9 +181,14 @@ namespace Stilargo.Editor.Scenes
             AssignCombat(combatInstaller, enemies);
             CoverGarrisonInstaller coverGarrisonInstaller = CreateCoverGarrisonInstaller(combatInstaller, world, enemies);
             UnitWorldInstaller unitWorldInstaller = CreateUnitWorldInstaller(world, units, enemies);
-            Installer fortificationInstaller = FortificationSceneSetup.Create(world, coverGarrisonInstaller, enemies);
-            Installer hudInstaller = HudSceneSetup.Create(world, combatInstaller, (FortificationInstaller)fortificationInstaller);
-            CreateBootstrapper(combatInstaller.gameObject, new Installer[] { world, combatInstaller, coverGarrisonInstaller, unitWorldInstaller, fortificationInstaller, hudInstaller });
+            FortificationInstaller fortificationInstaller = FortificationSceneSetup.Create(world, coverGarrisonInstaller, enemies);
+            HillRivalInstaller hillRivalInstaller = HillSceneSetup.Create(world, combatInstaller, fortificationInstaller);
+            HudInstaller hudInstaller = HudSceneSetup.Create(world, combatInstaller, fortificationInstaller);
+            Installer hillHudLink = HillSceneSetup.LinkToHud(hillRivalInstaller, hudInstaller);
+
+            // The link hands the hill to the HUD, so it runs after the hill installer and before the HUD installer.
+            var installers = new Installer[] { world, combatInstaller, coverGarrisonInstaller, unitWorldInstaller, fortificationInstaller, hillRivalInstaller, hillHudLink, hudInstaller };
+            CreateBootstrapper(combatInstaller.gameObject, installers);
 
             EnsureFolder(System.IO.Path.GetDirectoryName(ScenePath));
             if (!EditorSceneManager.SaveScene(scene, ScenePath))
@@ -303,7 +311,9 @@ namespace Stilargo.Editor.Scenes
             CreateGroundRing(enemy.transform, marker, EnemyMarkerDiameter).name = EnemyMarkerName;
             CreateMuzzle(enemy.transform, LoadOrCreateUnlitMaterial(EnemyTracerMaterialPath, EnemyTracerColor));
             enemy.AddComponent<FogHideable>();
-            return enemy.AddComponent<CombatUnit>();
+            var combatUnit = enemy.AddComponent<CombatUnit>();
+            HillSceneSetup.MakeAutonomous(combatUnit);
+            return combatUnit;
         }
 
         private static void CreateMuzzle(Transform unit, Material material)
