@@ -43,7 +43,6 @@ namespace Stilargo.Editor.Fortification
         private const string TurretBatteryField = "_turretBattery";
         private const string TracerViewField = "_tracerView";
         private const string FortificationViewField = "_fortificationView";
-        private const string PanelViewField = "_panelView";
         private const string LooksField = "_looks";
         private const string LookSlotKindField = "_slotKind";
         private const string LookMaterialField = "_material";
@@ -62,7 +61,6 @@ namespace Stilargo.Editor.Fortification
             SerializedFields.Assign(installer, TurretBatteryField, holder.AddComponent<TurretBattery>());
             SerializedFields.Assign(installer, TracerViewField, CreateTracerView(holder.transform));
             SerializedFields.Assign(installer, FortificationViewField, fortificationView);
-            SerializedFields.Assign(installer, PanelViewField, holder.AddComponent<FortificationPanelView>());
             return installer;
         }
 

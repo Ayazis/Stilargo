@@ -1,6 +1,5 @@
 using System;
 using Stilargo.Gameplay.Composition;
-using Stilargo.Gameplay.Economy;
 using Stilargo.Gameplay.Fog;
 using Stilargo.Gameplay.Scavenging;
 using UnityEngine;
@@ -18,7 +17,6 @@ namespace Stilargo.Gameplay.World
         [SerializeField] private VisionSourceComponent[] _visionSources;
         [SerializeField] private ScavengerComponent[] _scavengers;
         [SerializeField] private FogHideable[] _fogHideables;
-        [SerializeField] private WalletLabelView _walletLabelView;
 
         public override void Install(GameContext context)
         {
@@ -42,15 +40,13 @@ namespace Stilargo.Gameplay.World
             {
                 hideable.Construct(_world.VisibilityGrid);
             }
-
-            _walletLabelView.Construct(_world.Wallet);
         }
 
         private void ValidateReferences()
         {
-            if (_world == null || _walletLabelView == null)
+            if (_world == null)
             {
-                throw new InvalidOperationException($"{nameof(UnitWorldInstaller)} on '{name}' needs a world installer and a wallet label.");
+                throw new InvalidOperationException($"{nameof(UnitWorldInstaller)} on '{name}' needs a world installer.");
             }
 
             if (_world.VisibilityGrid == null)

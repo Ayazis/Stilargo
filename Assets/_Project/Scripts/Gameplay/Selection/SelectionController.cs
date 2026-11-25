@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Stilargo.Core.Hud;
 using Stilargo.Core.Input;
 using Stilargo.Core.Selection;
 using UnityEngine;
@@ -21,6 +22,7 @@ namespace Stilargo.Gameplay.Selection
         private IReadOnlyList<ISelectable> _units;
         private IScreenProjector _projector;
         private UnitSelection _selection;
+        private IUiPointerBlocker _uiPointerBlocker = new NoUiPointerBlocker();
 
         public UnitSelection Selection
         {
@@ -52,6 +54,12 @@ namespace Stilargo.Gameplay.Selection
             Drag = new SelectionDrag(_dragThresholdPixels);
         }
 
+        /// <summary>Makes presses on the HUD start no selection drag. Without it the HUD never blocks clicks.</summary>
+        public void UseUiPointerBlocker(IUiPointerBlocker uiPointerBlocker)
+        {
+            _uiPointerBlocker = uiPointerBlocker ?? throw new ArgumentNullException(nameof(uiPointerBlocker));
+        }
+
         private void Update()
         {
             if (_input == null)
@@ -63,7 +71,11 @@ namespace Stilargo.Gameplay.Selection
 
             if (_input.WasSelectPressedThisFrame)
             {
-                Drag.Begin(pointer);
+                if (!_uiPointerBlocker.IsPointerOverUi)
+                {
+                    Drag.Begin(pointer);
+                }
+
                 return;
             }
 
