@@ -241,10 +241,29 @@ Add a `WorldInstaller` (`Stilargo.Gameplay.World`) to the scene, or as a prefab,
 **@FL: money now comes from claimed houses; some shared contracts changed**
 - `HouseClaim` allows any number of claims. `House` is still the base (first claim): drop-off, rival raids and the lose condition use only it. New: `Houses`, `TryGetHouse(...)`.
 - `ClaimedHouse` has `Condition` (wears over time, repaired for money), `Maintenance` (condition × health), `FortifiedFraction`, `OccupiedFraction`, `FloorCells`.
-- New `Core/Income`: `HouseIncomeRate` (size × (1 + barricade/occupation/maintenance bonuses)), `HouseIncome` (pays + wears), `HouseRepair`. Values in new `StreamingAssets/Config/Income.json`; `GameConfig` takes a third argument.
+- New `Core/Income`: `HouseIncomeRate` (size × (1 + barricade/occupation/maintenance bonuses)), `HouseIncome` (pays + wears), `HouseRepair`. Values in new `StreamingAssets/Config/Income.json`; `GameConfig` takes it as a fourth argument, after `EconomySettings`.
 - The hill no longer pays: `HillControl` lost its wallet argument, `incomeMoneyPerSecond` is gone from `Hill.json`.
 - `FortificationShop.TryBuy/Check` now take the house. `FortifyMenu` takes `ClaimTarget`, shop and `UpkeepMenu`; the fortify panel shows income, condition and a repair button.
 - No scene change: `FortificationInstaller` adds a `HouseIncomeTicker` component at runtime.
 
 **@FL: Unity-written settings changes committed too**
 Opening the project in Unity 6000.6.10f1 (batch test/build) rewrote `GraphicsSettings`, `QualitySettings`, `ProjectAuditorSettings`, `HdrpPipeline.asset`, `HDRenderPipelineGlobalSettings.asset` and added `HDRPProjectSettings.asset`. Not hand-edited; committed so the project stays consistent.
+
+### 2026-11-25 · FL (Mediterranean look, branch `feature/mediterranean-look`)
+
+**@Ci: shared rendering and scene files changed**
+- Volume profile: fog mean free path 4000 m → 700 m for aerial haze (`PhotorealRenderingSetup`, rerun `Apply Photoreal Rendering Settings`).
+- Sun: 6000 K → 5000 K (`PhotorealSceneDefaults`), pitch 50° → 38° for longer shadows (`MainSceneCreator`). `Main.unity` was regenerated with `Recreate Main Scene`; regenerate it instead of merging the YAML.
+- `CitySpawner` now needs a roof prefab and takes wall/roof material palettes, picked per plot by `Core/City/PlotVariation`. `World.prefab` was rebuilt; new assets in `Assets/_Project/World` (`Roof.prefab`, `HipRoof.asset`, `Wall0-5.mat`, `Roof0-2.mat`).
+
+### 2026-11-25 · FL (starting money)
+
+**@Ci: `GameConfig` contract changed**
+- New `Config/Economy.json` (`startingMoney`, default 1000) loaded by `EconomyConfig` into `Core/Economy/EconomySettings`.
+- `GameConfig` constructor now takes a third `EconomySettings` argument and exposes `Economy`. `WorldInstaller` deposits the starting money into the player wallet.
+
+### 2026-11-25 · FL (Esc pause menu)
+
+**@Ci: `IPlayerInput` contract changed**
+- New `WasPauseMenuPressedThisFrame` (Esc). Any other `IPlayerInput` implementation must add it.
+- `Wallet.SetBalance(int)` added (settings menu). `HudView.Construct` now takes a `PauseMenu` (`Core/Hud/PauseMenu`); opening the menu sets `Time.timeScale` to 0.

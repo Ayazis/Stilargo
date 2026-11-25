@@ -14,6 +14,12 @@ namespace Stilargo.Tests.EditMode.Camera
 
         public Vector2 PointerScreenPosition { get; set; }
 
+        public Vector2 PointerDelta { get; set; }
+
+        public float TurnAxis { get; set; }
+
+        public bool IsOrbitDragHeld { get; set; }
+
         public bool WasSelectPressedThisFrame { get; set; }
 
         public bool IsSelectHeld { get; set; }
@@ -31,5 +37,7 @@ namespace Stilargo.Tests.EditMode.Camera
         public bool WasDefensiveStancePressedThisFrame { get; set; }
 
         public bool WasHoldStancePressedThisFrame { get; set; }
+
+        public bool WasPauseMenuPressedThisFrame { get; set; }
     }
 }

@@ -11,6 +11,7 @@ namespace Stilargo.Core.Camera
     public sealed class RtsCameraMotion
     {
         private const float MaxPanDirectionLength = 1f;
+        private const float DegreesToRadians = MathF.PI / 180f;
 
         private readonly CameraMotionSettings _settings;
         private readonly EdgeScroll _edgeScroll;
@@ -29,17 +30,26 @@ namespace Stilargo.Core.Camera
             }
 
             float height = ClampHeight(current.Height - (input.ZoomDelta * _settings.Zoom.HeightPerZoomStep));
-            Vector2 direction = PanDirection(input, frame.Screen);
+            Vector2 direction = ToWorld(PanDirection(input, frame.Screen), current.YawDegrees);
             float speed = _settings.Pan.SpeedPerHeight * height;
             Vector2 focus = current.Focus + (direction * speed * frame.DeltaTime);
 
-            return new CameraState(_settings.Bounds.Clamp(focus), height);
+            return new CameraState(_settings.Bounds.Clamp(focus), height, current.YawDegrees);
         }
 
         /// <summary>Pulls a state (for example the one placed in the scene) inside the bounds and height range.</summary>
         public CameraState Constrain(CameraState state)
         {
-            return new CameraState(_settings.Bounds.Clamp(state.Focus), ClampHeight(state.Height));
+            return new CameraState(_settings.Bounds.Clamp(state.Focus), ClampHeight(state.Height), state.YawDegrees);
+        }
+
+        /// <summary>Turns a screen-relative direction (X right, Y up the screen) into ground X/Z for the given yaw.</summary>
+        private static Vector2 ToWorld(Vector2 screenDirection, float yawDegrees)
+        {
+            float yaw = yawDegrees * DegreesToRadians;
+            var right = new Vector2(MathF.Cos(yaw), -MathF.Sin(yaw));
+            var forward = new Vector2(MathF.Sin(yaw), MathF.Cos(yaw));
+            return (screenDirection.X * right) + (screenDirection.Y * forward);
         }
 
         private Vector2 PanDirection(IPlayerInput input, ScreenSize screen)

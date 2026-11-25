@@ -21,6 +21,9 @@ namespace Stilargo.Infrastructure.Input
         private const string PanActionName = "Pan";
         private const string ZoomActionName = "Zoom";
         private const string PointerActionName = "Pointer";
+        private const string PointerDeltaActionName = "PointerDelta";
+        private const string TurnActionName = "Turn";
+        private const string OrbitDragActionName = "OrbitDrag";
         private const string SelectActionName = "Select";
         private const string CommandActionName = "Command";
         private const string QueueModifierActionName = "QueueModifier";
@@ -28,6 +31,7 @@ namespace Stilargo.Infrastructure.Input
         private const string AggressiveStanceActionName = "AggressiveStance";
         private const string DefensiveStanceActionName = "DefensiveStance";
         private const string HoldStanceActionName = "HoldStance";
+        private const string PauseMenuActionName = "PauseMenu";
 
         private const string Vector2ControlType = "Vector2";
         private const string AxisControlType = "Axis";
@@ -39,6 +43,9 @@ namespace Stilargo.Infrastructure.Input
         private readonly InputAction _pan;
         private readonly InputAction _zoom;
         private readonly InputAction _pointer;
+        private readonly InputAction _pointerDelta;
+        private readonly InputAction _turn;
+        private readonly InputAction _orbitDrag;
         private readonly InputAction _select;
         private readonly InputAction _command;
         private readonly InputAction _queueModifier;
@@ -46,6 +53,7 @@ namespace Stilargo.Infrastructure.Input
         private readonly InputAction _aggressiveStance;
         private readonly InputAction _defensiveStance;
         private readonly InputAction _holdStance;
+        private readonly InputAction _pauseMenu;
         private readonly float _scrollUnitsPerNotch;
 
         private bool _isDisposed;
@@ -56,6 +64,9 @@ namespace Stilargo.Infrastructure.Input
             _pan = CreatePanAction(_actionMap);
             _zoom = _actionMap.AddAction(ZoomActionName, InputActionType.Value, InputBindingPaths.MouseScrollY, expectedControlLayout: AxisControlType);
             _pointer = _actionMap.AddAction(PointerActionName, InputActionType.Value, InputBindingPaths.PointerPosition, expectedControlLayout: Vector2ControlType);
+            _pointerDelta = _actionMap.AddAction(PointerDeltaActionName, InputActionType.Value, InputBindingPaths.PointerDelta, expectedControlLayout: Vector2ControlType);
+            _turn = CreateTurnAction(_actionMap);
+            _orbitDrag = _actionMap.AddAction(OrbitDragActionName, InputActionType.Button, InputBindingPaths.MouseMiddleButton);
             _select = _actionMap.AddAction(SelectActionName, InputActionType.Button, InputBindingPaths.MouseLeftButton);
             _command = _actionMap.AddAction(CommandActionName, InputActionType.Button, InputBindingPaths.MouseRightButton);
             _queueModifier = CreateQueueModifierAction(_actionMap);
@@ -63,6 +74,7 @@ namespace Stilargo.Infrastructure.Input
             _aggressiveStance = _actionMap.AddAction(AggressiveStanceActionName, InputActionType.Button, InputBindingPaths.KeyZ);
             _defensiveStance = _actionMap.AddAction(DefensiveStanceActionName, InputActionType.Button, InputBindingPaths.KeyX);
             _holdStance = _actionMap.AddAction(HoldStanceActionName, InputActionType.Button, InputBindingPaths.KeyC);
+            _pauseMenu = _actionMap.AddAction(PauseMenuActionName, InputActionType.Button, InputBindingPaths.KeyEscape);
             _scrollUnitsPerNotch = ResolveScrollUnitsPerNotch();
         }
 
@@ -71,6 +83,12 @@ namespace Stilargo.Infrastructure.Input
         public float ZoomDelta => _zoom.ReadValue<float>() / _scrollUnitsPerNotch;
 
         public NumericsVector2 PointerScreenPosition => ToNumerics(_pointer.ReadValue<UnityVector2>());
+
+        public NumericsVector2 PointerDelta => ToNumerics(_pointerDelta.ReadValue<UnityVector2>());
+
+        public float TurnAxis => _turn.ReadValue<float>();
+
+        public bool IsOrbitDragHeld => _orbitDrag.IsPressed();
 
         public bool WasSelectPressedThisFrame => _select.WasPressedThisFrame();
 
@@ -89,6 +107,8 @@ namespace Stilargo.Infrastructure.Input
         public bool WasDefensiveStancePressedThisFrame => _defensiveStance.WasPressedThisFrame();
 
         public bool WasHoldStancePressedThisFrame => _holdStance.WasPressedThisFrame();
+
+        public bool WasPauseMenuPressedThisFrame => _pauseMenu.WasPressedThisFrame();
 
         public void Enable()
         {
@@ -131,6 +151,15 @@ namespace Stilargo.Infrastructure.Input
                 .With(InputBindingPaths.CompositeRight, InputBindingPaths.KeyRightArrow);
 
             return pan;
+        }
+
+        private static InputAction CreateTurnAction(InputActionMap actionMap)
+        {
+            InputAction turn = actionMap.AddAction(TurnActionName, InputActionType.Value, expectedControlLayout: AxisControlType);
+            turn.AddCompositeBinding(InputBindingPaths.AxisComposite)
+                .With(InputBindingPaths.CompositeNegative, InputBindingPaths.KeyQ)
+                .With(InputBindingPaths.CompositePositive, InputBindingPaths.KeyE);
+            return turn;
         }
 
         private static InputAction CreateQueueModifierAction(InputActionMap actionMap)

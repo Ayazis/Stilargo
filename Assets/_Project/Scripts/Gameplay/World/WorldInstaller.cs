@@ -52,7 +52,7 @@ namespace Stilargo.Gameplay.World
             RequireReferences();
             InstallCity();
             InstallFog();
-            InstallScavenging();
+            InstallScavenging(context.Config.Economy);
         }
 
         private void InstallCity()
@@ -69,9 +69,14 @@ namespace Stilargo.Gameplay.World
             _fogTicker.Construct(VisibilityGrid);
         }
 
-        private void InstallScavenging()
+        private void InstallScavenging(EconomySettings economy)
         {
             Wallet = new Wallet();
+            if (economy.StartingMoney > 0)
+            {
+                Wallet.Deposit(economy.StartingMoney);
+            }
+
             Vector3 home = _dropOffPoint.position;
             DropOff dropOff = new DropOff(new WorldPoint(home.x, home.z), Wallet);
             IReadOnlyList<LootCache> caches = new LootPlacer(_seed, _lootConfig.ToConfig()).Place(CityLayout);

@@ -26,10 +26,18 @@ namespace Stilargo.Infrastructure.Input
         public const string KeyZ = "<Keyboard>/z";
         public const string KeyX = "<Keyboard>/x";
         public const string KeyC = "<Keyboard>/c";
+        public const string KeyQ = "<Keyboard>/q";
+        public const string KeyE = "<Keyboard>/e";
+        public const string KeyEscape = "<Keyboard>/escape";
+        public const string AxisComposite = "1DAxis";
+        public const string CompositeNegative = "Negative";
+        public const string CompositePositive = "Positive";
 
         public const string MouseScrollY = "<Mouse>/scroll/y";
         public const string MouseLeftButton = "<Mouse>/leftButton";
         public const string MouseRightButton = "<Mouse>/rightButton";
+        public const string MouseMiddleButton = "<Mouse>/middleButton";
         public const string PointerPosition = "<Pointer>/position";
+        public const string PointerDelta = "<Pointer>/delta";
     }
 }
