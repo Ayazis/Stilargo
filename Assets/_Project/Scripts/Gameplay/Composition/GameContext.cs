@@ -8,11 +8,14 @@ namespace Stilargo.Gameplay.Composition
     /// </summary>
     public sealed class GameContext
     {
-        public GameContext(IPlayerInput playerInput)
+        public GameContext(IPlayerInput playerInput, GameConfig config)
         {
             PlayerInput = playerInput ?? throw new ArgumentNullException(nameof(playerInput));
+            Config = config ?? throw new ArgumentNullException(nameof(config));
         }
 
         public IPlayerInput PlayerInput { get; }
+
+        public GameConfig Config { get; }
     }
 }

@@ -1,0 +1,71 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Stilargo.Core.Combat;
+using Stilargo.Core.Fortification;
+using Stilargo.Gameplay.Combat;
+using Stilargo.Gameplay.Composition;
+using Stilargo.Gameplay.World;
+using UnityEngine;
+
+namespace Stilargo.Gameplay.Fortification
+{
+    /// <summary>
+    /// Wires claim and fortify: the player claims the building the squad is garrisoned in, then spends money on
+    /// fortifications from <c>Fortification.json</c>. List it after <see cref="WorldInstaller"/> (wallet, drop-off,
+    /// fog) and <see cref="CoverGarrisonInstaller"/> (buildings).
+    /// </summary>
+    public sealed class FortificationInstaller : Installer
+    {
+        [SerializeField] private WorldInstaller _world;
+        [SerializeField] private CoverGarrisonInstaller _garrisons;
+        [SerializeField] private CombatUnit[] _enemies;
+        [SerializeField] private TurretBattery _turretBattery;
+        [SerializeField] private TurretTracerView _tracerView;
+        [SerializeField] private FortificationView _fortificationView;
+        [SerializeField] private FortificationPanelView _panelView;
+
+        /// <summary>The player's claim; null until <see cref="Install"/> has run. Step 10 reads the house from it.</summary>
+        public HouseClaim Claim { get; private set; }
+
+        public override void Install(GameContext context)
+        {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            ValidateReferences();
+            FortificationSettings settings = context.Config.Fortifications;
+            var layout = new FortificationSlotLayout(_world.CityLayout.CellSize);
+            Claim = new HouseClaim(settings, layout, _world.ScavengingArea.DropOff);
+            var shop = new FortificationShop(Claim, _world.Wallet, settings.Definitions);
+
+            IReadOnlyList<ICombatTarget> enemies = _enemies.Cast<ICombatTarget>().ToList();
+            _turretBattery.Construct(Claim, enemies, _world.VisibilityGrid);
+            _tracerView.Construct(_turretBattery);
+            _fortificationView.Construct(Claim);
+            _panelView.Construct(Claim, shop, new ClaimCandidatePicker(_garrisons.Garrisons.Buildings));
+        }
+
+        private void ValidateReferences()
+        {
+            if (_world == null || _garrisons == null || _turretBattery == null || _tracerView == null
+                || _fortificationView == null || _panelView == null)
+            {
+                throw new InvalidOperationException($"{nameof(FortificationInstaller)} on '{name}' needs a world, garrisons, turrets and all views assigned.");
+            }
+
+            if (_world.ScavengingArea == null || _garrisons.Garrisons == null)
+            {
+                throw new InvalidOperationException(
+                    $"List {nameof(WorldInstaller)} and {nameof(CoverGarrisonInstaller)} before {nameof(FortificationInstaller)}.");
+            }
+
+            if (_enemies == null || _enemies.Any(enemy => enemy == null))
+            {
+                throw new InvalidOperationException($"{nameof(FortificationInstaller)} on '{name}' has a missing or empty enemy slot.");
+            }
+        }
+    }
+}

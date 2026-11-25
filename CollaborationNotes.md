@@ -8,6 +8,46 @@ Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handover
 
 ---
 
+### 2026-11-25 · FL (PR #15, step 9 claim & fortify)
+
+**@Ci: please check PR #15 in Unity before it's merged.** It's a draft because it was written without Unity: the Core rules and tests compile and pass, but the Gameplay, Infrastructure and Editor code has never been compiled. On branch `ccr-5b226a2b-iaq9mi`:
+1. Open the project (this creates the `.meta` files) and fix any compile errors.
+2. Run `Stilargo → Recreate Main Scene`.
+3. Run the EditMode tests.
+4. Build the exe and test: garrison units → **Claim** on the panel → buy each fortification → turrets fire.
+5. Commit the `.meta` files and `Main.unity` to the branch and mark the PR ready.
+
+Tell me about anything you'd rather I fix myself. Your files I touched are listed in the entry below.
+
+### 2026-11-25 · FL (claim & fortify, step 9 part 2: wiring, branch `ccr-5b226a2b-iaq9mi`)
+
+**@Ci: I changed four of your files (all small changes). Please regenerate `Main`; don't merge YAML.**
+- `GameContext` has a new member, `Config` (`GameConfig`), with one property per JSON config file. `GameBootstrapper` loads it through `Infrastructure/Config/GameConfigLoader` before running the installers. Add your own config files to `GameConfig`/`GameConfigLoader` too.
+- `CoverGarrisonInstaller` now exposes `Garrisons` (the `GarrisonDirectory`), so claiming can find the occupied building.
+- `MainSceneCreator` calls `FortificationSceneSetup.Create(...)` (`Editor/Fortification`). The installer list is now `[WorldInstaller, CombatInstaller, CoverGarrisonInstaller, UnitWorldInstaller, FortificationInstaller]`. Run `Stilargo → Recreate Main Scene`.
+
+**@both: how it plays.**
+- Garrison units in a building. The panel below the money label then shows a claim button. Clicking it claims the building that holds the most garrisoned units (Core `ClaimCandidatePicker`).
+- After claiming, the panel shows the house's HP and a buy button for each fortification.
+- Built fortifications appear as greybox blocks. Turrets shoot with a tracer and reveal fog within their range (Core `StaticVisionSource`).
+- New materials, all made through `HdrpMaterials`: `Greybox_Barricade`, `Greybox_ReinforcedWindow`, `Greybox_Turret` and `Greybox_TurretTracer`.
+
+**@Ci, for step 10:**
+- `FortificationInstaller.Claim.House` is an `ICombatTarget`. Add it to the enemies' targets once it's claimed, and use its `Died` event as the lose condition.
+- Clicks on the placeholder panel also reach your `SelectionController`. A click on a button deselects the selected units. That's harmless for now; step 11's UI should block pointer input over panels.
+
+### 2026-11-25 · FL (claim & fortify, step 9 part 1: Core, branch `ccr-5b226a2b-iaq9mi`)
+
+**@both: new Core module `Core/Fortification`, with EditMode tests.** It's plain C# only; nothing is in the scene yet.
+- `HouseClaim.TryClaim(GarrisonBuilding)` claims one building per game, for free. The claimed building becomes a `ClaimedHouse`, and the drop-off moves to its entrance.
+- `ClaimedHouse` implements `ICombatTarget`. Its `Position` is the entrance and its `Protection` is `None`. It has its own HP, starting at 400. **@Ci:** enemies can target it in step 10, and its `Died` event is the lose condition.
+- Fortification slots come from the garrison layout: one at the entrance, one per garrison window and one per roof spot. `FortificationShop.TryBuy(definition)` fills the first free slot of the right kind and charges the `Wallet`. It returns a `PurchaseResult` (`Built`, `NoClaimedHouse`, `HouseDestroyed`, `NoFreeSlot`, `CannotAfford`).
+- Barricades (entrance) and reinforced windows add HP. A `Turret` (roof) shoots the nearest visible enemy in range using Core's `Weapon`.
+
+**@both: first JSON config file, following the new rule.** `Assets/StreamingAssets/Config/Fortification.json` holds the house HP, costs, HP bonuses and turret stats. `Infrastructure/Config/ConfigFile` reads any file from `StreamingAssets/Config`, and `FortificationConfig` maps this one to `FortificationSettings`, which validates every value. Keys missing from the file keep their default values. A missing file or an invalid value fails at startup and the error names the file. We can reuse `ConfigFile` for later config files.
+
+**@Ci: one small change in my scavenging code.** `DropOff.Position` can now move, via `Relocate`. `ScavengingArea` already reads it live.
+
 ### 2026-11-23 · Ci (CLAUDE.md rules, branch `docs/config-files-rule`)
 
 **@both: two new rules in `CLAUDE.md`.**
