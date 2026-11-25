@@ -29,6 +29,9 @@ namespace Stilargo.Gameplay.Composition
 
         private GarrisonExitOnMove _exitOnMove;
 
+        /// <summary>The enterable buildings; null until <see cref="Install"/> has run.</summary>
+        public GarrisonDirectory Garrisons { get; private set; }
+
         public override void Install(GameContext context)
         {
             if (context == null)
@@ -72,6 +75,7 @@ namespace Stilargo.Gameplay.Composition
         {
             IReadOnlyList<GarrisonBuilding> buildings = new GarrisonSlotGenerator(new GarrisonLayoutSettings()).Generate(_world.CityLayout);
             var directory = new GarrisonDirectory(buildings, _world.CityLayout.CellSize);
+            Garrisons = directory;
             var bonuses = new GarrisonBonuses();
             var registry = new GarrisonOccupantRegistry();
 

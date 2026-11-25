@@ -14,6 +14,7 @@ using Stilargo.Gameplay.Selection;
 using Stilargo.Gameplay.Stances;
 using Stilargo.Gameplay.Units;
 using Stilargo.Gameplay.World;
+using Stilargo.Editor.Fortification;
 using Stilargo.Editor.Rendering;
 using Stilargo.Editor.World;
 using Stilargo.Infrastructure.Composition;
@@ -178,7 +179,8 @@ namespace Stilargo.Editor.Scenes
             AssignCombat(combatInstaller, enemies);
             CoverGarrisonInstaller coverGarrisonInstaller = CreateCoverGarrisonInstaller(combatInstaller, world, enemies);
             UnitWorldInstaller unitWorldInstaller = CreateUnitWorldInstaller(world, units, enemies);
-            CreateBootstrapper(combatInstaller.gameObject, new Installer[] { world, combatInstaller, coverGarrisonInstaller, unitWorldInstaller });
+            Installer fortificationInstaller = FortificationSceneSetup.Create(world, coverGarrisonInstaller, enemies);
+            CreateBootstrapper(combatInstaller.gameObject, new Installer[] { world, combatInstaller, coverGarrisonInstaller, unitWorldInstaller, fortificationInstaller });
 
             EnsureFolder(System.IO.Path.GetDirectoryName(ScenePath));
             if (!EditorSceneManager.SaveScene(scene, ScenePath))

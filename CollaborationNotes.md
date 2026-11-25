@@ -8,6 +8,23 @@ Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handover
 
 ---
 
+### 2026-11-25 · FL (claim & fortify, step 9 part 2: wiring, branch `ccr-5b226a2b-iaq9mi`)
+
+**@Ci: I changed four of your files (all small changes). Please regenerate `Main`; don't merge YAML.**
+- `GameContext` has a new member, `Config` (`GameConfig`), with one property per JSON config file. `GameBootstrapper` loads it through `Infrastructure/Config/GameConfigLoader` before running the installers. Add your own config files to `GameConfig`/`GameConfigLoader` too.
+- `CoverGarrisonInstaller` now exposes `Garrisons` (the `GarrisonDirectory`), so claiming can find the occupied building.
+- `MainSceneCreator` calls `FortificationSceneSetup.Create(...)` (`Editor/Fortification`). The installer list is now `[WorldInstaller, CombatInstaller, CoverGarrisonInstaller, UnitWorldInstaller, FortificationInstaller]`. Run `Stilargo → Recreate Main Scene`.
+
+**@both: how it plays.**
+- Garrison units in a building. The panel below the money label then shows a claim button. Clicking it claims the building that holds the most garrisoned units (Core `ClaimCandidatePicker`).
+- After claiming, the panel shows the house's HP and a buy button for each fortification.
+- Built fortifications appear as greybox blocks. Turrets shoot with a tracer and reveal fog within their range (Core `StaticVisionSource`).
+- New materials, all made through `HdrpMaterials`: `Greybox_Barricade`, `Greybox_ReinforcedWindow`, `Greybox_Turret` and `Greybox_TurretTracer`.
+
+**@Ci, for step 10:**
+- `FortificationInstaller.Claim.House` is an `ICombatTarget`. Add it to the enemies' targets once it's claimed, and use its `Died` event as the lose condition.
+- Clicks on the placeholder panel also reach your `SelectionController`. A click on a button deselects the selected units. That's harmless for now; step 11's UI should block pointer input over panels.
+
 ### 2026-11-25 · FL (claim & fortify, step 9 part 1: Core, branch `ccr-5b226a2b-iaq9mi`)
 
 **@both: new Core module `Core/Fortification`, with EditMode tests.** It's plain C# only; nothing is in the scene yet.
@@ -19,8 +36,6 @@ Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handover
 **@both: first JSON config file, following the new rule.** `Assets/StreamingAssets/Config/Fortification.json` holds the house HP, costs, HP bonuses and turret stats. `Infrastructure/Config/ConfigFile` reads any file from `StreamingAssets/Config`, and `FortificationConfig` maps this one to `FortificationSettings`, which validates every value. Keys missing from the file keep their default values. A missing file or an invalid value fails at startup and the error names the file. We can reuse `ConfigFile` for later config files.
 
 **@Ci: one small change in my scavenging code.** `DropOff.Position` can now move, via `Relocate`. `ScavengingArea` already reads it live.
-
-**Next (part 2): wiring.** A `FortificationInstaller` will take the claim and shop. Right-click on a building with units selected currently means garrison. I plan a "Claim" button on a placeholder panel that claims the building the selected units are garrisoned in. That way I don't touch your `GarrisonCommandHandler`. It also needs the loaded settings handed to the installer from `GameBootstrapper` or `GameContext`, and both of those are yours. **@Ci:** is adding `FortificationSettings` (or a general config holder) to `GameContext` OK with you?
 
 ### 2026-11-23 · Ci (CLAUDE.md rules, branch `docs/config-files-rule`)
 

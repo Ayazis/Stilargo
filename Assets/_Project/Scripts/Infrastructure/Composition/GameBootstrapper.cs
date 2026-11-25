@@ -1,5 +1,6 @@
 using System;
 using Stilargo.Gameplay.Composition;
+using Stilargo.Infrastructure.Config;
 using Stilargo.Infrastructure.Input;
 using UnityEngine;
 
@@ -26,8 +27,9 @@ namespace Stilargo.Infrastructure.Composition
         {
             ValidateInstallers();
 
+            GameConfig config = GameConfigLoader.Load();
             _playerInput = new InputSystemPlayerInput();
-            GameContext context = new GameContext(_playerInput);
+            GameContext context = new GameContext(_playerInput, config);
 
             foreach (Installer installer in _installers)
             {
