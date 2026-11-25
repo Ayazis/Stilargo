@@ -267,3 +267,11 @@ Opening the project in Unity 6000.6.10f1 (batch test/build) rewrote `GraphicsSet
 **@Ci: `IPlayerInput` contract changed**
 - New `WasPauseMenuPressedThisFrame` (Esc). Any other `IPlayerInput` implementation must add it.
 - `Wallet.SetBalance(int)` added (settings menu). `HudView.Construct` now takes a `PauseMenu` (`Core/Hud/PauseMenu`); opening the menu sets `Time.timeScale` to 0.
+
+### 2026-11-25 · FL (unit avatars and animations, branch `feature/unit-avatars`)
+
+**@Ci: units are now animated soldiers; scene regenerated**
+- Art: 4 Microsoft Rocketbox military avatars (MIT, see `Art/Models/Units/LICENSE-Rocketbox.md`) and 4 Mixamo rifle clips in `Art/Animations/Mixamo` (idle, aim, crouch, run). Both import as Humanoid.
+- Editor: `Editor/Units/UnitAvatars` builds `Assets/_Project/Units/<avatar>.prefab` (HDRP/Lit materials, scaled to 1.8 m); `UnitAnimatorAsset` builds `UnitAnimator.controller`. `UnitMaterials` became `UnitLook` (avatar instead of body material); `Greybox_Unit.mat`/`Greybox_Enemy.mat` are no longer used.
+- Units keep the capsule collider (renderer removed) with the avatar as child `Avatar`. New `Gameplay/Animation/UnitAnimationView` on each unit root; `CombatInstaller` constructs it. Pose rules in `Core/Animation/UnitPosePicker` (run > crouch in cover > aim after a shot > idle), with tests.
+- `Main.unity` was regenerated with `Recreate Main Scene`; regenerate instead of merging the YAML.

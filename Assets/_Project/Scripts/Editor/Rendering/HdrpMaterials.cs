@@ -80,6 +80,14 @@ namespace Stilargo.Editor.Rendering
             HDMaterial.ValidateMaterial(material);
         }
 
+        /// <summary>Maps the textures through the mesh's own UVs, once, as authored characters expect.</summary>
+        public static void ApplyUvTextures(Material material, SurfaceTextures textures)
+        {
+            ApplyTextures(material, textures, 1f);
+            material.SetFloat(UvBaseProperty, UvBaseUv0);
+            HDMaterial.ValidateMaterial(material);
+        }
+
         private static void ApplyTextures(Material material, SurfaceTextures textures, float metresPerTile)
         {
             if (metresPerTile <= 0f)

@@ -1,6 +1,7 @@
 using System;
 using Stilargo.Core.Combat;
 using Stilargo.Core.Combat.Stances;
+using Stilargo.Gameplay.Animation;
 using Stilargo.Gameplay.CameraControl;
 using Stilargo.Gameplay.Combat;
 using Stilargo.Gameplay.Orders;
@@ -86,7 +87,9 @@ namespace Stilargo.Gameplay.Composition
             foreach (SelectableUnit unit in _units)
             {
                 unit.Construct();
-                roster.AddPlayerUnit(unit, ComponentOf<CombatUnit>(unit), ChildComponentOf<HitEffectView>(unit));
+                CombatUnit combatUnit = ComponentOf<CombatUnit>(unit);
+                roster.AddPlayerUnit(unit, combatUnit, ChildComponentOf<HitEffectView>(unit));
+                ComponentOf<UnitAnimationView>(unit).Construct(combatUnit.Combat);
             }
         }
 
@@ -97,6 +100,7 @@ namespace Stilargo.Gameplay.Composition
                 AutonomousUnit autonomous = ComponentOf<AutonomousUnit>(enemy);
                 autonomous.Construct();
                 roster.AddEnemyUnit(enemy, ChildComponentOf<HitEffectView>(enemy), autonomous.Orders);
+                ComponentOf<UnitAnimationView>(enemy).Construct(enemy.Combat);
             }
         }
 
