@@ -16,6 +16,15 @@ namespace Stilargo.Core.Input
         /// <summary>Pointer position in screen pixels, origin bottom-left.</summary>
         Vector2 PointerScreenPosition { get; }
 
+        /// <summary>Pointer movement this frame in screen pixels.</summary>
+        Vector2 PointerDelta { get; }
+
+        /// <summary>Camera turn keys in [-1, 1]. Positive turns the view clockwise seen from above.</summary>
+        float TurnAxis { get; }
+
+        /// <summary>True while the button that turns and tilts the camera by dragging is held.</summary>
+        bool IsOrbitDragHeld { get; }
+
         bool WasSelectPressedThisFrame { get; }
 
         bool IsSelectHeld { get; }
@@ -38,5 +47,8 @@ namespace Stilargo.Core.Input
 
         /// <summary>True on the frame the player asks for the Hold stance.</summary>
         bool WasHoldStancePressedThisFrame { get; }
+
+        /// <summary>True on the frame the player asks to open or close the pause menu.</summary>
+        bool WasPauseMenuPressedThisFrame { get; }
     }
 }

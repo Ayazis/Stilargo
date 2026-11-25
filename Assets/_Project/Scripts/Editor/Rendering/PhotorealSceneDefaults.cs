@@ -14,8 +14,8 @@ namespace Stilargo.Editor.Rendering
     {
         public const string VolumeProfilePath = "Assets/_Project/Settings/PhotorealVolumeProfile.asset";
 
-        // Midday daylight: about 6000 K and roughly 100,000 lux of direct sun.
-        private const float SunTemperatureKelvin = 6000f;
+        // Warm late-morning Mediterranean sun: about 5000 K and roughly 100,000 lux of direct light.
+        private const float SunTemperatureKelvin = 5000f;
         private const float SunIlluminanceLux = 100000f;
         private const string VolumeName = "Global Volume";
 

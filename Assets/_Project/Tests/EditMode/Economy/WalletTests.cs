@@ -58,5 +58,25 @@ namespace Stilargo.Tests.EditMode.Economy
             Assert.Throws<ArgumentOutOfRangeException>(() => wallet.Deposit(amount));
             Assert.Throws<ArgumentOutOfRangeException>(() => wallet.TrySpend(amount));
         }
+
+        [Test]
+        public void SetBalance_ReplacesBalanceAndRaisesEvent()
+        {
+            Wallet wallet = new Wallet();
+            wallet.Deposit(30);
+            int reported = -1;
+            wallet.BalanceChanged += balance => reported = balance;
+
+            wallet.SetBalance(500);
+
+            Assert.AreEqual(500, wallet.Balance);
+            Assert.AreEqual(500, reported);
+        }
+
+        [Test]
+        public void SetBalance_Negative_Throws()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Wallet().SetBalance(-1));
+        }
     }
 }

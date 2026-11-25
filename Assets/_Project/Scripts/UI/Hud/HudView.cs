@@ -8,7 +8,7 @@ namespace Stilargo.UI.Hud
 {
     /// <summary>
     /// The player's HUD, built in code with UI Toolkit: money, the hill timer, stance buttons and the
-    /// claim-and-fortify menu. It only reads Core state each frame and forwards button clicks to Core menus.
+    /// claim-and-fortify menu, plus the Esc pause menu. It only reads Core state each frame and forwards button clicks to Core menus.
     /// </summary>
     public sealed class HudView : MonoBehaviour, IUiPointerBlocker
     {
@@ -24,6 +24,8 @@ namespace Stilargo.UI.Hud
         private Label _hillLabel;
         private StanceBar _stanceBar;
         private FortifyPanel _fortifyPanel;
+        private PauseMenu _pauseMenu;
+        private PauseMenuPanel _pauseMenuPanel;
         private int _shownBalance = -1;
         private int _shownHillSeconds = -1;
 
@@ -43,7 +45,7 @@ namespace Stilargo.UI.Hud
             }
         }
 
-        public void Construct(HudContent content, IPlayerInput input)
+        public void Construct(HudContent content, IPlayerInput input, PauseMenu pauseMenu)
         {
             if (_root != null)
             {
@@ -52,6 +54,7 @@ namespace Stilargo.UI.Hud
 
             _content = content ?? throw new ArgumentNullException(nameof(content));
             _input = input ?? throw new ArgumentNullException(nameof(input));
+            _pauseMenu = pauseMenu ?? throw new ArgumentNullException(nameof(pauseMenu));
             _root = CreateRoot();
             BuildWidgets();
         }
@@ -63,6 +66,12 @@ namespace Stilargo.UI.Hud
                 return;
             }
 
+            if (_input.WasPauseMenuPressedThisFrame)
+            {
+                _pauseMenu.HandleEscape();
+            }
+
+            _pauseMenuPanel.Refresh();
             RefreshMoney();
             RefreshHill();
             _stanceBar.Refresh();
@@ -99,6 +108,8 @@ namespace Stilargo.UI.Hud
             _stanceBar = AddPanelWith(column, new StanceBar(_content.StanceMenu));
             _fortifyPanel = AddPanelWith(column, new FortifyPanel(_content.FortifyMenu));
             _root.Add(column);
+            _pauseMenuPanel = new PauseMenuPanel(_pauseMenu);
+            _root.Add(_pauseMenuPanel);
         }
 
         private static T AddPanelWith<T>(VisualElement column, T content) where T : VisualElement

@@ -235,3 +235,22 @@ Add a `WorldInstaller` (`Stilargo.Gameplay.World`) to the scene, or as a prefab,
 - Logic is in `Core/Hud` (`StanceMenu`, `FortifyMenu`, `HudText`, `IHillStatus`) with EditMode tests.
 - `MainSceneCreator` was changed, so `Main.unity` was regenerated: run `Stilargo → Recreate Main Scene` instead of merging YAML. New assets: `Assets/_Project/UI/HudPanelSettings.asset` and `HudTheme.tss`. A PanelSettings made at runtime has no theme and renders nothing, hence the asset.
 - **Step 10:** implement `IHillStatus` (`IsActive`, `SecondsRemaining`) and call `HudInstaller.UseHillStatus(...)` before the HUD installs; the timer then shows up.
+
+### 2026-11-25 · FL (Mediterranean look, branch `feature/mediterranean-look`)
+
+**@Ci: shared rendering and scene files changed**
+- Volume profile: fog mean free path 4000 m → 700 m for aerial haze (`PhotorealRenderingSetup`, rerun `Apply Photoreal Rendering Settings`).
+- Sun: 6000 K → 5000 K (`PhotorealSceneDefaults`), pitch 50° → 38° for longer shadows (`MainSceneCreator`). `Main.unity` was regenerated with `Recreate Main Scene`; regenerate it instead of merging the YAML.
+- `CitySpawner` now needs a roof prefab and takes wall/roof material palettes, picked per plot by `Core/City/PlotVariation`. `World.prefab` was rebuilt; new assets in `Assets/_Project/World` (`Roof.prefab`, `HipRoof.asset`, `Wall0-5.mat`, `Roof0-2.mat`).
+
+### 2026-11-25 · FL (starting money)
+
+**@Ci: `GameConfig` contract changed**
+- New `Config/Economy.json` (`startingMoney`, default 1000) loaded by `EconomyConfig` into `Core/Economy/EconomySettings`.
+- `GameConfig` constructor now takes a third `EconomySettings` argument and exposes `Economy`. `WorldInstaller` deposits the starting money into the player wallet.
+
+### 2026-11-25 · FL (Esc pause menu)
+
+**@Ci: `IPlayerInput` contract changed**
+- New `WasPauseMenuPressedThisFrame` (Esc). Any other `IPlayerInput` implementation must add it.
+- `Wallet.SetBalance(int)` added (settings menu). `HudView.Construct` now takes a `PauseMenu` (`Core/Hud/PauseMenu`); opening the menu sets `Time.timeScale` to 0.

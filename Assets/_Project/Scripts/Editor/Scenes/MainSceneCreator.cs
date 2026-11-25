@@ -127,7 +127,7 @@ namespace Stilargo.Editor.Scenes
         private const string CameraBoundsMaxField = "_boundsMax";
 
         private const float StartHeight = 30f;
-        private const float SunPitchDegrees = 50f;
+        private const float SunPitchDegrees = 38f;
         private const float SunYawDegrees = -30f;
 
         // A small squad in a loose grid on the street through home. The roads are 4 m wide, so rows stay within ±1 m.
