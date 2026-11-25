@@ -6,6 +6,7 @@ Unity game in C#. Follow SOLID and Clean Code.
 
 - **Build first, optimize later.** Make it work and clean; optimize only when the Profiler shows a problem.
 - Small, focused changes. Ask before adding packages or making architecture decisions.
+- **When something is unclear, ask.** If a request, requirement or design choice is ambiguous, ask the user before building on a guess.
 - Don't hand-edit Unity-managed files (`Library/`, `*.csproj`, `.meta`) or scene/prefab YAML; list editor steps for the user instead.
 - New logic gets EditMode tests. No commits unless asked.
 - **Refactor when necessary.** If a change makes code unclear, duplicated or breaks the rules below, clean it up as part of the work (keep behavior the same, tests green). Mention larger refactors to the user before starting them.
