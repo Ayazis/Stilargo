@@ -6,9 +6,9 @@ using Stilargo.Gameplay.Cover;
 using Stilargo.Gameplay.Garrison;
 using Stilargo.Gameplay.GarrisonViews;
 using Stilargo.Gameplay.Composition;
-using Stilargo.Gameplay.Economy;
 using Stilargo.Gameplay.Fog;
 using Stilargo.Gameplay.Fortification;
+using Stilargo.Gameplay.Hill;
 using Stilargo.Gameplay.Orders;
 using Stilargo.Gameplay.Scavenging;
 using Stilargo.Gameplay.Selection;
@@ -17,9 +17,11 @@ using Stilargo.Gameplay.Units;
 using Stilargo.Gameplay.World;
 using Stilargo.Editor.Fortification;
 using Stilargo.Editor.Hill;
+using Stilargo.Editor.Hud;
 using Stilargo.Editor.Rendering;
 using Stilargo.Editor.World;
 using Stilargo.Infrastructure.Composition;
+using Stilargo.UI.Hud;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -83,7 +85,6 @@ namespace Stilargo.Editor.Scenes
         private const string SideWeaponField = "_weapon";
         private const string SideMaxHealthField = "_maxHealth";
         private const string StanceControllerField = "_stanceController";
-        private const string StanceLabelViewField = "_stanceLabelView";
         private const string LineRendererField = "_lineRenderer";
         private const string WeaponDamageField = "_damage";
 
@@ -122,7 +123,6 @@ namespace Stilargo.Editor.Scenes
         private const string VisionSourcesField = "_visionSources";
         private const string ScavengersField = "_scavengers";
         private const string FogHideablesField = "_fogHideables";
-        private const string WalletLabelViewField = "_walletLabelView";
         private const string CameraBoundsMinField = "_boundsMin";
         private const string CameraBoundsMaxField = "_boundsMax";
 
@@ -182,8 +182,13 @@ namespace Stilargo.Editor.Scenes
             CoverGarrisonInstaller coverGarrisonInstaller = CreateCoverGarrisonInstaller(combatInstaller, world, enemies);
             UnitWorldInstaller unitWorldInstaller = CreateUnitWorldInstaller(world, units, enemies);
             FortificationInstaller fortificationInstaller = FortificationSceneSetup.Create(world, coverGarrisonInstaller, enemies);
-            Installer hillRivalInstaller = HillSceneSetup.Create(world, combatInstaller, fortificationInstaller);
-            CreateBootstrapper(combatInstaller.gameObject, new Installer[] { world, combatInstaller, coverGarrisonInstaller, unitWorldInstaller, fortificationInstaller, hillRivalInstaller });
+            HillRivalInstaller hillRivalInstaller = HillSceneSetup.Create(world, combatInstaller, fortificationInstaller);
+            HudInstaller hudInstaller = HudSceneSetup.Create(world, combatInstaller, fortificationInstaller);
+            Installer hillHudLink = HillSceneSetup.LinkToHud(hillRivalInstaller, hudInstaller);
+
+            // The link hands the hill to the HUD, so it runs after the hill installer and before the HUD installer.
+            var installers = new Installer[] { world, combatInstaller, coverGarrisonInstaller, unitWorldInstaller, fortificationInstaller, hillRivalInstaller, hillHudLink, hudInstaller };
+            CreateBootstrapper(combatInstaller.gameObject, installers);
 
             EnsureFolder(System.IO.Path.GetDirectoryName(ScenePath));
             if (!EditorSceneManager.SaveScene(scene, ScenePath))
@@ -465,7 +470,6 @@ namespace Stilargo.Editor.Scenes
             SerializedFields.AssignArray(installer, VisionSourcesField, units.Select(unit => unit.GetComponent<VisionSourceComponent>()).ToArray());
             SerializedFields.AssignArray(installer, ScavengersField, units.Select(unit => unit.GetComponent<ScavengerComponent>()).ToArray());
             SerializedFields.AssignArray(installer, FogHideablesField, enemies.Select(enemy => enemy.GetComponent<FogHideable>()).ToArray());
-            SerializedFields.Assign(installer, WalletLabelViewField, links.AddComponent<WalletLabelView>());
             return installer;
         }
 
@@ -485,7 +489,6 @@ namespace Stilargo.Editor.Scenes
             fields.FindProperty(MoveOrderControllerField).objectReferenceValue = controls.AddComponent<MoveOrderController>();
             fields.FindProperty(FormationLabelViewField).objectReferenceValue = controls.AddComponent<FormationLabelView>();
             fields.FindProperty(StanceControllerField).objectReferenceValue = controls.AddComponent<StanceController>();
-            fields.FindProperty(StanceLabelViewField).objectReferenceValue = controls.AddComponent<StanceLabelView>();
 
             SerializedProperty unitList = fields.FindProperty(UnitsField);
             unitList.arraySize = units.Length;

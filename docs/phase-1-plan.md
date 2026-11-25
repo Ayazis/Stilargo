@@ -100,7 +100,7 @@ Update the status cell in the PR that finishes a step. "Done" means merged into 
 | 2 | 4. Selection, waypoints, formations | Done (PR 8) | 7. Fog of war | Done (PR 4) |
 | 3 | 5. Combat, stances, target priority | Done (PR 10) | 8. Scavenging & economy (uses `IUnitOrders`) | Done (PR 5) |
 | 4 | 6. Cover & garrison (uses `CityLayout`) | Done (PR 12) | 9. Claim & fortify (uses `IDamageable`, `Wallet`) | Done (PR #15) |
-| 5 | 10. Hill + rival AI | Done (PR #18) | 11. Minimal UI | Not started |
+| 5 | 10. Hill + rival AI | Done (PR #18) | 11. Minimal UI | Done (PR #17) |
 
 Step 1 (skeleton) is done. The city has been in `Main` since PR 11.
 

@@ -1,0 +1,6 @@
+{
+    "name": "Stilargo.UI",
+    "rootNamespace": "Stilargo.UI",
+    "references": ["Stilargo.Core", "Stilargo.Gameplay"],
+    "autoReferenced": true
+}

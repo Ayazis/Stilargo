@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Stilargo.Core.Combat;
 using Stilargo.Core.Fortification;
+using Stilargo.Core.Hud;
 using Stilargo.Gameplay.Combat;
 using Stilargo.Gameplay.Composition;
 using Stilargo.Gameplay.World;
@@ -23,10 +24,12 @@ namespace Stilargo.Gameplay.Fortification
         [SerializeField] private TurretBattery _turretBattery;
         [SerializeField] private TurretTracerView _tracerView;
         [SerializeField] private FortificationView _fortificationView;
-        [SerializeField] private FortificationPanelView _panelView;
 
         /// <summary>The player's claim; null until <see cref="Install"/> has run. Step 10 reads the house from it.</summary>
         public HouseClaim Claim { get; private set; }
+
+        /// <summary>What the HUD shows and does for claiming and buying; null until <see cref="Install"/> has run.</summary>
+        public FortifyMenu FortifyMenu { get; private set; }
 
         public override void Install(GameContext context)
         {
@@ -45,13 +48,13 @@ namespace Stilargo.Gameplay.Fortification
             _turretBattery.Construct(Claim, enemies, _world.VisibilityGrid);
             _tracerView.Construct(_turretBattery);
             _fortificationView.Construct(Claim);
-            _panelView.Construct(Claim, shop, new ClaimCandidatePicker(_garrisons.Garrisons.Buildings));
+            FortifyMenu = new FortifyMenu(Claim, shop, new ClaimCandidatePicker(_garrisons.Garrisons.Buildings));
         }
 
         private void ValidateReferences()
         {
             if (_world == null || _garrisons == null || _turretBattery == null || _tracerView == null
-                || _fortificationView == null || _panelView == null)
+                || _fortificationView == null)
             {
                 throw new InvalidOperationException($"{nameof(FortificationInstaller)} on '{name}' needs a world, garrisons, turrets and all views assigned.");
             }

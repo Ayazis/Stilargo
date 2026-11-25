@@ -14,7 +14,8 @@ Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handover
 - `Hill` (Core `HillControl`): `State` (`HillState`: `Empty`, `HeldByPlayer`, `HeldByRival`, `Contested`), the `StateChanged` event, `HeldSeconds`, `RemainingHoldSeconds`, `Settings.HoldDurationSeconds` and the `HoldCompleted` event. Income goes straight into your `Wallet`, so the money label updates by itself.
 - `Referee` (Core `MatchReferee`): `Outcome` (`MatchOutcome`: `Undecided`, `Won`, `Lost`), `IsDecided` and the `Decided` event.
 - `Rival` (Core `RivalBrain`): `Current.Name`, `IsDefeated` (whole squad dead) and the `StrategyChanged` event. `RivalWallet` holds the rival's scavenged money.
-- My placeholder `HillHudView` draws two lines in the **top-right** corner (hill state + time to win, rival strategy) and a centred win/lose box, so it stays clear of the left-hand labels and your panel. Replace or delete it when your UI covers the same things. `MatchEndPause` sets `Time.timeScale = 0` once the match is decided.
+- **Your HUD's hill timer is now live.** `Gameplay/Hill/HillStatus` implements your `IHillStatus` (it goes inactive once the match is decided). `Gameplay` can't reference `UI`, so I couldn't call `HudInstaller.UseHillStatus` from my installer. I added a small installer of my own, `UI/Hud/HillHudLink`, that runs between `HillRivalInstaller` and `HudInstaller` and makes that call. I didn't change any of your step 11 files.
+- My placeholder `HillHudView` still draws two lines in the **top-right** corner (who holds the hill, what the rival is doing), plus the centred win/lose box, which your HUD doesn't have yet. The timer is only in your HUD now. Replace or delete my view when your UI covers the rest. `MatchEndPause` sets `Time.timeScale = 0` once the match is decided.
 
 **@FL: I changed two of your files, adding members only.** `GameConfig` has two new properties, `Hill` and `Rival` (constructor now takes a `HillRivalSettings`), and `GameConfigLoader` loads `Hill.json` through the new `Infrastructure/Config/HillConfig` (`HillEntry`, `RivalEntry`), following `FortificationConfig`.
 
@@ -26,7 +27,7 @@ Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handover
 - Once you claim a house, it joins the enemies' targets (`CombatInstaller.AddPlayerTarget`). Its `Died` event is the lose condition.
 - Enemies now have an `AutonomousUnit` that holds their move orders. `SelectableUnit` and `AutonomousUnit` share the new `NavMeshOrderDriver`, which I pulled out of `SelectableUnit` without changing its behaviour.
 
-**@FL: `Main` scene changed (regenerate, don't merge YAML).** The installer list is now `[WorldInstaller, CombatInstaller, CoverGarrisonInstaller, UnitWorldInstaller, FortificationInstaller, HillRivalInstaller]`. `MainSceneCreator` calls `HillSceneSetup.Create(...)` (`Editor/Hill`). New materials, all made through `HdrpMaterials`: `Greybox_HillEmpty`, `Greybox_HillHeldByPlayer`, `Greybox_HillHeldByRival` and `Greybox_HillContested`.
+**@FL: `Main` scene changed (regenerate, don't merge YAML).** After merging your PR #17, the installer list is now `[WorldInstaller, CombatInstaller, CoverGarrisonInstaller, UnitWorldInstaller, FortificationInstaller, HillRivalInstaller, HillHudLink, HudInstaller]`. `MainSceneCreator` calls `HillSceneSetup.Create(...)` and `HillSceneSetup.LinkToHud(...)` (`Editor/Hill`) next to your `HudSceneSetup.Create(...)`. I resolved the `MainSceneCreator` conflict by keeping both sides. New materials, all made through `HdrpMaterials`: `Greybox_HillEmpty`, `Greybox_HillHeldByPlayer`, `Greybox_HillHeldByRival` and `Greybox_HillContested`.
 
 **Verified in the exe:** loot pickup and delivery, garrison, claim, barricade, the rival raiding the house as soon as it was claimed (house 550 → 490 HP before our squad wiped the raiders out), holding the hill (marker turns blue, income flows) and the win screen. The lose path is covered by EditMode tests only.
 
@@ -223,3 +224,14 @@ Add a `WorldInstaller` (`Stilargo.Gameplay.World`) to the scene, or as a prefab,
 
 **@both: `WorldTest` is temporary**
 `WorldTestBootstrap` and `Assets/_Project/WorldTest/` exist only until `Main` and `GameBootstrapper` land. Delete both at that point. To regenerate the scene, use `Stilargo → Build World Test Scene`.
+
+### 2026-11-25 · FL (minimal UI, step 11, branch `fl/minimal-ui`)
+
+**@Ci: the HUD is in; it touches a few of your files**
+- New `Stilargo.UI` asmdef with `HudInstaller` and `HudView` (UI Toolkit, built in code). It's listed last in the bootstrapper. `Stilargo.Editor` now references `Stilargo.UI`.
+- The IMGUI placeholders are gone: `StanceLabelView`, `WalletLabelView` and `FortificationPanelView`. `FormationLabelView` stays.
+- `CombatInstaller` now exposes `SelectionController` and `SelectionStance` (the stance label field is removed). `SelectionController` has `UseUiPointerBlocker(...)`, so a press on a HUD button doesn't start a selection drag.
+- `FortificationInstaller` and `UnitWorldInstaller` lost their view fields; `FortificationInstaller` exposes `FortifyMenu`.
+- Logic is in `Core/Hud` (`StanceMenu`, `FortifyMenu`, `HudText`, `IHillStatus`) with EditMode tests.
+- `MainSceneCreator` was changed, so `Main.unity` was regenerated: run `Stilargo → Recreate Main Scene` instead of merging YAML. New assets: `Assets/_Project/UI/HudPanelSettings.asset` and `HudTheme.tss`. A PanelSettings made at runtime has no theme and renders nothing, hence the asset.
+- **Step 10:** implement `IHillStatus` (`IsActive`, `SecondsRemaining`) and call `HudInstaller.UseHillStatus(...)` before the HUD installs; the timer then shows up.

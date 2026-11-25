@@ -7,17 +7,16 @@ using UnityEngine;
 namespace Stilargo.Gameplay.Hill
 {
     /// <summary>
-    /// Placeholder hill HUD in the top-right corner, clear of the left-hand labels: hill state, hold time left,
-    /// what the rival is doing and the final result. Step 11's UI can replace it by reading the same Core objects.
+    /// Placeholder hill HUD in the top-right corner, clear of FL's HUD column on the left: who holds the hill, what
+    /// the rival is doing and the final result. FL's HUD shows the hold timer through <see cref="HillStatus"/>.
     /// </summary>
     public sealed class HillHudView : MonoBehaviour
     {
-        private const string HillFormat = "Hill: {0} | {1:0}:{2:00} to win";
+        private const string HillFormat = "Hill: {0}";
         private const string RivalFormat = "Rival: {0}";
         private const string DefeatedRivalText = "wiped out";
         private const string WonText = "You held the hill. You win!";
         private const string LostText = "Your house was destroyed. You lose.";
-        private const int SecondsPerMinute = 60;
         private const int ResultFontSize = 22;
 
         [SerializeField] private float _width = 360f;
@@ -60,8 +59,7 @@ namespace Stilargo.Gameplay.Hill
 
         private string HillLine()
         {
-            int remaining = (int)Math.Ceiling(_hill.RemainingHoldSeconds);
-            return string.Format(HillFormat, StateText(_hill.State), remaining / SecondsPerMinute, remaining % SecondsPerMinute);
+            return string.Format(HillFormat, StateText(_hill.State));
         }
 
         private string RivalLine()

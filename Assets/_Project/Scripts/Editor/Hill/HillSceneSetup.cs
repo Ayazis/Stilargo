@@ -9,6 +9,7 @@ using Stilargo.Gameplay.Fortification;
 using Stilargo.Gameplay.Hill;
 using Stilargo.Gameplay.Units;
 using Stilargo.Gameplay.World;
+using Stilargo.UI.Hud;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -37,6 +38,8 @@ namespace Stilargo.Editor.Hill
         private const string MatchLoopField = "_matchLoop";
         private const string EndPauseField = "_endPause";
         private const string MarkerField = "_marker";
+        private const string HillField = "_hill";
+        private const string HudField = "_hud";
         private const string LooksField = "_looks";
         private const string LookStateField = "_state";
         private const string LookMaterialField = "_material";
@@ -61,6 +64,15 @@ namespace Stilargo.Editor.Hill
             SerializedFields.Assign(installer, MatchLoopField, holder.AddComponent<MatchLoop>());
             SerializedFields.Assign(installer, EndPauseField, holder.AddComponent<MatchEndPause>());
             return installer;
+        }
+
+        /// <summary>Adds the installer that shows the hill timer in FL's HUD; list it between the two installers.</summary>
+        public static HillHudLink LinkToHud(HillRivalInstaller hill, HudInstaller hud)
+        {
+            var link = hill.gameObject.AddComponent<HillHudLink>();
+            SerializedFields.Assign(link, HillField, hill);
+            SerializedFields.Assign(link, HudField, hud);
+            return link;
         }
 
         /// <summary>Enemies are the rival's units, so each needs an <see cref="AutonomousUnit"/> to take its orders.</summary>
