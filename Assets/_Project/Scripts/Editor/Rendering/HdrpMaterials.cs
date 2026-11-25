@@ -16,6 +16,14 @@ namespace Stilargo.Editor.Rendering
 
         private const string LitColorProperty = "_BaseColor";
         private const string UnlitColorProperty = "_UnlitColor";
+        private const string SmoothnessProperty = "_Smoothness";
+        private const string BaseColorMapProperty = "_BaseColorMap";
+        private const string NormalMapProperty = "_NormalMap";
+        private const string MaskMapProperty = "_MaskMap";
+        private const string UvBaseProperty = "_UVBase";
+        private const string TexWorldScaleProperty = "_TexWorldScale";
+        private const float UvBaseUv0 = 0f;
+        private const float UvBaseTriplanar = 5f;
 
         // Placeholder surfaces read as painted concrete/plastic rather than mirror-smooth.
         private const float PlaceholderSmoothness = 0.35f;
@@ -42,9 +50,51 @@ namespace Stilargo.Editor.Rendering
             return material;
         }
 
-        private static void ApplyLit(Material material, Color color)
+        public static void SetLitColor(Material material, Color color)
         {
             material.SetColor(LitColorProperty, color);
+        }
+
+        public static void SetSmoothness(Material material, float smoothness)
+        {
+            material.SetFloat(SmoothnessProperty, smoothness);
+            HDMaterial.ValidateMaterial(material);
+        }
+
+        /// <summary>Projects the textures in world space, for scaled boxes whose own UVs would stretch.</summary>
+        public static void ApplyTriplanarTextures(Material material, SurfaceTextures textures, float metresPerTile)
+        {
+            ApplyTextures(material, textures, metresPerTile);
+            material.SetFloat(UvBaseProperty, UvBaseTriplanar);
+            material.SetFloat(TexWorldScaleProperty, 1f / metresPerTile);
+            material.SetTextureScale(BaseColorMapProperty, Vector2.one);
+            HDMaterial.ValidateMaterial(material);
+        }
+
+        /// <summary>Maps the textures through the mesh's UVs, which must be in metres.</summary>
+        public static void ApplyMetricUvTextures(Material material, SurfaceTextures textures, float metresPerTile)
+        {
+            ApplyTextures(material, textures, metresPerTile);
+            material.SetFloat(UvBaseProperty, UvBaseUv0);
+            material.SetTextureScale(BaseColorMapProperty, Vector2.one / metresPerTile);
+            HDMaterial.ValidateMaterial(material);
+        }
+
+        private static void ApplyTextures(Material material, SurfaceTextures textures, float metresPerTile)
+        {
+            if (metresPerTile <= 0f)
+            {
+                throw new ArgumentOutOfRangeException(nameof(metresPerTile), metresPerTile, "Tile size must be positive.");
+            }
+
+            material.SetTexture(BaseColorMapProperty, textures.Albedo);
+            material.SetTexture(NormalMapProperty, textures.Normal);
+            material.SetTexture(MaskMapProperty, textures.Mask);
+        }
+
+        private static void ApplyLit(Material material, Color color)
+        {
+            SetLitColor(material, color);
             material.SetFloat("_Smoothness", PlaceholderSmoothness);
             HDMaterial.ValidateMaterial(material);
         }

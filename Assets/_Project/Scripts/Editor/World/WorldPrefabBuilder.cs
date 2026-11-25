@@ -25,8 +25,8 @@ namespace Stilargo.Editor.World
         private const float HomeMarkerSize = 4f;
         private const float HomeMarkerThickness = 0.1f;
 
-        private static readonly Color GroundColor = new Color(0.25f, 0.25f, 0.27f);
-        private static readonly Color BuildingColor = new Color(0.7f, 0.68f, 0.62f);
+        // Plain base for the building box; CitySpawner gives each building a plaster colour from the palette.
+        private static readonly Color BuildingColor = new Color(0.88f, 0.83f, 0.7f);
         private static readonly Color LootColor = new Color(1f, 0.8f, 0.1f);
         private static readonly Color HomeColor = new Color(0.2f, 0.75f, 0.3f);
 
@@ -58,8 +58,9 @@ namespace Stilargo.Editor.World
             // Only the spawned city is walkable; markers and units elsewhere must not end up in the bake.
             city.GetComponent<NavMeshSurface>().collectObjects = CollectObjects.Children;
             CitySpawner spawner = city.GetComponent<CitySpawner>();
-            SerializedFields.Assign(spawner, "_groundPrefab", LoadOrCreateCubePrefab("Ground", LoadOrCreateLitMaterial("Ground", GroundColor)));
+            SerializedFields.Assign(spawner, "_groundPrefab", LoadOrCreateCubePrefab("Ground", CityLookAssets.GroundMaterial()));
             SerializedFields.Assign(spawner, "_buildingPrefab", LoadOrCreateCubePrefab("Building", LoadOrCreateLitMaterial("Building", BuildingColor)));
+            CityLookAssets.Dress(spawner);
             SerializedFields.Assign(installer, "_cityConfig", LoadOrCreateAsset<CityConfigAsset>("CityConfig"));
             SerializedFields.Assign(installer, "_citySpawner", spawner);
         }
@@ -126,6 +127,9 @@ namespace Stilargo.Editor.World
             Material existing = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (existing != null)
             {
+                // Colours are owned by this builder, so a rerun picks up palette changes.
+                HdrpMaterials.SetLitColor(existing, color);
+                EditorUtility.SetDirty(existing);
                 return existing;
             }
 

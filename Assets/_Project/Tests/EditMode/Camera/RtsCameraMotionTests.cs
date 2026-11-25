@@ -251,6 +251,18 @@ namespace Stilargo.Tests.EditMode.Camera
         }
 
         [Test]
+        public void PanForward_WhenTurnedRight_MovesAlongWorldX()
+        {
+            _input.PanAxis = Vector2.UnitY;
+            var turnedRight = new CameraState(Vector2.Zero, StartHeight, 90f);
+
+            CameraState next = _motion.Step(turnedRight, _input, _frame);
+
+            AssertFocus(new Vector2(FullPanDistance, 0f), next);
+            Assert.That(next.YawDegrees, Is.EqualTo(90f));
+        }
+
+        [Test]
         public void Step_WithNullInput_Throws()
         {
             Assert.Throws<ArgumentNullException>(() => _motion.Step(_start, null, _frame));

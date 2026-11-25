@@ -16,6 +16,18 @@ namespace Stilargo.Core.Economy
             BalanceChanged?.Invoke(Balance);
         }
 
+        /// <summary>Replaces the balance outright, for the settings menu. Zero is allowed; negative is not.</summary>
+        public void SetBalance(int balance)
+        {
+            if (balance < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(balance), balance, "Balance cannot be negative.");
+            }
+
+            Balance = balance;
+            BalanceChanged?.Invoke(Balance);
+        }
+
         public bool CanAfford(int amount)
         {
             RequirePositive(amount);

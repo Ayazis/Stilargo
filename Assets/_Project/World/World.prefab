@@ -402,3 +402,20 @@ MonoBehaviour:
   _buildingPrefab: {fileID: 8672573999000431306, guid: 2dc7beca6102f8a4f9b2a8cc74071069, type: 3}
   _storeyHeight: 3
   _groundThickness: 0.2
+  _roofPrefab: {fileID: 589556293621245113, guid: 19b1043d6028a004f8ecb8ef83938305, type: 3}
+  _wallMaterials:
+  - {fileID: 2100000, guid: 2c79abd8772d4884f80c671ce638a849, type: 2}
+  - {fileID: 2100000, guid: 5c10718ef8a38934d8c1d5531a0e8d25, type: 2}
+  - {fileID: 2100000, guid: 02a73870f53894d4b9d7558f4110f826, type: 2}
+  - {fileID: 2100000, guid: f53221dea8266a245bf262b366e58f38, type: 2}
+  - {fileID: 2100000, guid: f2435d7153e31d54fba4b20c41fad57a, type: 2}
+  - {fileID: 2100000, guid: 2b44fba0c93e0574385046219e8530f1, type: 2}
+  _roofMaterials:
+  - {fileID: 2100000, guid: 019a139b93d6e634e961626a4ed600a5, type: 2}
+  - {fileID: 2100000, guid: 74d49d68f50c96d4b938e26153d22bee, type: 2}
+  - {fileID: 2100000, guid: fbfa584af939e184db16b3b3e725fa4e, type: 2}
+  _roofOverhangMetres: 0.4
+  _roofRisePerHalfSpan: 0.5
+  _windowPrefab: {fileID: 277055272647644057, guid: 450f6d0153361a84dbd5c6388b75b814, type: 3}
+  _doorPrefab: {fileID: 8589050200725959438, guid: c78b0de2588fbd641b47b562d4b519b4, type: 3}
+  _cornicePrefab: {fileID: 2120939229515361375, guid: c8282b15d925f7c4387b26516a7ef73b, type: 3}

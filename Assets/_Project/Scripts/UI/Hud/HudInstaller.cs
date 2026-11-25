@@ -35,7 +35,8 @@ namespace Stilargo.UI.Hud
             ValidateReferences();
             var stanceMenu = new StanceMenu(_combat.SelectionController.Selection, _combat.SelectionStance);
             HudContent content = new HudContent(_world.Wallet, stanceMenu, _fortification.FortifyMenu).WithHillStatus(_hillStatus);
-            _view.Construct(content, context.PlayerInput);
+            var pauseMenu = new PauseMenu(_world.Wallet, new ApplicationQuitter());
+            _view.Construct(content, context.PlayerInput, pauseMenu);
             _combat.SelectionController.UseUiPointerBlocker(_view);
         }
 

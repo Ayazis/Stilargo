@@ -18,7 +18,7 @@ namespace Stilargo.Editor.Rendering
         private const string PipelinePath = SettingsFolder + "/HdrpPipeline.asset";
         private const int FullResolutionMipLimit = 0;
 
-        private const float FogMeanFreePathMetres = 4000f;
+        private const float FogMeanFreePathMetres = 700f;
         private const float BloomIntensity = 0.15f;
         private const float VignetteIntensity = 0.2f;
 
