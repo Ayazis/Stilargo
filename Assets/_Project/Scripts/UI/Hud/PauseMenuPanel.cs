@@ -71,7 +71,17 @@ namespace Stilargo.UI.Hud
             _settingsPage.Add(_moneyField);
             _settingsPage.Add(HudStyle.CreateButton(PauseMenu.ApplyMoneyLabel, ApplyMoney));
             _settingsPage.Add(_settingsMessage);
+            AddCameraControls();
             _settingsPage.Add(HudStyle.CreateButton(PauseMenu.BackLabel, _menu.ShowMain));
+        }
+
+        private void AddCameraControls()
+        {
+            _settingsPage.Add(HudStyle.CreateLabel(CameraControlHints.Title));
+            foreach (ControlHint hint in CameraControlHints.All)
+            {
+                _settingsPage.Add(HudStyle.CreateLabel($"{hint.Action}: {hint.Keys}"));
+            }
         }
 
         private void OpenSettings()
