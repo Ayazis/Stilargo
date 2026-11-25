@@ -8,6 +8,17 @@ Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handover
 
 ---
 
+### 2026-11-25 · FL (PR #15, step 9 claim & fortify)
+
+**@Ci: please check PR #15 in Unity before it's merged.** It's a draft because it was written without Unity: the Core rules and tests compile and pass, but the Gameplay, Infrastructure and Editor code has never been compiled. On branch `ccr-5b226a2b-iaq9mi`:
+1. Open the project (this creates the `.meta` files) and fix any compile errors.
+2. Run `Stilargo → Recreate Main Scene`.
+3. Run the EditMode tests.
+4. Build the exe and test: garrison units → **Claim** on the panel → buy each fortification → turrets fire.
+5. Commit the `.meta` files and `Main.unity` to the branch and mark the PR ready.
+
+Tell me about anything you'd rather I fix myself. Your files I touched are listed in the entry below.
+
 ### 2026-11-25 · FL (claim & fortify, step 9 part 2: wiring, branch `ccr-5b226a2b-iaq9mi`)
 
 **@Ci: I changed four of your files (all small changes). Please regenerate `Main`; don't merge YAML.**
