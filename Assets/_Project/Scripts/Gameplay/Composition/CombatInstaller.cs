@@ -34,7 +34,11 @@ namespace Stilargo.Gameplay.Composition
         [SerializeField] private MoveOrderController _moveOrderController;
         [SerializeField] private FormationLabelView _formationLabelView;
         [SerializeField] private StanceController _stanceController;
-        [SerializeField] private StanceLabelView _stanceLabelView;
+
+        public SelectionController SelectionController => _selectionController;
+
+        /// <summary>Sets and reads the selected units' stance; null until <see cref="Install"/> has run.</summary>
+        public SelectionStance SelectionStance { get; private set; }
 
         public override void Install(GameContext context)
         {
@@ -58,9 +62,8 @@ namespace Stilargo.Gameplay.Composition
             _moveOrderController.Construct(context.PlayerInput, _camera, _selectionController.Selection);
             _formationLabelView.Construct(_moveOrderController);
 
-            var selectionStance = new SelectionStance(stances, roster.CombatByUnit);
-            _stanceController.Construct(context.PlayerInput, _selectionController.Selection, selectionStance);
-            _stanceLabelView.Construct(_selectionController.Selection, selectionStance);
+            SelectionStance = new SelectionStance(stances, roster.CombatByUnit);
+            _stanceController.Construct(context.PlayerInput, _selectionController.Selection, SelectionStance);
         }
 
         private void AddPlayerUnits(CombatRoster roster)
@@ -113,7 +116,6 @@ namespace Stilargo.Gameplay.Composition
             RequireAssigned(_moveOrderController, nameof(MoveOrderController));
             RequireAssigned(_formationLabelView, nameof(FormationLabelView));
             RequireAssigned(_stanceController, nameof(StanceController));
-            RequireAssigned(_stanceLabelView, nameof(StanceLabelView));
             RequireAssigned(_playerSide.Weapon, "player " + nameof(WeaponDefinition));
             RequireAssigned(_enemySide.Weapon, "enemy " + nameof(WeaponDefinition));
             RequireNoEmptySlots(_units, "unit");

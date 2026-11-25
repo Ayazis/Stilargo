@@ -197,3 +197,14 @@ Add a `WorldInstaller` (`Stilargo.Gameplay.World`) to the scene, or as a prefab,
 
 **@both: `WorldTest` is temporary**
 `WorldTestBootstrap` and `Assets/_Project/WorldTest/` exist only until `Main` and `GameBootstrapper` land. Delete both at that point. To regenerate the scene, use `Stilargo → Build World Test Scene`.
+
+### 2026-11-25 · FL (minimal UI, step 11, branch `fl/minimal-ui`)
+
+**@Ci: the HUD is in; it touches a few of your files**
+- New `Stilargo.UI` asmdef with `HudInstaller` and `HudView` (UI Toolkit, built in code). It's listed last in the bootstrapper. `Stilargo.Editor` now references `Stilargo.UI`.
+- The IMGUI placeholders are gone: `StanceLabelView`, `WalletLabelView` and `FortificationPanelView`. `FormationLabelView` stays.
+- `CombatInstaller` now exposes `SelectionController` and `SelectionStance` (the stance label field is removed). `SelectionController` has `UseUiPointerBlocker(...)`, so a press on a HUD button doesn't start a selection drag.
+- `FortificationInstaller` and `UnitWorldInstaller` lost their view fields; `FortificationInstaller` exposes `FortifyMenu`.
+- Logic is in `Core/Hud` (`StanceMenu`, `FortifyMenu`, `HudText`, `IHillStatus`) with EditMode tests.
+- `MainSceneCreator` was changed, so `Main.unity` was regenerated: run `Stilargo → Recreate Main Scene` instead of merging YAML. New assets: `Assets/_Project/UI/HudPanelSettings.asset` and `HudTheme.tss`. A PanelSettings made at runtime has no theme and renders nothing, hence the asset.
+- **Step 10:** implement `IHillStatus` (`IsActive`, `SecondsRemaining`) and call `HudInstaller.UseHillStatus(...)` before the HUD installs; the timer then shows up.
