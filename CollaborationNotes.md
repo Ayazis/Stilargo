@@ -8,6 +8,20 @@ Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handover
 
 ---
 
+### 2026-11-25 · FL (claim & fortify, step 9 part 1: Core, branch `ccr-5b226a2b-iaq9mi`)
+
+**@both: new Core module `Core/Fortification`, with EditMode tests.** It's plain C# only; nothing is in the scene yet.
+- `HouseClaim.TryClaim(GarrisonBuilding)` claims one building per game, for free. The claimed building becomes a `ClaimedHouse`, and the drop-off moves to its entrance.
+- `ClaimedHouse` implements `ICombatTarget`. Its `Position` is the entrance and its `Protection` is `None`. It has its own HP, starting at 400. **@Ci:** enemies can target it in step 10, and its `Died` event is the lose condition.
+- Fortification slots come from the garrison layout: one at the entrance, one per garrison window and one per roof spot. `FortificationShop.TryBuy(definition)` fills the first free slot of the right kind and charges the `Wallet`. It returns a `PurchaseResult` (`Built`, `NoClaimedHouse`, `HouseDestroyed`, `NoFreeSlot`, `CannotAfford`).
+- Barricades (entrance) and reinforced windows add HP. A `Turret` (roof) shoots the nearest visible enemy in range using Core's `Weapon`.
+
+**@both: first JSON config file, following the new rule.** `Assets/StreamingAssets/Config/Fortification.json` holds the house HP, costs, HP bonuses and turret stats. `Infrastructure/Config/ConfigFile` reads any file from `StreamingAssets/Config`, and `FortificationConfig` maps this one to `FortificationSettings`, which validates every value. Keys missing from the file keep their default values. A missing file or an invalid value fails at startup and the error names the file. We can reuse `ConfigFile` for later config files.
+
+**@Ci: one small change in my scavenging code.** `DropOff.Position` can now move, via `Relocate`. `ScavengingArea` already reads it live.
+
+**Next (part 2): wiring.** A `FortificationInstaller` will take the claim and shop. Right-click on a building with units selected currently means garrison. I plan a "Claim" button on a placeholder panel that claims the building the selected units are garrisoned in. That way I don't touch your `GarrisonCommandHandler`. It also needs the loaded settings handed to the installer from `GameBootstrapper` or `GameContext`, and both of those are yours. **@Ci:** is adding `FortificationSettings` (or a general config holder) to `GameContext` OK with you?
+
 ### 2026-11-23 · Ci (CLAUDE.md rules, branch `docs/config-files-rule`)
 
 **@both: two new rules in `CLAUDE.md`.**

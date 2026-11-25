@@ -1,0 +1,33 @@
+{
+    "houseBaseHealthPoints": 400,
+    "fortifications": [
+        {
+            "id": "barricade",
+            "displayName": "Barricade",
+            "slotKind": "Entrance",
+            "costMoney": 40,
+            "healthBonusPoints": 150,
+            "hasTurret": false
+        },
+        {
+            "id": "reinforcedWindow",
+            "displayName": "Reinforced window",
+            "slotKind": "Window",
+            "costMoney": 25,
+            "healthBonusPoints": 60,
+            "hasTurret": false
+        },
+        {
+            "id": "turret",
+            "displayName": "Turret",
+            "slotKind": "Roof",
+            "costMoney": 120,
+            "healthBonusPoints": 0,
+            "hasTurret": true,
+            "turretDamagePerShot": 12,
+            "turretRangeMetres": 16,
+            "turretCooldownSeconds": 0.8,
+            "turretHitChance": 0.7
+        }
+    ]
+}

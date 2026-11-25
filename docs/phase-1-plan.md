@@ -99,7 +99,7 @@ Update the status cell in the PR that finishes a step. "Done" means merged into 
 | 1 | 2. Input + RTS camera | Done (PR 6) | 3. Procedural city + NavMesh | Done (PR 4) |
 | 2 | 4. Selection, waypoints, formations | Done (PR 8) | 7. Fog of war | Done (PR 4) |
 | 3 | 5. Combat, stances, target priority | Done (PR 10) | 8. Scavenging & economy (uses `IUnitOrders`) | Done (PR 5) |
-| 4 | 6. Cover & garrison (uses `CityLayout`) | Done (PR 12) | 9. Claim & fortify (uses `IDamageable`, `Wallet`) | Not started |
+| 4 | 6. Cover & garrison (uses `CityLayout`) | Done (PR 12) | 9. Claim & fortify (uses `IDamageable`, `Wallet`) | In progress (Core done) |
 | 5 | 10. Hill + rival AI | Not started | 11. Minimal UI | Not started |
 
 Step 1 (skeleton) is done. The city has been in `Main` since PR 11.
