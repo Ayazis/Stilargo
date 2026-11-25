@@ -31,7 +31,7 @@ namespace Stilargo.Tests.EditMode.Hud
         [Test]
         public void HouseHealth_ShowsWholeNumbers()
         {
-            Assert.AreEqual("House: 80 / 120 HP", HudText.HouseHealth(79.6f, 120f));
+            Assert.AreEqual("House: 80 / 120 HP", HudText.HouseHealth(HudText.HouseName, 79.6f, 120f));
         }
 
         [Test]

@@ -12,7 +12,6 @@ namespace Stilargo.Infrastructure.Config
         [SerializeField] private float centerXMetres = HillSettings.DefaultCenterXMetres;
         [SerializeField] private float centerZMetres = HillSettings.DefaultCenterZMetres;
         [SerializeField] private float radiusMetres = HillSettings.DefaultRadiusMetres;
-        [SerializeField] private float incomeMoneyPerSecond = HillSettings.DefaultIncomeMoneyPerSecond;
         [SerializeField] private float holdDurationSeconds = HillSettings.DefaultHoldDurationSeconds;
 
         public HillSettings ToSettings()
@@ -20,7 +19,6 @@ namespace Stilargo.Infrastructure.Config
             try
             {
                 return new HillSettings(centerXMetres, centerZMetres, radiusMetres)
-                    .WithIncome(incomeMoneyPerSecond)
                     .WithHoldDuration(holdDurationSeconds);
             }
             catch (ArgumentException exception)

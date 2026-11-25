@@ -1,0 +1,9 @@
+{
+    "baseMoneyPerSecondPerHouse": 0.3,
+    "moneyPerSecondPerFloorCell": 0.01,
+    "fortifiedBonusFraction": 0.5,
+    "occupiedBonusFraction": 0.5,
+    "maintenanceBonusFraction": 0.5,
+    "fullWearSeconds": 300,
+    "fullRepairCostMoneyPerFloorCell": 0.5
+}

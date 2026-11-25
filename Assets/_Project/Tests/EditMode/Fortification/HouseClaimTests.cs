@@ -1,5 +1,6 @@
 using System;
 using NUnit.Framework;
+using Stilargo.Core.Fog;
 using Stilargo.Core.Fortification;
 using Stilargo.Core.Garrison;
 using Stilargo.Core.Scavenging;
@@ -55,17 +56,50 @@ namespace Stilargo.Tests.EditMode.Fortification
         }
 
         [Test]
-        public void TryClaim_Second_IsRefusedAndKeepsFirstHouse()
+        public void TryClaim_SameBuildingTwice_IsRefused()
+        {
+            HouseClaim claim = FortificationTestHouse.CreateClaim(FortificationTestHouse.CreateDropOff());
+            GarrisonBuilding building = FortificationTestHouse.CreateBuilding();
+            claim.TryClaim(building);
+            bool raisedAgain = false;
+            claim.Claimed += _ => raisedAgain = true;
+
+            Assert.IsFalse(claim.TryClaim(building));
+            Assert.AreEqual(1, claim.Houses.Count);
+            Assert.IsFalse(raisedAgain);
+        }
+
+        [Test]
+        public void TryClaim_OtherBuilding_AddsHouseAndKeepsFirstAsBase()
         {
             HouseClaim claim = FortificationTestHouse.CreateClaim(FortificationTestHouse.CreateDropOff());
             claim.TryClaim(FortificationTestHouse.CreateBuilding());
             ClaimedHouse first = claim.House;
-            bool raisedAgain = false;
-            claim.Claimed += _ => raisedAgain = true;
+            ClaimedHouse reported = null;
+            claim.Claimed += house => reported = house;
+            GarrisonBuilding second = FortificationTestHouse.CreateBuilding();
 
-            Assert.IsFalse(claim.TryClaim(FortificationTestHouse.CreateBuilding()));
+            Assert.IsTrue(claim.TryClaim(second));
             Assert.AreSame(first, claim.House);
-            Assert.IsFalse(raisedAgain);
+            Assert.AreEqual(2, claim.Houses.Count);
+            Assert.AreSame(second, reported.Building);
+            Assert.IsTrue(claim.TryGetHouse(second, out ClaimedHouse found));
+            Assert.AreSame(reported, found);
+        }
+
+        [Test]
+        public void TryClaim_OtherBuilding_LeavesDropOffAtBase()
+        {
+            DropOff dropOff = FortificationTestHouse.CreateDropOff();
+            HouseClaim claim = FortificationTestHouse.CreateClaim(dropOff);
+            claim.TryClaim(FortificationTestHouse.CreateBuilding());
+            var marker = new WorldPoint(-5f, -5f);
+            dropOff.Relocate(marker);
+
+            claim.TryClaim(FortificationTestHouse.CreateBuilding());
+
+            Assert.AreEqual(marker.X, dropOff.Position.X);
+            Assert.AreEqual(marker.Z, dropOff.Position.Z);
         }
 
         [Test]

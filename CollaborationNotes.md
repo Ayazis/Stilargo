@@ -236,6 +236,19 @@ Add a `WorldInstaller` (`Stilargo.Gameplay.World`) to the scene, or as a prefab,
 - `MainSceneCreator` was changed, so `Main.unity` was regenerated: run `Stilargo → Recreate Main Scene` instead of merging YAML. New assets: `Assets/_Project/UI/HudPanelSettings.asset` and `HudTheme.tss`. A PanelSettings made at runtime has no theme and renders nothing, hence the asset.
 - **Step 10:** implement `IHillStatus` (`IsActive`, `SecondsRemaining`) and call `HudInstaller.UseHillStatus(...)` before the HUD installs; the timer then shows up.
 
+### 2026-11-25 · Ci (building income, branch `feature/building-income`)
+
+**@FL: money now comes from claimed houses; some shared contracts changed**
+- `HouseClaim` allows any number of claims. `House` is still the base (first claim): drop-off, rival raids and the lose condition use only it. New: `Houses`, `TryGetHouse(...)`.
+- `ClaimedHouse` has `Condition` (wears over time, repaired for money), `Maintenance` (condition × health), `FortifiedFraction`, `OccupiedFraction`, `FloorCells`.
+- New `Core/Income`: `HouseIncomeRate` (size × (1 + barricade/occupation/maintenance bonuses)), `HouseIncome` (pays + wears), `HouseRepair`. Values in new `StreamingAssets/Config/Income.json`; `GameConfig` takes it as a fourth argument, after `EconomySettings`.
+- The hill no longer pays: `HillControl` lost its wallet argument, `incomeMoneyPerSecond` is gone from `Hill.json`.
+- `FortificationShop.TryBuy/Check` now take the house. `FortifyMenu` takes `ClaimTarget`, shop and `UpkeepMenu`; the fortify panel shows income, condition and a repair button.
+- No scene change: `FortificationInstaller` adds a `HouseIncomeTicker` component at runtime.
+
+**@FL: Unity-written settings changes committed too**
+Opening the project in Unity 6000.6.10f1 (batch test/build) rewrote `GraphicsSettings`, `QualitySettings`, `ProjectAuditorSettings`, `HdrpPipeline.asset`, `HDRenderPipelineGlobalSettings.asset` and added `HDRPProjectSettings.asset`. Not hand-edited; committed so the project stays consistent.
+
 ### 2026-11-25 · FL (Mediterranean look, branch `feature/mediterranean-look`)
 
 **@Ci: shared rendering and scene files changed**

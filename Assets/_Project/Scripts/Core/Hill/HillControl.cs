@@ -1,24 +1,20 @@
 using System;
 using System.Collections.Generic;
 using Stilargo.Core.Combat;
-using Stilargo.Core.Economy;
 
 namespace Stilargo.Core.Hill
 {
     /// <summary>
     /// King-of-the-hill rules: whoever alone has living units in the zone holds it. While the player holds it,
-    /// income goes to the wallet and hold time adds up toward the win; a contested or rival-held hill pays nobody.
+    /// hold time adds up toward the win; a contested or rival-held hill counts for nobody. The hill pays no money:
+    /// income comes from claimed houses.
     /// </summary>
     public sealed class HillControl
     {
-        private readonly Wallet _wallet;
-        private float _unpaidIncome;
-
-        public HillControl(HillZone zone, HillSettings settings, Wallet wallet)
+        public HillControl(HillZone zone, HillSettings settings)
         {
             Zone = zone ?? throw new ArgumentNullException(nameof(zone));
             Settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            _wallet = wallet ?? throw new ArgumentNullException(nameof(wallet));
         }
 
         public event Action<HillState> StateChanged;
@@ -107,7 +103,6 @@ namespace Stilargo.Core.Hill
 
         private void Hold(float deltaSeconds)
         {
-            PayIncome(deltaSeconds);
             if (IsHoldComplete)
             {
                 return;
@@ -118,20 +113,6 @@ namespace Stilargo.Core.Hill
             {
                 HoldCompleted?.Invoke();
             }
-        }
-
-        // The wallet takes whole amounts, so fractions carry over to the next tick.
-        private void PayIncome(float deltaSeconds)
-        {
-            _unpaidIncome += Settings.IncomeMoneyPerSecond * deltaSeconds;
-            int payable = (int)Math.Floor(_unpaidIncome);
-            if (payable <= 0)
-            {
-                return;
-            }
-
-            _unpaidIncome -= payable;
-            _wallet.Deposit(payable);
         }
     }
 }

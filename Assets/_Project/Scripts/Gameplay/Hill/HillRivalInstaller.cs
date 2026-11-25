@@ -61,7 +61,7 @@ namespace Stilargo.Gameplay.Hill
             RequireHillOnRoad(hillSettings);
             RequireSquadFits(rivalSettings);
 
-            Hill = new HillControl(new HillZone(CenterOf(hillSettings), hillSettings.RadiusMetres), hillSettings, _world.Wallet);
+            Hill = new HillControl(new HillZone(CenterOf(hillSettings), hillSettings.RadiusMetres), hillSettings);
             HouseClaim claim = _fortifications.Claim;
             LetEnemiesTargetTheHouse(claim);
             Referee = new MatchReferee(Hill, claim);

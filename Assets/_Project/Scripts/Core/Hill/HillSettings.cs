@@ -12,7 +12,6 @@ namespace Stilargo.Core.Hill
         public const float DefaultCenterXMetres = 86f;
         public const float DefaultCenterZMetres = 72f;
         public const float DefaultRadiusMetres = 6f;
-        public const float DefaultIncomeMoneyPerSecond = 2f;
         public const float DefaultHoldDurationSeconds = 180f;
 
         public HillSettings(float centerXMetres, float centerZMetres, float radiusMetres)
@@ -23,7 +22,6 @@ namespace Stilargo.Core.Hill
         }
 
         public static HillSettings Default => new HillSettings(DefaultCenterXMetres, DefaultCenterZMetres, DefaultRadiusMetres)
-            .WithIncome(DefaultIncomeMoneyPerSecond)
             .WithHoldDuration(DefaultHoldDurationSeconds);
 
         public float CenterXMetres { get; }
@@ -32,22 +30,8 @@ namespace Stilargo.Core.Hill
 
         public float RadiusMetres { get; }
 
-        /// <summary>Money paid into the wallet per second while the player alone holds the hill.</summary>
-        public float IncomeMoneyPerSecond { get; private set; } = DefaultIncomeMoneyPerSecond;
-
         /// <summary>Total time the player must hold the hill to win; separate holds add up.</summary>
         public float HoldDurationSeconds { get; private set; } = DefaultHoldDurationSeconds;
-
-        public HillSettings WithIncome(float moneyPerSecond)
-        {
-            if (!(moneyPerSecond >= 0f) || float.IsInfinity(moneyPerSecond))
-            {
-                throw new ArgumentOutOfRangeException(nameof(moneyPerSecond), moneyPerSecond, "Income must be zero or more and finite.");
-            }
-
-            IncomeMoneyPerSecond = moneyPerSecond;
-            return this;
-        }
 
         public HillSettings WithHoldDuration(float seconds)
         {

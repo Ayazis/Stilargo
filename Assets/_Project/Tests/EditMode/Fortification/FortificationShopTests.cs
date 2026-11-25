@@ -20,7 +20,7 @@ namespace Stilargo.Tests.EditMode.Fortification
         {
             _dropOff = FortificationTestHouse.CreateDropOff();
             _claim = FortificationTestHouse.CreateClaim(_dropOff);
-            _shop = new FortificationShop(_claim, Wallet, FortificationTestHouse.Settings.Definitions);
+            _shop = new FortificationShop(Wallet, FortificationTestHouse.Settings.Definitions);
         }
 
         [Test]
@@ -28,7 +28,7 @@ namespace Stilargo.Tests.EditMode.Fortification
         {
             Wallet.Deposit(1000);
 
-            Assert.AreEqual(PurchaseResult.NoClaimedHouse, _shop.TryBuy(Barricade));
+            Assert.AreEqual(PurchaseResult.NoClaimedHouse, _shop.TryBuy(_claim.House, Barricade));
             Assert.AreEqual(1000, Wallet.Balance);
         }
 
@@ -40,7 +40,7 @@ namespace Stilargo.Tests.EditMode.Fortification
             FortificationSlot built = null;
             _claim.House.FortificationBuilt += slot => built = slot;
 
-            Assert.AreEqual(PurchaseResult.Built, _shop.TryBuy(Barricade));
+            Assert.AreEqual(PurchaseResult.Built, _shop.TryBuy(_claim.House, Barricade));
             Assert.AreEqual(100 - Barricade.CostMoney, Wallet.Balance);
             Assert.AreSame(Barricade, built.Fortification);
             Assert.AreEqual(FortificationSlotKind.Entrance, built.Kind);
@@ -54,7 +54,7 @@ namespace Stilargo.Tests.EditMode.Fortification
             ClaimHouse();
             Wallet.Deposit(Barricade.CostMoney - 1);
 
-            Assert.AreEqual(PurchaseResult.CannotAfford, _shop.TryBuy(Barricade));
+            Assert.AreEqual(PurchaseResult.CannotAfford, _shop.TryBuy(_claim.House, Barricade));
             Assert.AreEqual(Barricade.CostMoney - 1, Wallet.Balance);
             Assert.IsTrue(_claim.House.Slots.All(slot => !slot.IsFilled));
         }
@@ -64,9 +64,9 @@ namespace Stilargo.Tests.EditMode.Fortification
         {
             ClaimHouse();
             Wallet.Deposit(1000);
-            _shop.TryBuy(Barricade);
+            _shop.TryBuy(_claim.House, Barricade);
 
-            Assert.AreEqual(PurchaseResult.NoFreeSlot, _shop.TryBuy(Barricade));
+            Assert.AreEqual(PurchaseResult.NoFreeSlot, _shop.TryBuy(_claim.House, Barricade));
             Assert.AreEqual(1000 - Barricade.CostMoney, Wallet.Balance);
         }
 
@@ -79,10 +79,10 @@ namespace Stilargo.Tests.EditMode.Fortification
 
             for (int index = 0; index < roofSlots; index++)
             {
-                Assert.AreEqual(PurchaseResult.Built, _shop.TryBuy(Turret));
+                Assert.AreEqual(PurchaseResult.Built, _shop.TryBuy(_claim.House, Turret));
             }
 
-            Assert.AreEqual(PurchaseResult.NoFreeSlot, _shop.TryBuy(Turret));
+            Assert.AreEqual(PurchaseResult.NoFreeSlot, _shop.TryBuy(_claim.House, Turret));
             Assert.IsTrue(_claim.House.Slots.Where(slot => slot.Kind == FortificationSlotKind.Roof).All(slot => slot.Fortification == Turret));
         }
 
@@ -93,7 +93,7 @@ namespace Stilargo.Tests.EditMode.Fortification
             Wallet.Deposit(1000);
             _claim.House.TakeDamage(_claim.House.MaxHealth);
 
-            Assert.AreEqual(PurchaseResult.HouseDestroyed, _shop.TryBuy(Barricade));
+            Assert.AreEqual(PurchaseResult.HouseDestroyed, _shop.TryBuy(_claim.House, Barricade));
             Assert.AreEqual(1000, Wallet.Balance);
         }
 
@@ -103,7 +103,7 @@ namespace Stilargo.Tests.EditMode.Fortification
             ClaimHouse();
             Wallet.Deposit(1000);
 
-            Assert.AreEqual(PurchaseResult.Built, _shop.Check(Barricade));
+            Assert.AreEqual(PurchaseResult.Built, _shop.Check(_claim.House, Barricade));
             Assert.AreEqual(1000, Wallet.Balance);
             Assert.IsTrue(_claim.House.Slots.All(slot => !slot.IsFilled));
         }
@@ -111,7 +111,7 @@ namespace Stilargo.Tests.EditMode.Fortification
         [Test]
         public void TryBuy_Null_Throws()
         {
-            Assert.Throws<ArgumentNullException>(() => _shop.TryBuy(null));
+            Assert.Throws<ArgumentNullException>(() => _shop.TryBuy(_claim.House, null));
         }
 
         private static FortificationDefinition Barricade => FortificationTestHouse.Find("barricade");

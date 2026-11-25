@@ -3,7 +3,6 @@
         "centerXMetres": 86,
         "centerZMetres": 72,
         "radiusMetres": 6,
-        "incomeMoneyPerSecond": 2,
         "holdDurationSeconds": 180
     },
     "rival": {

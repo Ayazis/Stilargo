@@ -4,6 +4,7 @@ using System.Linq;
 using Stilargo.Core.Combat;
 using Stilargo.Core.Fortification;
 using Stilargo.Core.Hud;
+using Stilargo.Core.Income;
 using Stilargo.Gameplay.Combat;
 using Stilargo.Gameplay.Composition;
 using Stilargo.Gameplay.World;
@@ -12,8 +13,8 @@ using UnityEngine;
 namespace Stilargo.Gameplay.Fortification
 {
     /// <summary>
-    /// Wires claim and fortify: the player claims the building the squad is garrisoned in, then spends money on
-    /// fortifications from <c>Fortification.json</c>. List it after <see cref="WorldInstaller"/> (wallet, drop-off,
+    /// Wires claim, fortify and house income: the player claims buildings the squad is garrisoned in, spends money on
+    /// fortifications from <c>Fortification.json</c> and earns income per house from <c>Income.json</c>. List it after <see cref="WorldInstaller"/> (wallet, drop-off,
     /// fog) and <see cref="CoverGarrisonInstaller"/> (buildings).
     /// </summary>
     public sealed class FortificationInstaller : Installer
@@ -42,13 +43,23 @@ namespace Stilargo.Gameplay.Fortification
             FortificationSettings settings = context.Config.Fortifications;
             var layout = new FortificationSlotLayout(_world.CityLayout.CellSize);
             Claim = new HouseClaim(settings, layout, _world.ScavengingArea.DropOff);
-            var shop = new FortificationShop(Claim, _world.Wallet, settings.Definitions);
+            var shop = new FortificationShop(_world.Wallet, settings.Definitions);
 
             IReadOnlyList<ICombatTarget> enemies = _enemies.Cast<ICombatTarget>().ToList();
             _turretBattery.Construct(Claim, enemies, _world.VisibilityGrid);
             _tracerView.Construct(_turretBattery);
             _fortificationView.Construct(Claim);
-            FortifyMenu = new FortifyMenu(Claim, shop, new ClaimCandidatePicker(_garrisons.Garrisons.Buildings));
+
+            var target = new ClaimTarget(Claim, new ClaimCandidatePicker(_garrisons.Garrisons.Buildings));
+            FortifyMenu = new FortifyMenu(target, shop, CreateUpkeepMenu(target, context.Config.HouseIncome));
+        }
+
+        // The ticker is added here rather than in the scene, so the scene needs no regenerating for it.
+        private UpkeepMenu CreateUpkeepMenu(ClaimTarget target, HouseIncomeSettings incomeSettings)
+        {
+            var income = new HouseIncome(Claim, incomeSettings, _world.Wallet);
+            gameObject.AddComponent<HouseIncomeTicker>().Construct(income);
+            return new UpkeepMenu(target, income, new HouseRepair(incomeSettings, _world.Wallet));
         }
 
         private void ValidateReferences()

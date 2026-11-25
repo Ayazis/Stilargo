@@ -1,18 +1,18 @@
 using System;
 using System.Collections.Generic;
 using Stilargo.Core.Fortification;
-using Stilargo.Core.Garrison;
 
 namespace Stilargo.Core.Hud
 {
     /// <summary>
-    /// What the claim-and-fortify menu shows and does. Before a house is claimed it offers the claim; afterwards
-    /// it lists the shop's fortifications and says why a purchase did or did not happen.
+    /// What the claim-and-fortify menu shows and does. It offers a claim whenever the squad stands in an unclaimed
+    /// building; once something is claimed it lists the shop's fortifications for the selected house and says why a
+    /// purchase did or did not happen.
     /// </summary>
     public sealed class FortifyMenu
     {
         public const string ClaimHint = "Garrison units in a building to claim it.";
-        public const string ClaimLabel = "Claim the house your units are in";
+        public const string ClaimLabel = "Claim the building your units are in";
 
         private static readonly IReadOnlyDictionary<PurchaseResult, string> ResultMessages = new Dictionary<PurchaseResult, string>
         {
@@ -23,34 +23,36 @@ namespace Stilargo.Core.Hud
             { PurchaseResult.CannotAfford, "Not enough money." },
         };
 
-        private readonly HouseClaim _claim;
+        private readonly ClaimTarget _target;
         private readonly FortificationShop _shop;
-        private readonly ClaimCandidatePicker _picker;
 
-        public FortifyMenu(HouseClaim claim, FortificationShop shop, ClaimCandidatePicker picker)
+        public FortifyMenu(ClaimTarget target, FortificationShop shop, UpkeepMenu upkeep)
         {
-            _claim = claim ?? throw new ArgumentNullException(nameof(claim));
+            _target = target ?? throw new ArgumentNullException(nameof(target));
             _shop = shop ?? throw new ArgumentNullException(nameof(shop));
-            _picker = picker ?? throw new ArgumentNullException(nameof(picker));
+            Upkeep = upkeep ?? throw new ArgumentNullException(nameof(upkeep));
         }
 
-        public bool IsClaimed => _claim.IsClaimed;
+        public UpkeepMenu Upkeep { get; }
 
-        /// <summary>True when some building holds garrisoned units, so claiming would work now.</summary>
-        public bool CanClaim => !_claim.IsClaimed && _picker.TryPick(out _);
+        public bool IsClaimed => _target.IsAnyClaimed;
+
+        /// <summary>True when the squad is garrisoned in an unclaimed building, so claiming would work now.</summary>
+        public bool CanClaim => _target.CanClaim;
 
         public int OfferCount => _shop.Catalogue.Count;
 
         public string HouseHealthText()
         {
-            RequireClaimedHouse();
-            return HudText.HouseHealth(_claim.House.CurrentHealth, _claim.House.MaxHealth);
+            ClaimedHouse house = RequireSelectedHouse();
+            string houseName = _target.IsSelectedTheBase ? HudText.BaseName : HudText.HouseName;
+            return HudText.HouseHealth(houseName, house.CurrentHealth, house.MaxHealth);
         }
 
-        /// <summary>Claims the building holding the most garrisoned units; false when there is none or one is already claimed.</summary>
+        /// <summary>Claims the building holding the most garrisoned units; false when there is none or it is already claimed.</summary>
         public bool TryClaim()
         {
-            return _picker.TryPick(out GarrisonBuilding building) && _claim.TryClaim(building);
+            return _target.TryClaim();
         }
 
         public string OfferLabel(int index)
@@ -61,13 +63,13 @@ namespace Stilargo.Core.Hud
 
         public bool IsOfferAvailable(int index)
         {
-            return _shop.Check(OfferAt(index)) == PurchaseResult.Built;
+            return _shop.Check(_target.SelectedHouse, OfferAt(index)) == PurchaseResult.Built;
         }
 
-        /// <summary>Buys the offer and returns a message for the player.</summary>
+        /// <summary>Buys the offer for the selected house and returns a message for the player.</summary>
         public string Buy(int index)
         {
-            return ResultMessages[_shop.TryBuy(OfferAt(index))];
+            return ResultMessages[_shop.TryBuy(_target.SelectedHouse, OfferAt(index))];
         }
 
         private FortificationDefinition OfferAt(int index)
@@ -80,12 +82,15 @@ namespace Stilargo.Core.Hud
             return _shop.Catalogue[index];
         }
 
-        private void RequireClaimedHouse()
+        private ClaimedHouse RequireSelectedHouse()
         {
-            if (!_claim.IsClaimed)
+            ClaimedHouse house = _target.SelectedHouse;
+            if (house == null)
             {
                 throw new InvalidOperationException("No house is claimed yet.");
             }
+
+            return house;
         }
     }
 }

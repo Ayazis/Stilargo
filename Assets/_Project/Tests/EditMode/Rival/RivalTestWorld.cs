@@ -35,7 +35,7 @@ namespace Stilargo.Tests.EditMode.Rival
             Cache = new LootCache(new WorldPoint(CachePosition.X, CachePosition.Z), CacheValue);
             RivalWallet = new Wallet();
             var scavenging = new ScavengingArea(new[] { Cache }, new DropOff(new WorldPoint(Base.X, Base.Z), RivalWallet), 1f);
-            Hill = new HillControl(new HillZone(HillCenter, HillRadius), new HillSettings(HillCenter.X, HillCenter.Z, HillRadius), new Wallet());
+            Hill = new HillControl(new HillZone(HillCenter, HillRadius), new HillSettings(HillCenter.X, HillCenter.Z, HillRadius));
             Claim = FortificationTestHouse.CreateClaim(FortificationTestHouse.CreateDropOff());
             Settings = new RivalSettings().WithStrategyTimes(ScavengeSeconds, ContestSeconds, RaidSeconds).WithArrivalTolerance(0.5f);
             World = new RivalWorld(new RivalSquad(Units, Base), new RivalSurroundings(Hill, Claim, scavenging), Settings);

@@ -8,12 +8,14 @@ using Stilargo.Core.Garrison;
 namespace Stilargo.Core.Fortification
 {
     /// <summary>
-    /// The player's base: a claimed building with fortification slots and its own hit points. Enemies can
-    /// shoot it like a unit; losing it is the step-10 lose condition. Fortifications only add strength, so the
+    /// A claimed building with fortification slots, its own hit points and an upkeep condition. Enemies can
+    /// shoot it like a unit; losing the base is the step-10 lose condition. Fortifications only add strength, so the
     /// house has no cover protection of its own.
     /// </summary>
     public sealed class ClaimedHouse : ICombatTarget
     {
+        public const float FullCondition = 1f;
+
         private readonly List<FortificationSlot> _slots;
 
         public ClaimedHouse(GarrisonBuilding building, IReadOnlyList<FortificationSlot> slots, float baseHealthPoints)
@@ -60,6 +62,21 @@ namespace Stilargo.Core.Fortification
 
         public CombatProtection Protection => CombatProtection.None;
 
+        /// <summary>Upkeep from 1 (well kept) down to 0 (run down). It wears over time and is repaired with money.</summary>
+        public float Condition { get; private set; } = FullCondition;
+
+        /// <summary>How well the house is kept, 0 to 1: both worn condition and battle damage lower it.</summary>
+        public float Maintenance => Condition * HealthFraction;
+
+        /// <summary>Share of the fortification slots that hold a fortification, 0 to 1.</summary>
+        public float FortifiedFraction => FractionOf(_slots.Count(slot => slot.IsFilled), _slots.Count);
+
+        /// <summary>Share of the building's garrison slots that hold a unit, 0 to 1.</summary>
+        public float OccupiedFraction => FractionOf(Building.Slots.Count(slot => slot.IsOccupied), Building.Slots.Count);
+
+        /// <summary>Floor area in cells: footprint times storeys, so bigger and taller buildings count for more.</summary>
+        public int FloorCells => Building.Plot.Area.Width * Building.Plot.Area.Height * Building.Plot.Storeys;
+
         public bool TryFindFreeSlot(FortificationSlotKind kind, out FortificationSlot slot)
         {
             slot = _slots.FirstOrDefault(candidate => candidate.Kind == kind && !candidate.IsFilled);
@@ -85,6 +102,22 @@ namespace Stilargo.Core.Fortification
             }
         }
 
+        /// <summary>Lowers the condition by <paramref name="amount"/>; it never drops below zero.</summary>
+        public void Wear(float amount)
+        {
+            if (float.IsNaN(amount) || amount < 0f)
+            {
+                throw new ArgumentOutOfRangeException(nameof(amount), amount, "Wear must be a non-negative number.");
+            }
+
+            Condition = Math.Max(0f, Condition - amount);
+        }
+
+        internal void RestoreCondition()
+        {
+            Condition = FullCondition;
+        }
+
         /// <summary>Builds into the slot and adds its health bonus to both maximum and current health.</summary>
         internal void Build(FortificationSlot slot, FortificationDefinition fortification)
         {
@@ -102,6 +135,11 @@ namespace Stilargo.Core.Fortification
             MaxHealth += fortification.HealthBonusPoints;
             CurrentHealth += fortification.HealthBonusPoints;
             FortificationBuilt?.Invoke(slot);
+        }
+
+        private static float FractionOf(int part, int whole)
+        {
+            return whole == 0 ? 0f : part / (float)whole;
         }
     }
 }
