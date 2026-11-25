@@ -245,3 +245,6 @@ Add a `WorldInstaller` (`Stilargo.Gameplay.World`) to the scene, or as a prefab,
 - The hill no longer pays: `HillControl` lost its wallet argument, `incomeMoneyPerSecond` is gone from `Hill.json`.
 - `FortificationShop.TryBuy/Check` now take the house. `FortifyMenu` takes `ClaimTarget`, shop and `UpkeepMenu`; the fortify panel shows income, condition and a repair button.
 - No scene change: `FortificationInstaller` adds a `HouseIncomeTicker` component at runtime.
+
+**@FL: Unity-written settings changes committed too**
+Opening the project in Unity 6000.6.10f1 (batch test/build) rewrote `GraphicsSettings`, `QualitySettings`, `ProjectAuditorSettings`, `HdrpPipeline.asset`, `HDRenderPipelineGlobalSettings.asset` and added `HDRPProjectSettings.asset`. Not hand-edited; committed so the project stays consistent.
