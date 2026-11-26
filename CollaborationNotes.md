@@ -337,3 +337,13 @@ Opening the project in Unity 6000.6.10f1 (batch test/build) rewrote `GraphicsSet
 - `Town.json` has new sections `streets`, `neighbourhoods`, `streetLife` and `houseBlock.cornerExtraStoreys` (`StreetsEntry`, `NeighbourhoodsEntry`, `StreetLifeEntry`).
 - `CityLayout.Blocks` is no longer one block per grid cell (merged and alley-split outskirts), so don't index it by grid position.
 - No scene/prefab change. Core and EditMode tests were compiled and run outside Unity (739 green); Gameplay/Infrastructure still need a Unity compile and exe build.
+
+### 2026-11-26 Â· FL via Claude (canal-town building models, branch `ccr-3bace2de-nutzy1`)
+
+**@Ci: eight Blender-built buildings from `docs/CanalTownArtList.md` (#1, #3â€“#9)**
+- `Tools/Art/canal_kit.py` is a shared building kit (blocks of storeys, openings, hip/gable tiled roofs, chimneys, props), generalised from `build_house_1.py`. One short script per building: `build_row_house.py`, `build_townhouse.py`, `build_detached_home.py`, `build_farmhouse.py`, `build_workshop.py`, `build_church.py`, `build_school.py`, `build_tavern.py`.
+- FBX in `Art/Models/<Name>/`, .blend in `Tools/Art/Blend/`. `Stilargo â†’ Build Canal Town Prefabs` (`Editor/World/CanalTownModelAssets`) makes `World/<Name>/<Name>.prefab` with HDRP materials; its material map must match `MATERIALS` in `canal_kit.py`.
+- Water pieces (#10–14): `build_quay.py` (`QuayWall`, `QuaySteps`: tileable 8 m segments, paving at z = 0, water 1.2 m below), `build_bridge.py` (`Bridge`: 10 m span, 4 m deck, 14 m long), `build_pond.py` (`PondEdge`, `PondCorner`, `Reeds`, `LilyPads`), `build_rowing_boat.py` (`RowingBoat`). The flat ground means the canal would need to be sunk 1.2 m to use the quays as-is.
+- Squares (#15–19): `build_fountain.py` (`Fountain`, `Well`), `build_square_props.py` (`SquareInlay`, `ChurchForecourt`, `StoneBench`, `Planter`, `CafeTerrace`), `build_market.py` (`MarketStall`, `MarketHall`). Multi-model scripts take `-- --piece <Name>` to rebuild one.
+- Green, countryside and street (#20–32): `build_trees.py` (plane, umbrella pine, willow, three fruit trees, shrub), `build_garden_props.py` (gazebo, monument, hedge, garden wall, vegetable bed, washing line, farm cart, haystack, woodpile), `build_countryside.py` (wheat and vegetable patches, wildflowers, rocks, sheep, fence, milestone, wayside shrine, town sign), `build_street_props.py` (lamp, bench, crates, barrels, planter, handcart). 57 prefabs in total.
+- Fixed sizes for now; `CitySpawner` doesn't place them yet (it still uses procedural boxes). No scene, prefab-YAML or settings change.
