@@ -59,7 +59,8 @@ namespace Stilargo.Gameplay.World
         {
             CityLayout generated = new CityGenerator(_seed, _cityConfig.ToConfig(), town).Generate();
             CityLayout = new PlotUsePlanner(district).Plan(generated, _seed);
-            _citySpawner.Construct(CityLayout);
+            List<StreetProp> streetProps = new StreetFurniturePlanner(town.StreetLife).Plan(CityLayout, _seed);
+            _citySpawner.Construct(CityLayout, streetProps);
         }
 
         // The fog grid shares the city's cells so a revealed cell lines up with a street or plot. Buildings block its view.

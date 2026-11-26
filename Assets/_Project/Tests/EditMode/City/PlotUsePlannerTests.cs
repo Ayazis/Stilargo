@@ -73,15 +73,24 @@ namespace Stilargo.Tests.EditMode.City
         }
 
         [Test]
-        public void Plan_LeavesTheMarketSquareAndParkBlocksAlone()
+        public void Plan_LeavesEveryOpenPlotAlone()
         {
             CityLayout generated = Generate();
 
             CityLayout city = new PlotUsePlanner(new DistrictSettings()).Plan(generated, Seed);
 
-            CollectionAssert.AreEqual(
-                generated.Plots.Where(plot => plot.Use != PlotUse.House).Select(plot => plot.Area),
-                city.Plots.Where(plot => plot.Use == PlotUse.Market || plot.Use == PlotUse.Park).Select(plot => plot.Area));
+            Assert.AreEqual(generated.Plots.Count, city.Plots.Count);
+            for (int index = 0; index < generated.Plots.Count; index++)
+            {
+                Plot before = generated.Plots[index];
+                if (before.Use == PlotUse.House)
+                {
+                    continue;
+                }
+
+                Assert.AreEqual(before.Area, city.Plots[index].Area);
+                Assert.AreEqual(before.Use, city.Plots[index].Use);
+            }
         }
 
         [Test]

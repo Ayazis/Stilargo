@@ -5,6 +5,27 @@
         "minFrontageCells": 3,
         "maxFrontageCells": 5,
         "minStoreys": 3,
-        "maxStoreys": 4
+        "maxStoreys": 4,
+        "cornerExtraStoreys": 1
+    },
+    "streets": {
+        "mergedBlockPairs": 3,
+        "alleyChance": 0.5,
+        "alleyWidthCells": 1
+    },
+    "neighbourhoods": {
+        "plazaCount": 1,
+        "oldTownWeight": 3,
+        "villasWeight": 2,
+        "workshopsWeight": 1,
+        "villaGardenShare": 0.4,
+        "workshopYardShare": 0.35,
+        "villaStoreys": 2,
+        "workshopStoreys": 1
+    },
+    "streetLife": {
+        "lampSpacingCells": 7,
+        "treeSpacingCells": 3,
+        "clutterChance": 0.12
     }
 }

@@ -14,13 +14,14 @@ namespace Stilargo.Infrastructure.Config
         [SerializeField] private int maxFrontageCells = RowHouseSettings.DefaultMaxFrontageCells;
         [SerializeField] private int minStoreys = RowHouseSettings.DefaultMinStoreys;
         [SerializeField] private int maxStoreys = RowHouseSettings.DefaultMaxStoreys;
+        [SerializeField] private int cornerExtraStoreys = RowHouseSettings.DefaultCornerExtraStoreys;
 
         public RowHouseSettings ToSettings()
         {
             return new RowHouseSettings(
                 rowDepthCells,
                 new IntRange(minFrontageCells, maxFrontageCells),
-                new IntRange(minStoreys, maxStoreys));
+                new IntRange(minStoreys, maxStoreys)).WithCornerExtraStoreys(cornerExtraStoreys);
         }
     }
 }

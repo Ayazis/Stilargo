@@ -13,6 +13,9 @@ namespace Stilargo.Infrastructure.Config
         // JsonUtility maps field names to JSON keys, so these fields are named like the keys instead of _camelCase.
         [SerializeField] private int parkBlocks = TownSettings.DefaultParkBlockCount;
         [SerializeField] private RowHouseEntry houseBlock = new RowHouseEntry();
+        [SerializeField] private StreetsEntry streets = new StreetsEntry();
+        [SerializeField] private NeighbourhoodsEntry neighbourhoods = new NeighbourhoodsEntry();
+        [SerializeField] private StreetLifeEntry streetLife = new StreetLifeEntry();
 
         public static TownSettings Load()
         {
@@ -23,7 +26,10 @@ namespace Stilargo.Infrastructure.Config
         {
             try
             {
-                return new TownSettings(parkBlocks, houseBlock.ToSettings());
+                return new TownSettings(parkBlocks, houseBlock.ToSettings())
+                    .WithStreets(streets.ToSettings())
+                    .WithNeighbourhoods(neighbourhoods.ToSettings())
+                    .WithStreetLife(streetLife.ToSettings());
             }
             catch (ArgumentException exception)
             {

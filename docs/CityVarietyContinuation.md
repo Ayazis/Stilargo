@@ -9,6 +9,14 @@ irregular streets, varied districts, varied buildings and street life.
   (`TownPlan`, `HouseBlockLayout`, `MarketDressing`, `Config/Town.json`, `PlotPlacement.FacingSquare`).
 - City is 5×5 blocks (`World/CityConfig.asset`). Logged in `CollaborationNotes.md`.
 
+## Second pass (wired up)
+
+Steps 1–4 below are done: dressings registered, street props spawned before the NavMesh bake, `Town.json`
+sections added, tests written (`StreetShaperTests`, `NeighbourhoodTests`, `StreetFurniturePlannerTests`) and the
+old tests updated. Core + EditMode tests pass outside Unity; Gameplay/Infrastructure have not been compiled yet.
+
+Remaining: open in Unity, fix any compile errors, build the exe and judge the look (step 5).
+
 ## Written but NOT compiled, wired or tested yet (WIP commit)
 
 The code may not compile yet. Run the EditMode tests first.

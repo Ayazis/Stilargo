@@ -8,7 +8,8 @@ namespace Stilargo.Gameplay.City
 {
     /// <summary>
     /// Turns a <see cref="CityLayout"/> into buildings (plaster walls, tiled hip roofs, facade kit pieces) and the
-    /// city's landmarks (church, school, taverns, parks, a fountain square), then bakes the NavMesh over it.
+    /// city's landmarks (church, school, taverns, parks, a fountain square), plazas, gardens, yards and street
+    /// life (lamps, trees, clutter), then bakes the NavMesh over it.
     /// </summary>
     [RequireComponent(typeof(NavMeshSurface))]
     public sealed class CitySpawner : MonoBehaviour
@@ -59,11 +60,11 @@ namespace Stilargo.Gameplay.City
             }
         }
 
-        public void Construct(CityLayout layout)
+        public void Construct(CityLayout layout, IReadOnlyList<StreetProp> streetProps)
         {
-            if (layout == null)
+            if (layout == null || streetProps == null)
             {
-                throw new ArgumentNullException(nameof(layout));
+                throw new ArgumentNullException(layout == null ? nameof(layout) : nameof(streetProps));
             }
 
             RequireAssets();
@@ -84,6 +85,7 @@ namespace Stilargo.Gameplay.City
                 SpawnPlot(plot, DressingFor(plot), layout.CellSize);
             }
 
+            SpawnStreetProps(streetProps, layout.CellSize);
             SpawnShowcaseHouse(layout);
             _navMeshSurface.BuildNavMesh();
 
@@ -103,6 +105,9 @@ namespace Stilargo.Gameplay.City
                 { PlotUse.Park, new ParkDressing(_landmarkMaterials) },
                 { PlotUse.Water, new WaterDressing(_landmarkMaterials) },
                 { PlotUse.Market, new MarketDressing(_landmarkMaterials) },
+                { PlotUse.Plaza, new PlazaDressing(_landmarkMaterials) },
+                { PlotUse.Garden, new GardenDressing(_landmarkMaterials) },
+                { PlotUse.Yard, new YardDressing(_landmarkMaterials) },
             };
         }
 
@@ -145,6 +150,15 @@ namespace Stilargo.Gameplay.City
             Vector3 position = new Vector3(width * Half, -_groundThickness * Half, depth * Half);
             GameObject ground = Instantiate(_groundPrefab, position, Quaternion.identity, transform);
             ground.transform.localScale = new Vector3(width, _groundThickness, depth);
+        }
+
+        private void SpawnStreetProps(IReadOnlyList<StreetProp> streetProps, float cellSize)
+        {
+            var builder = new StreetPropBuilder(_landmarkMaterials);
+            foreach (StreetProp prop in streetProps)
+            {
+                builder.Build(prop, cellSize, _props);
+            }
         }
 
         // The concept-art showcase house (built in Blender by a script under Tools/Art) stands outside the city on its own patch of cobbles.

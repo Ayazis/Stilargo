@@ -328,3 +328,12 @@ Opening the project in Unity 6000.6.10f1 (batch test/build) rewrote `GraphicsSet
 - `Stilargo.Gameplay.asmdef` now references `Unity.RenderPipelines.HighDefinition.Runtime`.
 - SSGI turned back off (flicker, black alleys).
 - Fog decal material gets its color map enabled through a 1×1 placeholder texture (`World/FogDecalPlaceholder.asset`).
+
+### 2026-11-26 · Ci via Claude (city variety wired up, on top of `feature/game-feel-city`)
+
+**@FL: finished the WIP city variety from `docs/CityVarietyContinuation.md`; contracts changed**
+- New `PlotUse`s: `Plaza`, `Garden`, `Yard`. `Plot.HasBuilding` is true only for House/Church/School/Tavern. The house-block courtyard is now a `Garden` plot.
+- `CitySpawner.Construct(layout, streetProps)` takes the props from `StreetFurniturePlanner`; `WorldInstaller.InstallCity` plans them. Plaza/Garden/Yard dressings are registered.
+- `Town.json` has new sections `streets`, `neighbourhoods`, `streetLife` and `houseBlock.cornerExtraStoreys` (`StreetsEntry`, `NeighbourhoodsEntry`, `StreetLifeEntry`).
+- `CityLayout.Blocks` is no longer one block per grid cell (merged and alley-split outskirts), so don't index it by grid position.
+- No scene/prefab change. Core and EditMode tests were compiled and run outside Unity (739 green); Gameplay/Infrastructure still need a Unity compile and exe build.
