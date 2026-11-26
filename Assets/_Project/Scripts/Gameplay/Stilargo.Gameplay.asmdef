@@ -1,6 +1,6 @@
 {
     "name": "Stilargo.Gameplay",
     "rootNamespace": "Stilargo.Gameplay",
-    "references": ["Stilargo.Core", "Unity.AI.Navigation"],
+    "references": ["Stilargo.Core", "Unity.AI.Navigation", "Unity.RenderPipelines.HighDefinition.Runtime"],
     "autoReferenced": true
 }

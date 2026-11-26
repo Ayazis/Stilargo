@@ -54,7 +54,8 @@ namespace Stilargo.Core.Camera
 
         private Vector2 PanDirection(IPlayerInput input, ScreenSize screen)
         {
-            Vector2 combined = input.PanAxis + _edgeScroll.DirectionFor(input.PointerScreenPosition, screen);
+            Vector2 edge = input.IsEdgeScrollEnabled ? _edgeScroll.DirectionFor(input.PointerScreenPosition, screen) : Vector2.Zero;
+            Vector2 combined = input.PanAxis + edge;
             float length = combined.Length();
 
             // Diagonals and keyboard plus edge scroll together must not pan faster than one key.

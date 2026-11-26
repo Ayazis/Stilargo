@@ -24,9 +24,17 @@ namespace Stilargo.Tests.EditMode.Fortification
             return buildings.Single(building => building.Plot == GarrisonTestCity.StreetPlot);
         }
 
+        public static HouseLedger CreateLedger()
+        {
+            return new HouseLedger(Settings, new FortificationSlotLayout(GarrisonTestCity.CellSize));
+        }
+
+        /// <summary>A Blue claim on its own ledger whose base keeps the drop-off at its entrance.</summary>
         public static HouseClaim CreateClaim(DropOff dropOff)
         {
-            return new HouseClaim(Settings, new FortificationSlotLayout(GarrisonTestCity.CellSize), dropOff);
+            var claim = new HouseClaim(Team.Blue, CreateLedger());
+            new BaseDropOff(claim, dropOff);
+            return claim;
         }
 
         public static DropOff CreateDropOff()

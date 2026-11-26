@@ -1,0 +1,6 @@
+{
+    "church": { "count": 1, "storeys": 2, "towerStoreys": 6, "incomeMultiplier": 1.2 },
+    "school": { "count": 1, "storeys": 2, "towerStoreys": 0, "incomeMultiplier": 1.4 },
+    "tavern": { "count": 2, "storeys": 0, "towerStoreys": 0, "incomeMultiplier": 1.8 },
+    "water": { "count": 1, "storeys": 0, "towerStoreys": 0, "incomeMultiplier": 1 }
+}

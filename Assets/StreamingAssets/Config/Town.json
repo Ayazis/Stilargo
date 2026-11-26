@@ -1,0 +1,10 @@
+{
+    "parkBlocks": 2,
+    "houseBlock": {
+        "rowDepthCells": 4,
+        "minFrontageCells": 3,
+        "maxFrontageCells": 5,
+        "minStoreys": 3,
+        "maxStoreys": 4
+    }
+}

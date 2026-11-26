@@ -39,6 +39,9 @@ namespace Stilargo.Infrastructure.Input
         private const float UniformScrollUnitsPerNotch = 1f;
         private const float WindowsRawScrollUnitsPerNotch = 120f;
 
+        // A right-click that moves less than this is an order; further, it orbits the camera (right-mouse presets).
+        private const float RightDragThresholdPixels = 6f;
+
         private readonly InputActionMap _actionMap;
         private readonly InputAction _pan;
         private readonly InputAction _zoom;
@@ -55,11 +58,15 @@ namespace Stilargo.Infrastructure.Input
         private readonly InputAction _holdStance;
         private readonly InputAction _pauseMenu;
         private readonly float _scrollUnitsPerNotch;
+        private readonly CameraControlChoice _controls;
+        private readonly DragOrClick _rightButton = new DragOrClick(RightDragThresholdPixels);
+        private int _rightButtonFrame = -1;
 
         private bool _isDisposed;
 
-        public InputSystemPlayerInput()
+        public InputSystemPlayerInput(CameraControlChoice controls)
         {
+            _controls = controls ?? throw new ArgumentNullException(nameof(controls));
             _actionMap = new InputActionMap(ActionMapName);
             _pan = CreatePanAction(_actionMap);
             _zoom = _actionMap.AddAction(ZoomActionName, InputActionType.Value, InputBindingPaths.MouseScrollY, expectedControlLayout: AxisControlType);
@@ -88,7 +95,9 @@ namespace Stilargo.Infrastructure.Input
 
         public float TurnAxis => _turn.ReadValue<float>();
 
-        public bool IsOrbitDragHeld => _orbitDrag.IsPressed();
+        public bool IsOrbitDragHeld => IsRightMouseOrbit ? RightButton().IsDragging : _orbitDrag.IsPressed();
+
+        public bool IsEdgeScrollEnabled => _controls.Current.UsesEdgeScroll;
 
         public bool WasSelectPressedThisFrame => _select.WasPressedThisFrame();
 
@@ -96,7 +105,10 @@ namespace Stilargo.Infrastructure.Input
 
         public bool WasSelectReleasedThisFrame => _select.WasReleasedThisFrame();
 
-        public bool WasCommandPressedThisFrame => _command.WasPressedThisFrame();
+        // With right-mouse orbit an order waits for the release, because only then is it clear the press was no drag.
+        public bool WasCommandPressedThisFrame => IsRightMouseOrbit ? RightButton().WasClicked : _command.WasPressedThisFrame();
+
+        private bool IsRightMouseOrbit => _controls.Current.OrbitButton == OrbitButton.Right;
 
         public bool IsQueueModifierHeld => _queueModifier.IsPressed();
 
@@ -188,6 +200,18 @@ namespace Stilargo.Infrastructure.Input
             }
 
             return UniformScrollUnitsPerNotch;
+        }
+
+        // Updated at most once per frame, on first use, so every reader in that frame sees the same state.
+        private DragOrClick RightButton()
+        {
+            if (_rightButtonFrame != Time.frameCount)
+            {
+                _rightButtonFrame = Time.frameCount;
+                _rightButton.Update(_command.IsPressed(), ToNumerics(_pointer.ReadValue<UnityVector2>()));
+            }
+
+            return _rightButton;
         }
 
         private static NumericsVector2 ToNumerics(UnityVector2 value)

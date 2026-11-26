@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
+using Stilargo.Core.Audio;
 using Stilargo.Core.Hud;
 using Stilargo.Core.Input;
+using Stilargo.Gameplay.Combat;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -26,6 +29,7 @@ namespace Stilargo.UI.Hud
         private FortifyPanel _fortifyPanel;
         private PauseMenu _pauseMenu;
         private PauseMenuPanel _pauseMenuPanel;
+        private HealthBarOverlay _healthBars;
         private int _shownBalance = -1;
         private int _shownHillSeconds = -1;
 
@@ -59,6 +63,46 @@ namespace Stilargo.UI.Hud
             BuildWidgets();
         }
 
+        /// <summary>Draws a health bar over every unit in <paramref name="sources"/>. Call once, after <see cref="Construct"/>.</summary>
+        public void ShowHealthBars(IReadOnlyList<HealthBarSource> sources, UnityEngine.Camera camera)
+        {
+            if (_root == null)
+            {
+                throw new InvalidOperationException($"Construct {nameof(HudView)} before showing health bars.");
+            }
+
+            if (_healthBars != null)
+            {
+                throw new InvalidOperationException($"{nameof(HudView)} already shows health bars.");
+            }
+
+            // Inserted first so every panel draws on top of the bars.
+            _healthBars = new HealthBarOverlay(sources, camera);
+            _root.Insert(0, _healthBars);
+        }
+
+        /// <summary>Every HUD button, pause menu included, ticks when clicked. Call once, after <see cref="Construct"/>.</summary>
+        public void UseClickSound(ISoundPlayer sounds)
+        {
+            if (_root == null)
+            {
+                throw new InvalidOperationException($"Construct {nameof(HudView)} before giving it sounds.");
+            }
+
+            if (sounds == null)
+            {
+                throw new ArgumentNullException(nameof(sounds));
+            }
+
+            _root.RegisterCallback<ClickEvent>(click =>
+            {
+                if (click.target is Button)
+                {
+                    sounds.Play(SoundCue.UiClick);
+                }
+            });
+        }
+
         private void Update()
         {
             if (_root == null)
@@ -72,6 +116,11 @@ namespace Stilargo.UI.Hud
             }
 
             _pauseMenuPanel.Refresh();
+            if (_healthBars != null)
+            {
+                _healthBars.Refresh();
+            }
+
             RefreshMoney();
             RefreshHill();
             _stanceBar.Refresh();
@@ -108,7 +157,12 @@ namespace Stilargo.UI.Hud
             _stanceBar = AddPanelWith(column, new StanceBar(_content.StanceMenu));
             _fortifyPanel = AddPanelWith(column, new FortifyPanel(_content.FortifyMenu));
             _root.Add(column);
-            _pauseMenuPanel = new PauseMenuPanel(_pauseMenu);
+            if (_content.Options == null)
+            {
+                throw new InvalidOperationException($"{nameof(HudView)} needs the play options in its content.");
+            }
+
+            _pauseMenuPanel = new PauseMenuPanel(_pauseMenu, _content.Options);
             _root.Add(_pauseMenuPanel);
         }
 

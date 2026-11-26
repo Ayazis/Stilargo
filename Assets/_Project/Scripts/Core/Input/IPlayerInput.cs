@@ -25,6 +25,9 @@ namespace Stilargo.Core.Input
         /// <summary>True while the button that turns and tilts the camera by dragging is held.</summary>
         bool IsOrbitDragHeld { get; }
 
+        /// <summary>False when the chosen camera preset turns off panning at the screen edge.</summary>
+        bool IsEdgeScrollEnabled { get; }
+
         bool WasSelectPressedThisFrame { get; }
 
         bool IsSelectHeld { get; }

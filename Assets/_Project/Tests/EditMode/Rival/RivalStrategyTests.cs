@@ -1,5 +1,8 @@
 using System.Numerics;
 using NUnit.Framework;
+using Stilargo.Core.Economy;
+using Stilargo.Core.Fortification;
+using Stilargo.Core.Income;
 using Stilargo.Core.Rival;
 
 namespace Stilargo.Tests.EditMode.Rival
@@ -170,14 +173,95 @@ namespace Stilargo.Tests.EditMode.Rival
         }
 
         [Test]
-        public void Raid_HouseDestroyed_ReturnsToTheHill()
+        public void Raid_HouseDestroyed_ConfiscatesIt()
         {
-            _test.ClaimHouse();
+            ClaimedHouse house = _test.ClaimHouse();
             IRivalStrategy raid = _test.Strategies.RaidHouse;
             raid.Enter(_test.World);
-            _test.Claim.House.TakeDamage(_test.Claim.House.MaxHealth);
+            house.TakeDamage(house.MaxHealth);
 
-            Assert.AreSame(_test.Strategies.ContestHill, raid.Tick(_test.World, _test.Strategies, 0.1f));
+            Assert.AreSame(_test.Strategies.ConfiscateHouse, raid.Tick(_test.World, _test.Strategies, 0.1f));
+        }
+
+        [Test]
+        public void Raid_HouseTakenByPlayerAgain_StaysOnIt()
+        {
+            ClaimedHouse house = _test.ClaimHouse();
+            IRivalStrategy raid = _test.Strategies.RaidHouse;
+            raid.Enter(_test.World);
+
+            Assert.AreSame(raid, raid.Tick(_test.World, _test.Strategies, 0.1f));
+            Assert.AreEqual(house.Position, _test.Units[0].FakeOrders.LastTarget);
+        }
+
+        [Test]
+        public void Contest_TimeUpWithOnlyARuin_Confiscates()
+        {
+            _test.CreateRuin();
+            IRivalStrategy contest = _test.Strategies.ContestHill;
+            contest.Enter(_test.World);
+
+            Assert.AreSame(_test.Strategies.ConfiscateHouse, contest.Tick(_test.World, _test.Strategies, RivalTestWorld.ContestSeconds));
+        }
+
+        [Test]
+        public void Confiscate_Enter_SendsUnitsToTheRuin()
+        {
+            ClaimedHouse ruin = _test.CreateRuin();
+
+            _test.Strategies.ConfiscateHouse.Enter(_test.World);
+
+            Assert.AreEqual(ruin.Position, _test.Units[0].FakeOrders.LastTarget);
+            Assert.AreEqual(ruin.Position, _test.Units[1].FakeOrders.LastTarget);
+        }
+
+        [Test]
+        public void Confiscate_UnitReachesEntrance_ClaimsForTheRivalAndReturnsToTheHill()
+        {
+            ClaimedHouse ruin = _test.CreateRuin();
+            IRivalStrategy confiscate = _test.Strategies.ConfiscateHouse;
+            confiscate.Enter(_test.World);
+            _test.Units[0].Position = ruin.Position;
+
+            Assert.AreSame(_test.Strategies.ContestHill, confiscate.Tick(_test.World, _test.Strategies, 0.1f));
+            Assert.IsTrue(ruin.IsOwnedBy(Team.Red));
+            Assert.AreSame(ruin, _test.RivalClaim.House);
+            Assert.IsFalse(_test.Claim.IsClaimed);
+        }
+
+        [Test]
+        public void Confiscate_PlayerReclaimedRuin_IsStillConfiscatable()
+        {
+            ClaimedHouse ruin = _test.CreateRuin();
+            IRivalStrategy confiscate = _test.Strategies.ConfiscateHouse;
+            confiscate.Enter(_test.World);
+            _test.Claim.TryClaim(ruin.Building);
+
+            Assert.AreSame(confiscate, confiscate.Tick(_test.World, _test.Strategies, 0.1f));
+        }
+
+        [Test]
+        public void Confiscate_PlayerRepairedItFirst_ReturnsToTheHill()
+        {
+            ClaimedHouse ruin = _test.CreateRuin();
+            IRivalStrategy confiscate = _test.Strategies.ConfiscateHouse;
+            confiscate.Enter(_test.World);
+            _test.Claim.TryClaim(ruin.Building);
+            var wallet = new Wallet();
+            wallet.Deposit(100000);
+            new HouseRepair(new HouseIncomeSettings(), wallet).TryRepair(ruin);
+
+            Assert.AreSame(_test.Strategies.ContestHill, confiscate.Tick(_test.World, _test.Strategies, 0.1f));
+        }
+
+        [Test]
+        public void Confiscate_TimeUp_ReturnsToTheHill()
+        {
+            _test.CreateRuin();
+            IRivalStrategy confiscate = _test.Strategies.ConfiscateHouse;
+            confiscate.Enter(_test.World);
+
+            Assert.AreSame(_test.Strategies.ContestHill, confiscate.Tick(_test.World, _test.Strategies, RivalTestWorld.ConfiscateSeconds));
         }
 
         [Test]

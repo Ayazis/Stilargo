@@ -50,21 +50,23 @@ namespace Stilargo.Gameplay.World
             }
 
             RequireReferences();
-            InstallCity();
+            InstallCity(context.Config.Town, context.Config.District);
             InstallFog();
             InstallScavenging(context.Config.Economy);
         }
 
-        private void InstallCity()
+        private void InstallCity(TownSettings town, DistrictSettings district)
         {
-            CityLayout = new CityGenerator(_seed, _cityConfig.ToConfig()).Generate();
+            CityLayout generated = new CityGenerator(_seed, _cityConfig.ToConfig(), town).Generate();
+            CityLayout = new PlotUsePlanner(district).Plan(generated, _seed);
             _citySpawner.Construct(CityLayout);
         }
 
-        // The fog grid shares the city's cells so a revealed cell lines up with a street or plot.
+        // The fog grid shares the city's cells so a revealed cell lines up with a street or plot. Buildings block its view.
         private void InstallFog()
         {
             VisibilityGrid = new VisibilityGrid(CityLayout.Width, CityLayout.Height, CityLayout.CellSize);
+            VisibilityGrid.UseSightBlocker(new CitySkyline(CityLayout, _citySpawner.StoreyHeightMetres));
             _fogOverlay.Construct(VisibilityGrid);
             _fogTicker.Construct(VisibilityGrid);
         }

@@ -1,4 +1,5 @@
 using System;
+using Stilargo.Core.Input;
 using Stilargo.Gameplay.Composition;
 using Stilargo.Infrastructure.Config;
 using Stilargo.Infrastructure.Input;
@@ -28,8 +29,9 @@ namespace Stilargo.Infrastructure.Composition
             ValidateInstallers();
 
             GameConfig config = GameConfigLoader.Load();
-            _playerInput = new InputSystemPlayerInput();
-            GameContext context = new GameContext(_playerInput, config);
+            var cameraControls = new CameraControlChoice();
+            _playerInput = new InputSystemPlayerInput(cameraControls);
+            GameContext context = new GameContext(_playerInput, config, cameraControls);
 
             foreach (Installer installer in _installers)
             {

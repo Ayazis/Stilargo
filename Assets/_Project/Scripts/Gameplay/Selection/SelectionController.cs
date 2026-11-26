@@ -39,6 +39,9 @@ namespace Stilargo.Gameplay.Selection
 
         public SelectionDrag Drag { get; private set; }
 
+        /// <summary>Raised for a click (not a box drag) that hit something other than a unit, with the point it hit.</summary>
+        public event Action<Vector3> WorldClicked;
+
         public void Construct(IPlayerInput input, UnityEngine.Camera camera, IReadOnlyList<ISelectable> units)
         {
             if (camera == null)
@@ -100,25 +103,20 @@ namespace Stilargo.Gameplay.Selection
                 return BoxSelection.Within(Drag.Rect, _units, _projector);
             }
 
-            ISelectable clicked = UnitUnderPointer();
-            if (clicked == null)
+            Ray ray = _camera.ScreenPointToRay(Drag.CurrentPoint.ToScreenPoint());
+            if (!Physics.Raycast(ray, out RaycastHit hit))
             {
                 return Array.Empty<ISelectable>();
             }
 
-            return new[] { clicked };
-        }
-
-        private ISelectable UnitUnderPointer()
-        {
-            Ray ray = _camera.ScreenPointToRay(Drag.CurrentPoint.ToScreenPoint());
-
-            if (!Physics.Raycast(ray, out RaycastHit hit))
+            ISelectable clicked = hit.collider.GetComponentInParent<ISelectable>();
+            if (clicked == null)
             {
-                return null;
+                WorldClicked?.Invoke(hit.point);
+                return Array.Empty<ISelectable>();
             }
 
-            return hit.collider.GetComponentInParent<ISelectable>();
+            return new[] { clicked };
         }
 
         private void ApplySelection(IReadOnlyList<ISelectable> picked)

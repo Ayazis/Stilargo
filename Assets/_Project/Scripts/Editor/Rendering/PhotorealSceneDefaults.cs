@@ -17,6 +17,8 @@ namespace Stilargo.Editor.Rendering
         // Warm late-morning Mediterranean sun: about 5000 K and roughly 100,000 lux of direct light.
         private const float SunTemperatureKelvin = 5000f;
         private const float SunIlluminanceLux = 100000f;
+        // Above HDRP's default of 0.5: crisper TAA at the cost of slight edge ringing.
+        private const float TaaSharpenStrength = 0.8f;
         private const string VolumeName = "Global Volume";
 
         public static void ConfigureCamera(Camera camera)
@@ -30,6 +32,7 @@ namespace Stilargo.Editor.Rendering
 
             data.antialiasing = HDAdditionalCameraData.AntialiasingMode.TemporalAntialiasing;
             data.TAAQuality = HDAdditionalCameraData.TAAQualityLevel.High;
+            data.taaSharpenStrength = TaaSharpenStrength;
         }
 
         public static Light CreateSun(string name)

@@ -8,6 +8,36 @@ Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handover
 
 ---
 
+### 2026-11-26 · FL (town plan: market square, house blocks, park blocks, branch `feature/game-feel-city`)
+
+**@Ci: the city is now 5×5 blocks (144 m) with a town plan.** Roads stay on the same 14-cell grid, so home (58, 58), the hill (86, 72) and the rival start are still on roads.
+- `Core/City/TownPlan`: the middle block is an open **market square** (new `PlotUse.Market`, no building; `MarketDressing` paves it and adds a fountain, trees, benches and stalls). The ring around it holds **house blocks** (`HouseBlockLayout`: 3–4 storey town houses along the streets, courtyard inside). Further out are the **outskirts** (the old recursive split, now 1–2 storeys) and **park blocks** (a whole block each).
+- **New config `Config/Town.json`** (`parkBlocks`, `houseBlock`: row depth, frontage, storeys). `GameConfig.WithTown`, `CityGenerator(seed, config, town)`; the 2-arg constructor uses defaults.
+- **`Buildings.json` lost its `park` entry** (parks come from `Town.json`). The church and taverns use the new `PlotPlacement.FacingSquare`, so they line the market square. `PlotUsePlanner` only hands out house plots.
+- `World/CityConfig.asset`: `blocksX/Y` 4 → 5, `maxStoreys` 4 → 2 (outskirts). No scene or prefab change.
+
+### 2026-11-26 · FL (camera presets, double-click garrison, no haze, fog toggle, branch `feature/game-feel-city`)
+
+**@Ci: contracts and shared settings changed.**
+- `IPlayerInput` has a new `IsEdgeScrollEnabled`; add it to any fake. `InputSystemPlayerInput(CameraControlChoice)` and `GameContext(input, config, cameraControls)` take the chosen camera preset (`Core/Input/CameraControlPreset`: middle or right mouse orbit, with or without edge scroll). With right-mouse orbit an order fires on release when the press did not drag (`Core/Input/DragOrClick`).
+- Garrisoning needs a double right-click on the building (`Core/Input/DoubleClick`, 0.4 s); a single right-click is a plain move.
+- **Volume profile changed:** atmospheric fog is off (`PhotorealRenderingSetup`, rerun `Apply Photoreal Rendering Settings`). It washed the city white when zoomed out.
+- Settings page: a camera preset button and a fog-of-war on/off button (`Core/Hud/GameOptions`, `VisibilityGrid.DisableFog/EnableFog`).
+- The ambience loop is gone (it sounded like surf and gulls); `ambienceVolume` left `Audio.json`.
+- No scene or prefab change.
+
+### 2026-11-26 · FL (health bars, sound, landmarks, line of sight, house selection, branch `feature/game-feel-city`)
+
+**@Ci: `Main` scene and `World.prefab` regenerated (regenerate, don't merge YAML); several contracts changed.** Built on top of `feature/unit-avatars` plus the uncommitted house-teams work.
+- **Combat values moved to `Config/Combat.json`** (health, weapon damage/range/cooldown/hit chance, sight per side, player move speed, corpse time). `CombatSide`, `WeaponDefinition` and `Settings/Weapons/*.asset` are deleted. Fights last about 3× longer (enemy 160 HP, soldier 250 HP).
+- **Fog has line of sight.** `IVisionSource` has a new `EyeHeightMetres`; `VisibilityGrid.UseSightBlocker(ISightBlocker)`; `Core/City/CitySkyline` blocks sight with building heights. New `Config/Vision.json`: base radius 24 m, plus 1.5 m per metre of height (rooftops, church tower). `VisionSourceComponent.Construct` now takes `VisionSettings`; `RooftopVision` wraps the unit's own sight.
+- **Landmarks:** `Plot` has `Use` (`PlotUse`: House, Church, School, Tavern, Park, Water), `TowerStoreys`, `IncomeMultiplier`, `HasBuilding`. `PlotUsePlanner` assigns them after generation from `Config/Buildings.json`; `CityLayout.WithPlots(...)` is new. Parks and water have no garrison building. Church roof slots are on the bell tower top. `HouseIncomeRate` multiplies by the plot's multiplier. `CitySpawner` dresses each use (`IPlotDressing`) and has new `_landmarkMaterials` (made by `Build World Prefab`).
+- **Houses are selectable:** `SelectionController.WorldClicked`, Core `BuildingSelection`, `ClaimTarget(claim, picker, selection)` with `FocusedBuilding`. `FortificationInstaller` has new `_combat` and `_selectionOutlineMaterial` fields; `FortificationSceneSetup.Create(world, combat, garrisons)` reads the enemies from the combat installer.
+- **Health bars** for every unit (UI Toolkit overlay, `HudView.ShowHealthBars`); enemy bars only while visible.
+- **Sound:** new `Gameplay/Audio/AudioInstaller` (between `HillRivalInstaller` and `HillHudLink`) and `Config/Audio.json`. Every sound is synthesised in `Core/Audio`; there are no audio files. `HudInstaller` has a new `_audio` field.
+- **Animation:** Mixamo clips no longer bake XZ root motion into the pose (it made the run drift ~2 m ahead and snap back). The run plays at agent speed / measured clip speed (`Editor/Units/RunClipSpeed`, ~3.5–3.8 m/s). Player and rival speed are 3.8 m/s (rival `moveSpeedMetresPerSecond` in `Hill.json` was 6). Dead soldiers fall and stay for `corpseSeconds`.
+- New material: `Greybox_BuildingOutline`, plus `World/Landmark*.mat` and `KitWater.mat`, all made through `HdrpMaterials`.
+
 ### 2026-11-25 · Ci (hill + rival AI, step 10, branch `ci/hill-rival`)
 
 **@FL: what your step 11 UI can read.** It's all on `HillRivalInstaller` (`Gameplay/Hill`, on the "Hill And Rival" object), filled in by `Install`:
@@ -268,6 +298,18 @@ Opening the project in Unity 6000.6.10f1 (batch test/build) rewrote `GraphicsSet
 - New `WasPauseMenuPressedThisFrame` (Esc). Any other `IPlayerInput` implementation must add it.
 - `Wallet.SetBalance(int)` added (settings menu). `HudView.Construct` now takes a `PauseMenu` (`Core/Hud/PauseMenu`); opening the menu sets `Time.timeScale` to 0.
 
+### 2026-11-25 · FL (house teams, branch `feature/house-teams`)
+
+**@Ci: houses now have an owner (Blue, Red or unoccupied); claim contracts changed**
+- New `Core/Fortification`: `Team` (Blue/Red), `HouseLedger` (every house ever claimed, shared by both teams; `HouseCreated` fires once per building), `BaseDropOff` (drop-off follows the base), `HouseTarget` (house as a combat target, valid only while its team owns it), `MountedTurret`.
+- `HouseClaim(Team, HouseLedger)` replaces `HouseClaim(settings, layout, dropOff)`. It is now one team's houses: new `Team`, `Lost` event and `CanClaim(building)`. A team can claim an unoccupied house or the other team's ruin, not a standing enemy house.
+- `ClaimedHouse` has `Owner`, `OwnerChanged`, `IsOwnedBy`, `IsClaimableBy`, `NeedsRepair`, `DamagedFraction`. A house at 0 HP becomes unoccupied and leaves its owner's claim, but keeps its damage and fortifications.
+- `HouseRepair` now also repairs battle damage (priced like wear) and can bring a ruin back. `RestoreCondition` is now `Restore`.
+- Lose rule: `MatchReferee` no longer watches the base. `HillMatch` calls `Referee.Review(playerUnits)` each tick, and the player loses when they own no house and have no unit alive.
+- Rival: `RivalSurroundings(hill, RivalHouses, scavenging)`. The raid targets the player's oldest standing house. New `ConfiscateHouseStrategy` claims a fallen house for Red. New `confiscateSeconds` in `Hill.json`.
+- `CombatInstaller.AddEnemyTarget(...)` lets player units shoot Red houses. `TurretBattery`/`FortificationView` now take the `HouseLedger`, and turrets only fire while their house stands and belongs to Blue.
+- No scene or prefab change.
+
 ### 2026-11-25 · FL (unit avatars and animations, branch `feature/unit-avatars`)
 
 **@Ci: units are now animated soldiers; scene regenerated**
@@ -275,3 +317,14 @@ Opening the project in Unity 6000.6.10f1 (batch test/build) rewrote `GraphicsSet
 - Editor: `Editor/Units/UnitAvatars` builds `Assets/_Project/Units/<avatar>.prefab` (HDRP/Lit materials, scaled to 1.8 m); `UnitAnimatorAsset` builds `UnitAnimator.controller`. `UnitMaterials` became `UnitLook` (avatar instead of body material); `Greybox_Unit.mat`/`Greybox_Enemy.mat` are no longer used.
 - Units keep the capsule collider (renderer removed) with the avatar as child `Avatar`. New `Gameplay/Animation/UnitAnimationView` on each unit root; `CombatInstaller` constructs it. Pose rules in `Core/Animation/UnitPosePicker` (run > crouch in cover > aim after a shot > idle), with tests.
 - `Main.unity` was regenerated with `Recreate Main Scene`; regenerate instead of merging the YAML.
+
+### 2026-11-26 · FL (graphics polish, branch `feature/game-feel-city`)
+
+**@Ci: shared rendering settings changed** (rerun `Stilargo → Apply Photoreal Rendering Settings`)
+- Pipeline: volumetric clouds supported; directional shadows use High filtering (PCSS) at 4096 (1024 on Low).
+- Volume profile: sparse volumetric clouds, shadow distance 600 m with 4 cascades, micro shadowing, stronger/wider SSAO (high), far-horizon depth of field (300–900 m), color adjustments (+8 contrast, −5 saturation), white balance +6, thin film grain. Fog stays off.
+- Camera: TAA sharpen 0.8 in `PhotorealSceneDefaults` (takes effect after `Recreate Main Scene`).
+- Fog of war is now an HDRP decal projected down onto ground and buildings (`FogOverlay` needs a `DecalProjector`, material `World/FogDecal.mat`, made by `HdrpMaterials.CreateAlbedoDecal`). Old `World/Fog.mat` removed. `World.prefab` was rebuilt; rebuild it instead of merging the YAML.
+- `Stilargo.Gameplay.asmdef` now references `Unity.RenderPipelines.HighDefinition.Runtime`.
+- SSGI turned back off (flicker, black alleys).
+- Fog decal material gets its color map enabled through a 1×1 placeholder texture (`World/FogDecalPlaceholder.asset`).

@@ -13,6 +13,10 @@ namespace Stilargo.Editor.Rendering
         public const string LitShaderName = "HDRP/Lit";
         public const string UnlitShaderName = "HDRP/Unlit";
         public const string UnlitColorMapProperty = "_UnlitColorMap";
+        public const string DecalShaderName = "HDRP/Decal";
+
+        private const string AffectNormalProperty = "_AffectNormal";
+        private const string AffectSmoothnessProperty = "_AffectSmoothness";
 
         private const string LitColorProperty = "_BaseColor";
         private const string UnlitColorProperty = "_UnlitColor";
@@ -42,10 +46,21 @@ namespace Stilargo.Editor.Rendering
             return material;
         }
 
-        public static Material CreateTransparentUnlit()
+        /// <summary>
+        /// A decal that only tints albedo, with opacity from its base color map's alpha. HDRP only samples the map
+        /// when one is assigned at validation, so pass a placeholder even if the real map is set at runtime.
+        /// </summary>
+        public static Material CreateAlbedoDecal(Texture colorMap)
         {
-            Material material = CreateUnlit(Color.white);
-            HDMaterial.SetSurfaceType(material, true);
+            if (colorMap == null)
+            {
+                throw new ArgumentNullException(nameof(colorMap));
+            }
+
+            var material = new Material(RequireShader(DecalShaderName));
+            material.SetTexture(BaseColorMapProperty, colorMap);
+            material.SetFloat(AffectNormalProperty, 0f);
+            material.SetFloat(AffectSmoothnessProperty, 0f);
             HDMaterial.ValidateMaterial(material);
             return material;
         }

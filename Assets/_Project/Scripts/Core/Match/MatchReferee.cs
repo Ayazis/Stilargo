@@ -1,33 +1,29 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using Stilargo.Core.Combat;
 using Stilargo.Core.Fortification;
 using Stilargo.Core.Hill;
 
 namespace Stilargo.Core.Match
 {
     /// <summary>
-    /// Decides the phase-1 match: the player wins by holding the hill for its full hold duration and loses when
-    /// the base (the first claimed house) is destroyed. The first result is final.
+    /// Decides the phase-1 match: the player wins by holding the hill for its full hold duration and loses once
+    /// they own no house and have no unit left alive. The first result is final.
     /// </summary>
     public sealed class MatchReferee
     {
-        public MatchReferee(HillControl hill, HouseClaim claim)
+        private readonly HouseClaim _playerHouses;
+
+        public MatchReferee(HillControl hill, HouseClaim playerHouses)
         {
             if (hill == null)
             {
                 throw new ArgumentNullException(nameof(hill));
             }
 
-            if (claim == null)
-            {
-                throw new ArgumentNullException(nameof(claim));
-            }
-
+            _playerHouses = playerHouses ?? throw new ArgumentNullException(nameof(playerHouses));
             hill.HoldCompleted += () => Decide(MatchOutcome.Won);
-            claim.Claimed += house => WatchIfBase(claim, house);
-            if (claim.IsClaimed)
-            {
-                WatchHouse(claim.House);
-            }
         }
 
         /// <summary>Raised once, with <see cref="MatchOutcome.Won"/> or <see cref="MatchOutcome.Lost"/>.</summary>
@@ -37,18 +33,18 @@ namespace Stilargo.Core.Match
 
         public bool IsDecided => Outcome != MatchOutcome.Undecided;
 
-        // Only the base decides the match; other claimed houses can fall without losing it.
-        private void WatchIfBase(HouseClaim claim, ClaimedHouse house)
+        /// <summary>Checks the lose condition against the player's units; call once per frame.</summary>
+        public void Review(IReadOnlyList<ICombatTarget> playerUnits)
         {
-            if (house == claim.House)
+            if (playerUnits == null)
             {
-                WatchHouse(house);
+                throw new ArgumentNullException(nameof(playerUnits));
             }
-        }
 
-        private void WatchHouse(ClaimedHouse house)
-        {
-            house.Died += () => Decide(MatchOutcome.Lost);
+            if (!_playerHouses.IsClaimed && !playerUnits.Any(unit => unit.IsAlive))
+            {
+                Decide(MatchOutcome.Lost);
+            }
         }
 
         private void Decide(MatchOutcome outcome)

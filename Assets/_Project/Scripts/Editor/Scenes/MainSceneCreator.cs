@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Stilargo.Gameplay.Animation;
+using Stilargo.Gameplay.Audio;
 using Stilargo.Gameplay.CameraControl;
 using Stilargo.Gameplay.Combat;
 using Stilargo.Gameplay.Cover;
@@ -56,9 +57,6 @@ namespace Stilargo.Editor.Scenes
         private static readonly Color PlayerTracerColor = new Color(0.94f, 0.86f, 0.55f);
         private static readonly Color EnemyTracerColor = new Color(0.94f, 0.42f, 0.2f);
 
-        private const string WeaponsFolder = SettingsFolder + "/Weapons";
-        private const string PlayerWeaponPath = WeaponsFolder + "/PlayerRifle.asset";
-        private const string EnemyWeaponPath = WeaponsFolder + "/EnemyRifle.asset";
         private const string EnemyMarkerMaterialPath = MaterialsFolder + "/Greybox_EnemyMarker.mat";
         private const string PlayerTracerMaterialPath = MaterialsFolder + "/Greybox_PlayerTracer.mat";
         private const string EnemyTracerMaterialPath = MaterialsFolder + "/Greybox_EnemyTracer.mat";
@@ -78,20 +76,12 @@ namespace Stilargo.Editor.Scenes
         private const string MuzzleName = "Muzzle";
 
         private const string EnemiesField = "_enemies";
-        private const string PlayerSideField = "_playerSide";
-        private const string EnemySideField = "_enemySide";
-        private const string SideWeaponField = "_weapon";
-        private const string SideMaxHealthField = "_maxHealth";
         private const string StanceControllerField = "_stanceController";
         private const string LineRendererField = "_lineRenderer";
-        private const string WeaponDamageField = "_damage";
 
         // Enemies stand in a row on the next street north of home: out of vision at the start, one block away.
         private static readonly float[] EnemyOffsetsX = { -6f, -2f, 2f, 6f };
         private const float EnemyOffsetZ = 28f;
-        private const float EnemyMaxHealth = 60f;
-        private const float PlayerWeaponDamage = 10f;
-        private const float EnemyWeaponDamage = 6f;
         private const float EnemyMarkerDiameter = 1.6f;
         private const float MuzzleHeightAboveCentre = 0.4f;
         private const float TracerWidth = 0.06f;
@@ -107,6 +97,12 @@ namespace Stilargo.Editor.Scenes
         private const string WaypointPathName = "Waypoint Path";
         private const string AvatarName = "Avatar";
         private const string AnimatorField = "_animator";
+        private const string RunClipSpeedField = "_runClipMetresPerSecond";
+        private const string AudioName = "Audio";
+        private const string AudioField = "_audio";
+        private const string CombatField = "_combat";
+        private const string FortificationField = "_fortification";
+        private const string HillField = "_hill";
 
         // Player avatars are handed out in turn so the squad does not look cloned.
         private static readonly string[] PlayerAvatars = { UnitAvatars.PlayerAvatarA, UnitAvatars.PlayerAvatarB, UnitAvatars.PlayerAvatarC };
@@ -139,8 +135,9 @@ namespace Stilargo.Editor.Scenes
         private const float UnitColumnSpacing = 3f;
         private const float UnitRowSpacing = 2f;
         private const float UnitHalfHeight = 1f;
-        private const float UnitAgentSpeed = 8f;
-        private const float UnitAgentAcceleration = 40f;
+        // Placeholder speed: player units get theirs from Combat.json and the rival's from Hill.json at startup.
+        private const float UnitAgentSpeed = 3.8f;
+        private const float UnitAgentAcceleration = 16f;
 
         private const float SelectionMarkerDiameter = 1.8f;
         private const float SelectionMarkerThickness = 0.02f;
@@ -173,6 +170,9 @@ namespace Stilargo.Editor.Scenes
         private static void Create()
         {
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            // Makes sure the unit animator has its run-speed parameter before any unit is built from it.
+            UnitAnimatorAsset.LoadOrCreate();
             CreateSun();
             PhotorealSceneDefaults.CreateGlobalVolume();
             WorldInstaller world = CreateWorld();
@@ -184,13 +184,16 @@ namespace Stilargo.Editor.Scenes
             AssignCombat(combatInstaller, enemies);
             CoverGarrisonInstaller coverGarrisonInstaller = CreateCoverGarrisonInstaller(combatInstaller, world, enemies);
             UnitWorldInstaller unitWorldInstaller = CreateUnitWorldInstaller(world, units, enemies);
-            FortificationInstaller fortificationInstaller = FortificationSceneSetup.Create(world, coverGarrisonInstaller, enemies);
+            FortificationInstaller fortificationInstaller = FortificationSceneSetup.Create(world, combatInstaller, coverGarrisonInstaller);
             HillRivalInstaller hillRivalInstaller = HillSceneSetup.Create(world, combatInstaller, fortificationInstaller);
+            AudioInstaller audioInstaller = CreateAudioInstaller(combatInstaller, fortificationInstaller, hillRivalInstaller);
             HudInstaller hudInstaller = HudSceneSetup.Create(world, combatInstaller, fortificationInstaller);
+            SerializedFields.Assign(hudInstaller, AudioField, audioInstaller);
             Installer hillHudLink = HillSceneSetup.LinkToHud(hillRivalInstaller, hudInstaller);
 
             // The link hands the hill to the HUD, so it runs after the hill installer and before the HUD installer.
-            var installers = new Installer[] { world, combatInstaller, coverGarrisonInstaller, unitWorldInstaller, fortificationInstaller, hillRivalInstaller, hillHudLink, hudInstaller };
+            // Audio listens to combat, fortification and the hill, and the HUD plays its clicks through it.
+            var installers = new Installer[] { world, combatInstaller, coverGarrisonInstaller, unitWorldInstaller, fortificationInstaller, hillRivalInstaller, audioInstaller, hillHudLink, hudInstaller };
             CreateBootstrapper(combatInstaller.gameObject, installers);
 
             EnsureFolder(System.IO.Path.GetDirectoryName(ScenePath));
@@ -325,7 +328,18 @@ namespace Stilargo.Editor.Scenes
 
             var animation = body.AddComponent<UnitAnimationView>();
             SerializedFields.Assign(animation, AnimatorField, instance.GetComponentInChildren<Animator>());
+            AssignRunClipSpeed(animation, avatar);
             return body;
+        }
+
+        /// <summary>The run plays at the measured speed of its feet, so the view can match it to the agent.</summary>
+        private static void AssignRunClipSpeed(UnitAnimationView animation, GameObject avatar)
+        {
+            float metresPerSecond = RunClipSpeed.MeasureMetresPerSecond(avatar, UnitAnimatorAsset.LoadRunClip());
+            var fields = new SerializedObject(animation);
+            fields.FindProperty(RunClipSpeedField).floatValue = metresPerSecond;
+            fields.ApplyModifiedPropertiesWithoutUndo();
+            Debug.Log($"{avatar.name}: run clip covers {metresPerSecond:0.00} m/s.");
         }
 
         private static void CreateMuzzle(Transform unit, Material material)
@@ -357,31 +371,7 @@ namespace Stilargo.Editor.Scenes
                 enemyList.GetArrayElementAtIndex(index).objectReferenceValue = enemies[index];
             }
 
-            fields.FindProperty(PlayerSideField).FindPropertyRelative(SideWeaponField).objectReferenceValue = LoadOrCreateWeapon(PlayerWeaponPath, PlayerWeaponDamage);
-            SerializedProperty enemySide = fields.FindProperty(EnemySideField);
-            enemySide.FindPropertyRelative(SideWeaponField).objectReferenceValue = LoadOrCreateWeapon(EnemyWeaponPath, EnemyWeaponDamage);
-            enemySide.FindPropertyRelative(SideMaxHealthField).floatValue = EnemyMaxHealth;
             fields.ApplyModifiedPropertiesWithoutUndo();
-        }
-
-        /// <summary>Only a newly created weapon gets <paramref name="damage"/>; an existing asset keeps its tuned values.</summary>
-        private static WeaponDefinition LoadOrCreateWeapon(string path, float damage)
-        {
-            var existing = AssetDatabase.LoadAssetAtPath<WeaponDefinition>(path);
-            if (existing != null)
-            {
-                return existing;
-            }
-
-            EnsureFolder(WeaponsFolder);
-            var weapon = ScriptableObject.CreateInstance<WeaponDefinition>();
-            AssetDatabase.CreateAsset(weapon, path);
-            var fields = new SerializedObject(weapon);
-            fields.FindProperty(WeaponDamageField).floatValue = damage;
-            fields.ApplyModifiedPropertiesWithoutUndo();
-
-            AssetDatabase.SaveAssets();
-            return weapon;
         }
 
         private static GameObject CreateSelectionMarker(Transform unit, Material material)
@@ -482,6 +472,16 @@ namespace Stilargo.Editor.Scenes
             SerializedFields.AssignArray(installer, VisionSourcesField, units.Select(unit => unit.GetComponent<VisionSourceComponent>()).ToArray());
             SerializedFields.AssignArray(installer, ScavengersField, units.Select(unit => unit.GetComponent<ScavengerComponent>()).ToArray());
             SerializedFields.AssignArray(installer, FogHideablesField, enemies.Select(enemy => enemy.GetComponent<FogHideable>()).ToArray());
+            return installer;
+        }
+
+        private static AudioInstaller CreateAudioInstaller(CombatInstaller combat, FortificationInstaller fortification, HillRivalInstaller hill)
+        {
+            var audio = new GameObject(AudioName);
+            var installer = audio.AddComponent<AudioInstaller>();
+            SerializedFields.Assign(installer, CombatField, combat);
+            SerializedFields.Assign(installer, FortificationField, fortification);
+            SerializedFields.Assign(installer, HillField, hill);
             return installer;
         }
 

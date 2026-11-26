@@ -24,6 +24,7 @@ namespace Stilargo.Editor.Fortification
         private const string WindowMaterialPath = MaterialsFolder + "/Greybox_ReinforcedWindow.mat";
         private const string TurretMaterialPath = MaterialsFolder + "/Greybox_Turret.mat";
         private const string TracerMaterialPath = MaterialsFolder + "/Greybox_TurretTracer.mat";
+        private const string OutlineMaterialPath = MaterialsFolder + "/Greybox_BuildingOutline.mat";
         private const float TracerWidthMetres = 0.06f;
 
         // Weathered timber, galvanised steel plate and olive-drab gun; all inside the PBR albedo range.
@@ -32,6 +33,9 @@ namespace Stilargo.Editor.Fortification
         private static readonly Color TurretColor = new Color(86f / 255f, 92f / 255f, 60f / 255f);
         private static readonly Color TracerColor = new Color(240f / 255f, 200f / 255f, 120f / 255f);
 
+        // The same bright green as the ring under a selected unit, so a selected building reads the same way.
+        private static readonly Color OutlineColor = new Color(0.3f, 1f, 0.4f);
+
         // A door-wide barricade, a plate over a window, and a squat gun on the roof.
         private static readonly Vector3 BarricadeSizeMetres = new Vector3(2.4f, 1.4f, 0.5f);
         private static readonly Vector3 WindowSizeMetres = new Vector3(1.2f, 1.2f, 0.15f);
@@ -39,6 +43,8 @@ namespace Stilargo.Editor.Fortification
 
         private const string WorldField = "_world";
         private const string GarrisonsField = "_garrisons";
+        private const string CombatField = "_combat";
+        private const string OutlineMaterialField = "_selectionOutlineMaterial";
         private const string EnemiesField = "_enemies";
         private const string TurretBatteryField = "_turretBattery";
         private const string TracerViewField = "_tracerView";
@@ -48,7 +54,8 @@ namespace Stilargo.Editor.Fortification
         private const string LookMaterialField = "_material";
         private const string LookSizeField = "_sizeMetres";
 
-        public static FortificationInstaller Create(WorldInstaller world, CoverGarrisonInstaller garrisons, CombatUnit[] enemies)
+        /// <summary>The enemies the turrets shoot are read from the combat installer, so both lists always match.</summary>
+        public static FortificationInstaller Create(WorldInstaller world, CombatInstaller combat, CoverGarrisonInstaller garrisons)
         {
             var holder = new GameObject(HolderName);
             var installer = holder.AddComponent<FortificationInstaller>();
@@ -57,11 +64,25 @@ namespace Stilargo.Editor.Fortification
 
             SerializedFields.Assign(installer, WorldField, world);
             SerializedFields.Assign(installer, GarrisonsField, garrisons);
-            SerializedFields.AssignArray(installer, EnemiesField, enemies);
+            SerializedFields.Assign(installer, CombatField, combat);
+            SerializedFields.Assign(installer, OutlineMaterialField, LoadOrCreateMaterial(OutlineMaterialPath, () => HdrpMaterials.CreateUnlit(OutlineColor)));
+            SerializedFields.AssignArray(installer, EnemiesField, EnemiesOf(combat));
             SerializedFields.Assign(installer, TurretBatteryField, holder.AddComponent<TurretBattery>());
             SerializedFields.Assign(installer, TracerViewField, CreateTracerView(holder.transform));
             SerializedFields.Assign(installer, FortificationViewField, fortificationView);
             return installer;
+        }
+
+        private static UnityEngine.Object[] EnemiesOf(CombatInstaller combat)
+        {
+            SerializedProperty enemies = new SerializedObject(combat).FindProperty(EnemiesField);
+            var result = new UnityEngine.Object[enemies.arraySize];
+            for (int index = 0; index < result.Length; index++)
+            {
+                result[index] = enemies.GetArrayElementAtIndex(index).objectReferenceValue;
+            }
+
+            return result;
         }
 
         private static TurretTracerView CreateTracerView(Transform parent)

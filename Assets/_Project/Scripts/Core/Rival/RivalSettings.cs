@@ -9,10 +9,11 @@ namespace Stilargo.Core.Rival
     public sealed class RivalSettings
     {
         public const int DefaultSquadSize = 4;
-        public const float DefaultMoveSpeedMetresPerSecond = 6f;
+        public const float DefaultMoveSpeedMetresPerSecond = 3.8f;
         public const float DefaultScavengeSeconds = 45f;
         public const float DefaultContestSeconds = 40f;
         public const float DefaultRaidSeconds = 30f;
+        public const float DefaultConfiscateSeconds = 30f;
         public const float DefaultScavengeReachMetres = 2.5f;
         public const float DefaultScavengeRadiusMetres = 30f;
         public const float DefaultHillSpreadMetres = 2f;
@@ -31,6 +32,9 @@ namespace Stilargo.Core.Rival
 
         /// <summary>How long a raid on the claimed house lasts before the rival returns to the hill.</summary>
         public float RaidSeconds { get; private set; } = DefaultRaidSeconds;
+
+        /// <summary>How long the rival tries to reach and claim a fallen house before giving up.</summary>
+        public float ConfiscateSeconds { get; private set; } = DefaultConfiscateSeconds;
 
         /// <summary>How close a rival unit must get to a cache to pick it up, or to its base to deliver.</summary>
         public float ScavengeReachMetres { get; private set; } = DefaultScavengeReachMetres;
@@ -68,6 +72,12 @@ namespace Stilargo.Core.Rival
             ScavengeSeconds = RequirePositive(scavengeSeconds, nameof(scavengeSeconds));
             ContestSeconds = RequirePositive(contestSeconds, nameof(contestSeconds));
             RaidSeconds = RequirePositive(raidSeconds, nameof(raidSeconds));
+            return this;
+        }
+
+        public RivalSettings WithConfiscateTime(float seconds)
+        {
+            ConfiscateSeconds = RequirePositive(seconds, nameof(seconds));
             return this;
         }
 

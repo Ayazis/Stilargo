@@ -11,8 +11,9 @@ namespace Stilargo.Core.Hud
     /// </summary>
     public sealed class FortifyMenu
     {
-        public const string ClaimHint = "Garrison units in a building to claim it.";
-        public const string ClaimLabel = "Claim the building your units are in";
+        public const string ClaimHint = "Click a building, or garrison units in one, to claim it.";
+        public const string SelectedClaimHint = "Garrison units in this building to claim it.";
+        public const string ClaimLabel = "Claim this building";
 
         private static readonly IReadOnlyDictionary<PurchaseResult, string> ResultMessages = new Dictionary<PurchaseResult, string>
         {
@@ -40,7 +41,31 @@ namespace Stilargo.Core.Hud
         /// <summary>True when the squad is garrisoned in an unclaimed building, so claiming would work now.</summary>
         public bool CanClaim => _target.CanClaim;
 
+        /// <summary>True when the menu manages one of the player's houses, so the shop and upkeep apply.</summary>
+        public bool HasHouse => _target.SelectedHouse != null;
+
+        /// <summary>True when there is a clicked or garrisoned building to describe.</summary>
+        public bool HasFocusedBuilding => _target.FocusedBuilding != null;
+
+        /// <summary>Shown instead of the claim button while claiming is not possible.</summary>
+        public bool ShowsClaimHint => !CanClaim && !HasHouse;
+
         public int OfferCount => _shop.Catalogue.Count;
+
+        public string BuildingInfoText()
+        {
+            return BuildingInfo.Describe(_target);
+        }
+
+        public string ClaimHintText()
+        {
+            if (BuildingInfo.IsHeldByRival(_target))
+            {
+                return BuildingInfo.RivalHint;
+            }
+
+            return _target.IsBuildingSelected ? SelectedClaimHint : ClaimHint;
+        }
 
         public string HouseHealthText()
         {

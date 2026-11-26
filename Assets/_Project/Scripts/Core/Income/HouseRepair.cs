@@ -5,8 +5,8 @@ using Stilargo.Core.Fortification;
 namespace Stilargo.Core.Income
 {
     /// <summary>
-    /// Restores a claimed house to full condition for money. The price grows with the house's size and how worn
-    /// it is; battle damage is not repaired here.
+    /// Restores a claimed house to full condition and full health for money, which also brings a ruined house back
+    /// into use. The price grows with the house's size and with how worn and how damaged it is.
     /// </summary>
     public sealed class HouseRepair
     {
@@ -19,7 +19,7 @@ namespace Stilargo.Core.Income
             _wallet = wallet ?? throw new ArgumentNullException(nameof(wallet));
         }
 
-        /// <summary>Whole money needed to restore the house; zero when it is already in full condition.</summary>
+        /// <summary>Whole money needed to restore the house; zero when it is neither worn nor damaged.</summary>
         public int CostFor(ClaimedHouse house)
         {
             if (house == null)
@@ -28,13 +28,14 @@ namespace Stilargo.Core.Income
             }
 
             float wornShare = ClaimedHouse.FullCondition - house.Condition;
-            return (int)Math.Ceiling(wornShare * _settings.FullRepairCostMoneyPerFloorCell * house.FloorCells);
+            float repairShare = wornShare + house.DamagedFraction;
+            return (int)Math.Ceiling(repairShare * _settings.FullRepairCostMoneyPerFloorCell * house.FloorCells);
         }
 
         public bool CanRepair(ClaimedHouse house)
         {
             int cost = CostFor(house);
-            return house.IsAlive && house.Condition < ClaimedHouse.FullCondition && (cost == 0 || _wallet.CanAfford(cost));
+            return house.NeedsRepair && (cost == 0 || _wallet.CanAfford(cost));
         }
 
         public bool TryRepair(ClaimedHouse house)
@@ -50,7 +51,7 @@ namespace Stilargo.Core.Income
                 _wallet.TrySpend(cost);
             }
 
-            house.RestoreCondition();
+            house.Restore();
             return true;
         }
     }

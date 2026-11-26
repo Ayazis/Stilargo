@@ -9,7 +9,8 @@ namespace Stilargo.Core.Garrison
     /// <summary>
     /// Turns the city's plots into enterable buildings. Only plots touching a road get one, because units
     /// enter from the street. Windows go on road-facing facades only (one row per storey, at floor level,
-    /// just outside the wall); roof slots are spread in a grid over the roof top.
+    /// just outside the wall); roof slots are spread in a grid over the roof top, or over the top of the bell tower
+    /// when the building has one. Parks and water hold no building, so they get none.
     /// </summary>
     public sealed class GarrisonSlotGenerator
     {
@@ -30,7 +31,7 @@ namespace Stilargo.Core.Garrison
             }
 
             List<GarrisonBuilding> buildings = new List<GarrisonBuilding>();
-            foreach (Plot plot in layout.Plots)
+            foreach (Plot plot in layout.Plots.Where(candidate => candidate.HasBuilding))
             {
                 List<PlotFacade> roadFacades = PlotFacade.AllOf(plot.Area, layout.CellSize)
                     .Where(facade => facade.FacesRoad(layout))
@@ -48,7 +49,7 @@ namespace Stilargo.Core.Garrison
 
         private GarrisonBuilding CreateBuilding(Plot plot, IReadOnlyList<PlotFacade> roadFacades, CityLayout layout)
         {
-            List<GarrisonSlot> slots = CreateRoofSlots(plot, layout.CellSize, roadFacades[0].Outward).ToList();
+            List<GarrisonSlot> slots = CreateRoofSlots(RoofOf(plot), layout.CellSize, roadFacades[0].Outward).ToList();
             for (int storey = 0; storey < plot.Storeys; storey++)
             {
                 foreach (PlotFacade facade in roadFacades)
@@ -73,7 +74,12 @@ namespace Stilargo.Core.Garrison
             }
         }
 
-        private IEnumerable<GarrisonSlot> CreateRoofSlots(Plot plot, float cellSize, Vector3 facing)
+        private static RoofTop RoofOf(Plot plot)
+        {
+            return plot.HasTower ? new RoofTop(BellTower.AreaOf(plot), plot.TowerStoreys) : new RoofTop(plot.Area, plot.Storeys);
+        }
+
+        private IEnumerable<GarrisonSlot> CreateRoofSlots(RoofTop roof, float cellSize, Vector3 facing)
         {
             int count = _settings.RoofSlotCount;
             if (count == 0)
@@ -83,17 +89,17 @@ namespace Stilargo.Core.Garrison
 
             int columns = (int)Math.Ceiling(Math.Sqrt(count));
             int rows = (int)Math.Ceiling(count / (double)columns);
-            float roofHeight = plot.Storeys * _settings.StoreyHeightMetres;
-            float west = plot.Area.Min.X * cellSize;
-            float south = plot.Area.Min.Y * cellSize;
-            float width = plot.Area.Width * cellSize;
-            float depth = plot.Area.Height * cellSize;
+            float roofHeight = roof.Storeys * _settings.StoreyHeightMetres;
+            float west = roof.Area.Min.X * cellSize;
+            float south = roof.Area.Min.Y * cellSize;
+            float width = roof.Area.Width * cellSize;
+            float depth = roof.Area.Height * cellSize;
             for (int index = 0; index < count; index++)
             {
                 float x = west + (width * ((index % columns) + HalfStep) / columns);
                 float z = south + (depth * ((index / columns) + HalfStep) / rows);
                 GarrisonSlotPose pose = new GarrisonSlotPose(new Vector3(x, roofHeight, z), facing);
-                yield return new GarrisonSlot(GarrisonSlotKind.Roof, plot.Storeys, pose);
+                yield return new GarrisonSlot(GarrisonSlotKind.Roof, roof.Storeys, pose);
             }
         }
 

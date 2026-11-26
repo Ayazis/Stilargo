@@ -6,7 +6,7 @@ using Stilargo.Core.Rival;
 
 namespace Stilargo.Core.Match
 {
-    /// <summary>One frame of the phase-1 match: the hill, then the rival. Both stop once the referee has decided.</summary>
+    /// <summary>One frame of the phase-1 match: the hill, the referee, then the rival. Both stop once the referee has decided.</summary>
     public sealed class HillMatch
     {
         private readonly RivalBrain _rival;
@@ -30,6 +30,7 @@ namespace Stilargo.Core.Match
             }
 
             Hill.Tick(deltaSeconds, playerUnits, rivalUnits);
+            Referee.Review(playerUnits);
             if (Referee.IsDecided)
             {
                 return;

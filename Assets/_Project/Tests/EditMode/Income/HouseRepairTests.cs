@@ -62,13 +62,26 @@ namespace Stilargo.Tests.EditMode.Income
         }
 
         [Test]
-        public void TryRepair_DestroyedHouse_IsRefused()
+        public void TryRepair_DestroyedHouse_RestoresHealthAndCondition()
         {
             _house.Wear(0.5f);
             _wallet.Deposit(1000);
             _house.TakeDamage(_house.MaxHealth);
 
-            Assert.IsFalse(_repair.TryRepair(_house));
+            Assert.IsTrue(_repair.TryRepair(_house));
+            Assert.IsTrue(_house.IsAlive);
+            Assert.AreEqual(1f, _house.HealthFraction);
+            Assert.AreEqual(ClaimedHouse.FullCondition, _house.Condition);
+        }
+
+        [Test]
+        public void CostFor_CountsBattleDamageLikeWear()
+        {
+            _house.TakeDamage(_house.MaxHealth / 2f);
+            Assert.AreEqual((int)Math.Ceiling(0.5f * CostPerFloorCell * _house.FloorCells), _repair.CostFor(_house));
+
+            _house.Wear(0.5f);
+            Assert.AreEqual((int)Math.Ceiling(1f * CostPerFloorCell * _house.FloorCells), _repair.CostFor(_house));
         }
 
         [Test]

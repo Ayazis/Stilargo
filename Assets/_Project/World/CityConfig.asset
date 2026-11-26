@@ -12,12 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7217cce6e2d71cb4db2a4ef0e8b0aa75, type: 3}
   m_Name: CityConfig
   m_EditorClassIdentifier: Stilargo.Gameplay::Stilargo.Gameplay.City.CityConfigAsset
-  _blocksX: 4
-  _blocksY: 4
+  _blocksX: 5
+  _blocksY: 5
   _blockSize: 12
   _roadWidth: 2
   _minPlotSize: 3
   _maxPlotSize: 6
   _minStoreys: 1
-  _maxStoreys: 4
+  _maxStoreys: 2
   _cellSize: 2

@@ -26,6 +26,27 @@ namespace Stilargo.Core.City
             _roadCells = grid.CopyRoadCells();
         }
 
+        private CityLayout(CityLayout source, IReadOnlyList<Plot> plots)
+        {
+            Blocks = source.Blocks;
+            Plots = plots;
+            Width = source.Width;
+            Height = source.Height;
+            CellSize = source.CellSize;
+            _roadCells = source._roadCells;
+        }
+
+        /// <summary>The same streets and blocks with other plots, e.g. after landmarks took some of them.</summary>
+        public CityLayout WithPlots(IReadOnlyList<Plot> plots)
+        {
+            if (plots == null)
+            {
+                throw new ArgumentNullException(nameof(plots));
+            }
+
+            return new CityLayout(this, plots);
+        }
+
         /// <summary>Grid width in cells.</summary>
         public int Width { get; }
 

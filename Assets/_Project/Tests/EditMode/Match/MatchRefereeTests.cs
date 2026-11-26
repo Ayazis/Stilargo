@@ -14,6 +14,9 @@ namespace Stilargo.Tests.EditMode.Match
     public sealed class MatchRefereeTests
     {
         private const float HoldSeconds = 5f;
+        private const float UnitHealth = 1f;
+
+        private static readonly IReadOnlyList<ICombatTarget> Nobody = Array.Empty<ICombatTarget>();
 
         private HillControl _hill;
         private HouseClaim _claim;
@@ -48,36 +51,52 @@ namespace Stilargo.Tests.EditMode.Match
         }
 
         [Test]
-        public void HouseDestroyed_Loses()
+        public void NoHouseButAUnitAlive_DoesNotLose()
+        {
+            _referee.Review(new ICombatTarget[] { AliveUnit() });
+
+            Assert.IsFalse(_referee.IsDecided);
+        }
+
+        [Test]
+        public void HouseButNoUnitsAlive_DoesNotLose()
         {
             _claim.TryClaim(FortificationTestHouse.CreateBuilding());
 
-            DestroyHouse();
+            _referee.Review(new ICombatTarget[] { DeadUnit() });
+
+            Assert.IsFalse(_referee.IsDecided);
+        }
+
+        [Test]
+        public void NoHouseAndNoUnitsAlive_Loses()
+        {
+            _referee.Review(new ICombatTarget[] { DeadUnit() });
 
             Assert.AreEqual(MatchOutcome.Lost, _referee.Outcome);
             CollectionAssert.AreEqual(new[] { MatchOutcome.Lost }, _decisions);
         }
 
         [Test]
-        public void HouseClaimedBeforeTheReferee_StillLosesWhenDestroyed()
+        public void LastHouseDestroyedAndNoUnits_Loses()
         {
-            HouseClaim claim = FortificationTestHouse.CreateClaim(FortificationTestHouse.CreateDropOff());
-            claim.TryClaim(FortificationTestHouse.CreateBuilding());
-            var referee = new MatchReferee(_hill, claim);
+            _claim.TryClaim(FortificationTestHouse.CreateBuilding());
+            ClaimedHouse house = _claim.House;
 
-            claim.House.TakeDamage(claim.House.MaxHealth);
+            house.TakeDamage(house.MaxHealth);
+            _referee.Review(Nobody);
 
-            Assert.AreEqual(MatchOutcome.Lost, referee.Outcome);
+            Assert.AreEqual(MatchOutcome.Lost, _referee.Outcome);
         }
 
         [Test]
-        public void OtherClaimedHouseDestroyed_DoesNotLose()
+        public void BaseDestroyedWithUnitsAlive_DoesNotLose()
         {
             _claim.TryClaim(FortificationTestHouse.CreateBuilding());
-            _claim.TryClaim(FortificationTestHouse.CreateBuilding());
-            ClaimedHouse outpost = _claim.Houses[1];
+            ClaimedHouse house = _claim.House;
 
-            outpost.TakeDamage(outpost.MaxHealth);
+            house.TakeDamage(house.MaxHealth);
+            _referee.Review(new ICombatTarget[] { AliveUnit() });
 
             Assert.IsFalse(_referee.IsDecided);
         }
@@ -85,31 +104,37 @@ namespace Stilargo.Tests.EditMode.Match
         [Test]
         public void FirstResultIsFinal()
         {
-            _claim.TryClaim(FortificationTestHouse.CreateBuilding());
             HoldHill();
 
-            DestroyHouse();
+            _referee.Review(Nobody);
 
             Assert.AreEqual(MatchOutcome.Won, _referee.Outcome);
             Assert.AreEqual(1, _decisions.Count);
         }
 
         [Test]
-        public void Constructor_NullArguments_Throw()
+        public void InvalidArguments_Throw()
         {
             Assert.Throws<ArgumentNullException>(() => new MatchReferee(null, _claim));
             Assert.Throws<ArgumentNullException>(() => new MatchReferee(_hill, null));
+            Assert.Throws<ArgumentNullException>(() => _referee.Review(null));
+        }
+
+        private static ICombatTarget AliveUnit()
+        {
+            return new FakeCombatTarget(Vector3.Zero, UnitHealth);
+        }
+
+        private static ICombatTarget DeadUnit()
+        {
+            var unit = new FakeCombatTarget(Vector3.Zero, UnitHealth);
+            unit.TakeDamage(UnitHealth);
+            return unit;
         }
 
         private void HoldHill()
         {
-            var player = new ICombatTarget[] { new FakeCombatTarget(Vector3.Zero, 1f) };
-            _hill.Tick(HoldSeconds, player, Array.Empty<ICombatTarget>());
-        }
-
-        private void DestroyHouse()
-        {
-            _claim.House.TakeDamage(_claim.House.MaxHealth);
+            _hill.Tick(HoldSeconds, new ICombatTarget[] { AliveUnit() }, Nobody);
         }
     }
 }

@@ -18,10 +18,21 @@ namespace Stilargo.Gameplay.Animation
         private const float DefaultAimHoldSeconds = 2f;
         private const float DefaultCrossFadeSeconds = 0.2f;
 
+        // Measured from the run clip by the scene creator; this default is only a stand-in until then.
+        private const float DefaultRunClipMetresPerSecond = 3.6f;
+
+        // Outside this range a sped-up or slowed-down run looks wrong, so the feet slip a little instead.
+        private const float MinRunPlaybackRate = 0.5f;
+        private const float MaxRunPlaybackRate = 1.6f;
+
+        /// <summary>The Animator float that sets how fast the run state plays.</summary>
+        public const string RunSpeedParameter = "RunSpeed";
+
         [SerializeField] private Animator _animator;
         [SerializeField, Min(0.01f)] private float _runThresholdMetresPerSecond = DefaultRunThresholdMetresPerSecond;
         [SerializeField, Min(0f)] private float _aimHoldSeconds = DefaultAimHoldSeconds;
         [SerializeField, Min(0f)] private float _crossFadeSeconds = DefaultCrossFadeSeconds;
+        [SerializeField, Min(0.1f)] private float _runClipMetresPerSecond = DefaultRunClipMetresPerSecond;
 
         private NavMeshAgent _agent;
         private UnitPosePicker _picker;
@@ -29,6 +40,9 @@ namespace Stilargo.Gameplay.Animation
         private float _lastShotTime = float.NegativeInfinity;
         private UnitPose _pose = UnitPose.Idle;
         private bool _isSubscribed;
+
+        /// <summary>The avatar that is seen; it stays behind as a body when the unit dies.</summary>
+        public Transform Body => _animator.transform;
 
         private bool IsConstructed => _combat != null;
 
@@ -71,7 +85,9 @@ namespace Stilargo.Gameplay.Animation
                 return;
             }
 
-            UnitPose pose = _picker.Pick(CurrentInput());
+            float speed = CurrentSpeed();
+            MatchRunToSpeed(speed);
+            UnitPose pose = _picker.Pick(CurrentInput(speed));
             if (pose == _pose)
             {
                 return;
@@ -81,11 +97,22 @@ namespace Stilargo.Gameplay.Animation
             _animator.CrossFadeInFixedTime(pose.ToString(), _crossFadeSeconds);
         }
 
-        private UnitPoseInput CurrentInput()
+        // Plays the run as fast as the unit really moves, so its feet stay planted instead of gliding.
+        private void MatchRunToSpeed(float speedMetresPerSecond)
         {
-            float speed = _agent.enabled ? _agent.velocity.magnitude : 0f;
+            float rate = Mathf.Clamp(speedMetresPerSecond / _runClipMetresPerSecond, MinRunPlaybackRate, MaxRunPlaybackRate);
+            _animator.SetFloat(RunSpeedParameter, rate);
+        }
+
+        private float CurrentSpeed()
+        {
+            return _agent.enabled ? _agent.velocity.magnitude : 0f;
+        }
+
+        private UnitPoseInput CurrentInput(float speedMetresPerSecond)
+        {
             bool isInCover = _combat.Protection.HitChanceMultiplier < 1f;
-            return new UnitPoseInput(speed, Time.time - _lastShotTime, isInCover);
+            return new UnitPoseInput(speedMetresPerSecond, Time.time - _lastShotTime, isInCover);
         }
 
         private void OnShot(ICombatTarget target)

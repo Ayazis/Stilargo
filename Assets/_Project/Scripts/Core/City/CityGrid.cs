@@ -38,12 +38,23 @@ namespace Stilargo.Core.City
 
         public void MarkRoad(GridPosition position)
         {
+            _roadCells[IndexOf(position)] = true;
+        }
+
+        /// <summary>Turns a road cell back into building ground, e.g. where two blocks are merged into one.</summary>
+        public void ClearRoad(GridPosition position)
+        {
+            _roadCells[IndexOf(position)] = false;
+        }
+
+        private int IndexOf(GridPosition position)
+        {
             if (position.X < 0 || position.X >= Width || position.Y < 0 || position.Y >= Height)
             {
                 throw new ArgumentOutOfRangeException(nameof(position), position, "Position is outside the grid.");
             }
 
-            _roadCells[(position.Y * Width) + position.X] = true;
+            return (position.Y * Width) + position.X;
         }
 
         internal bool[] CopyRoadCells()

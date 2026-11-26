@@ -6,7 +6,8 @@ namespace Stilargo.Core.Rival
 {
     /// <summary>
     /// Spreads the squad over the hill and sends back anyone who leaves it, e.g. after chasing a target. Once the
-    /// contest time is up and the player does not hold the hill, it raids a standing house or else scavenges.
+    /// contest time is up and the player does not hold the hill, it raids a standing house, else confiscates a fallen
+    /// one, else scavenges.
     /// </summary>
     public sealed class ContestHillStrategy : IRivalStrategy
     {
@@ -35,11 +36,22 @@ namespace Stilargo.Core.Rival
             RivalSurroundings surroundings = world.Surroundings;
             if (_elapsedSeconds >= world.Settings.ContestSeconds && !surroundings.IsPlayerHoldingHill)
             {
-                return surroundings.IsHouseStanding ? strategies.RaidHouse : strategies.Scavenge;
+                return NextAfterContest(world, strategies);
             }
 
             RecallStragglers(world);
             return this;
+        }
+
+        private static IRivalStrategy NextAfterContest(RivalWorld world, RivalStrategySet strategies)
+        {
+            RivalHouses houses = world.Surroundings.Houses;
+            if (houses.IsPlayerHouseStanding)
+            {
+                return strategies.RaidHouse;
+            }
+
+            return houses.TryFindNearestToConfiscate(world.Squad.BasePosition, out _) ? strategies.ConfiscateHouse : strategies.Scavenge;
         }
 
         private static void RecallStragglers(RivalWorld world)

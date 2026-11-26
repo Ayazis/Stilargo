@@ -7,42 +7,42 @@ using UnityEngine;
 
 namespace Stilargo.Gameplay.Fortification
 {
-    /// <summary>Places a greybox block on every slot of the claimed house that gets a fortification.</summary>
+    /// <summary>Places a greybox block on every slot of a claimed house that gets a fortification.</summary>
     public sealed class FortificationView : MonoBehaviour
     {
         private const string BlockNameFormat = "Fortification ({0})";
 
         [SerializeField] private FortificationLook[] _looks = Array.Empty<FortificationLook>();
 
-        private HouseClaim _claim;
+        private HouseLedger _ledger;
 
-        public void Construct(HouseClaim claim)
+        public void Construct(HouseLedger ledger)
         {
-            if (_claim != null)
+            if (_ledger != null)
             {
                 throw new InvalidOperationException($"{nameof(FortificationView)} is already constructed.");
             }
 
-            _claim = claim ?? throw new ArgumentNullException(nameof(claim));
+            _ledger = ledger ?? throw new ArgumentNullException(nameof(ledger));
             RequireLookForEveryKind();
-            _claim.Claimed += HandleClaimed;
+            _ledger.HouseCreated += HandleHouseCreated;
         }
 
         private void OnDestroy()
         {
-            if (_claim == null)
+            if (_ledger == null)
             {
                 return;
             }
 
-            _claim.Claimed -= HandleClaimed;
-            foreach (ClaimedHouse house in _claim.Houses)
+            _ledger.HouseCreated -= HandleHouseCreated;
+            foreach (ClaimedHouse house in _ledger.Houses)
             {
                 house.FortificationBuilt -= HandleBuilt;
             }
         }
 
-        private void HandleClaimed(ClaimedHouse house)
+        private void HandleHouseCreated(ClaimedHouse house)
         {
             house.FortificationBuilt += HandleBuilt;
         }

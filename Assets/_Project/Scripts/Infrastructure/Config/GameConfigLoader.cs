@@ -7,7 +7,12 @@ namespace Stilargo.Infrastructure.Config
     {
         public static GameConfig Load()
         {
-            return new GameConfig(FortificationConfig.Load(), HillConfig.Load(), EconomyConfig.Load(), IncomeConfig.Load());
+            return new GameConfig(FortificationConfig.Load(), HillConfig.Load(), EconomyConfig.Load(), IncomeConfig.Load())
+                .WithCombat(CombatConfig.Load())
+                .WithVision(VisionConfig.Load())
+                .WithDistrict(BuildingsConfig.Load())
+                .WithTown(TownConfig.Load())
+                .WithAudio(AudioConfig.Load());
         }
     }
 }

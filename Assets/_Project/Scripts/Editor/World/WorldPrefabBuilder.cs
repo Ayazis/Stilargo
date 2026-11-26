@@ -7,6 +7,7 @@ using Stilargo.Gameplay.World;
 using Unity.AI.Navigation;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering.HighDefinition;
 
 namespace Stilargo.Editor.World
 {
@@ -61,18 +62,16 @@ namespace Stilargo.Editor.World
             SerializedFields.Assign(spawner, "_groundPrefab", LoadOrCreateCubePrefab("Ground", CityLookAssets.GroundMaterial()));
             SerializedFields.Assign(spawner, "_buildingPrefab", LoadOrCreateCubePrefab("Building", LoadOrCreateLitMaterial("Building", BuildingColor)));
             CityLookAssets.Dress(spawner);
+            SerializedFields.Assign(spawner, "_showcaseHousePrefab", House1Assets.LoadOrCreatePrefab());
             SerializedFields.Assign(installer, "_cityConfig", LoadOrCreateAsset<CityConfigAsset>("CityConfig"));
             SerializedFields.Assign(installer, "_citySpawner", spawner);
         }
 
         private static void AddFog(WorldInstaller installer)
         {
-            GameObject fogQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            fogQuad.name = "Fog";
-            fogQuad.transform.SetParent(installer.transform, false);
-            UnityEngine.Object.DestroyImmediate(fogQuad.GetComponent<Collider>());
-            fogQuad.GetComponent<Renderer>().sharedMaterial = LoadOrCreateFogMaterial();
-            SerializedFields.Assign(installer, "_fogOverlay", fogQuad.AddComponent<FogOverlay>());
+            GameObject fog = CreateChild("Fog", installer.transform, typeof(DecalProjector));
+            fog.GetComponent<DecalProjector>().material = LoadOrCreateFogMaterial();
+            SerializedFields.Assign(installer, "_fogOverlay", fog.AddComponent<FogOverlay>());
             SerializedFields.Assign(installer, "_fogTicker", installer.GetComponent<FogTicker>());
         }
 
@@ -140,16 +139,33 @@ namespace Stilargo.Editor.World
 
         private static Material LoadOrCreateFogMaterial()
         {
-            string path = $"{Root}/Fog.mat";
+            string path = $"{Root}/FogDecal.mat";
             Material existing = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (existing != null)
             {
                 return existing;
             }
 
-            Material material = HdrpMaterials.CreateTransparentUnlit();
+            Material material = HdrpMaterials.CreateAlbedoDecal(LoadOrCreateFogPlaceholderTexture());
             AssetDatabase.CreateAsset(material, path);
             return material;
+        }
+
+        // FogOverlay paints the real map at runtime; this transparent stand-in keeps the decal's color map enabled.
+        private static Texture2D LoadOrCreateFogPlaceholderTexture()
+        {
+            string path = $"{Root}/FogDecalPlaceholder.asset";
+            Texture2D existing = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            var texture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+            texture.SetPixel(0, 0, Color.clear);
+            texture.Apply();
+            AssetDatabase.CreateAsset(texture, path);
+            return texture;
         }
 
         private static GameObject LoadOrCreateCubePrefab(string name, Material material)

@@ -20,6 +20,8 @@ namespace Stilargo.Tests.EditMode.Camera
 
         public bool IsOrbitDragHeld { get; set; }
 
+        public bool IsEdgeScrollEnabled { get; set; } = true;
+
         public bool WasSelectPressedThisFrame { get; set; }
 
         public bool IsSelectHeld { get; set; }
