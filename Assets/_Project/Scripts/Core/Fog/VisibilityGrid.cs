@@ -13,6 +13,7 @@ namespace Stilargo.Core.Fog
 
         private readonly VisibilityState[] _states;
         private readonly List<IVisionSource> _sources = new List<IVisionSource>();
+        private ISightBlocker _blocker;
 
         public VisibilityGrid(int width, int height, float cellSize)
         {
@@ -45,6 +46,15 @@ namespace Stilargo.Core.Fog
 
         public float CellSize { get; }
 
+        /// <summary>
+        /// From now on a source only reveals cells it has a line of sight to: a cell is hidden when an obstacle at least
+        /// as tall as the source's eyes stands between them. The first obstacle itself is revealed, so facades show.
+        /// </summary>
+        public void UseSightBlocker(ISightBlocker blocker)
+        {
+            _blocker = blocker ?? throw new ArgumentNullException(nameof(blocker));
+        }
+
         public void Register(IVisionSource source)
         {
             if (source == null)
@@ -70,8 +80,30 @@ namespace Stilargo.Core.Fog
             return _sources.Remove(source);
         }
 
+        /// <summary>False after <see cref="DisableFog"/>: every cell is visible, so the whole map and every enemy show.</summary>
+        public bool IsFogEnabled { get; private set; } = true;
+
+        /// <summary>Lifts the fog of war from the next refresh on.</summary>
+        public void DisableFog()
+        {
+            IsFogEnabled = false;
+        }
+
+        /// <summary>Brings the fog of war back from the next refresh on; cells seen while it was off stay explored.</summary>
+        public void EnableFog()
+        {
+            IsFogEnabled = true;
+        }
+
         public void Refresh()
         {
+            if (!IsFogEnabled)
+            {
+                Array.Fill(_states, VisibilityState.Visible);
+                Refreshed?.Invoke();
+                return;
+            }
+
             DemoteVisibleCells();
             foreach (IVisionSource source in _sources)
             {
@@ -119,6 +151,8 @@ namespace Stilargo.Core.Fog
             }
 
             WorldPoint center = source.Position;
+            int sourceX = ToCell(center.X);
+            int sourceY = ToCell(center.Z);
             int minX = Math.Max(0, ToCell(center.X - radius));
             int maxX = Math.Min(Width - 1, ToCell(center.X + radius));
             int minY = Math.Max(0, ToCell(center.Z - radius));
@@ -129,12 +163,38 @@ namespace Stilargo.Core.Fog
             {
                 for (int x = minX; x <= maxX; x++)
                 {
-                    if (DistanceSquaredToCellCenter(center, x, y) <= radiusSquared)
+                    if (DistanceSquaredToCellCenter(center, x, y) <= radiusSquared
+                        && HasLineOfSight(sourceX, sourceY, x, y, source.EyeHeightMetres))
                     {
                         _states[ToIndex(x, y)] = VisibilityState.Visible;
                     }
                 }
             }
+        }
+
+        // Steps cell by cell from the source to the target, skipping both ends: the source may stand on a roof and
+        // the target may be a facade, and neither should hide itself.
+        private bool HasLineOfSight(int fromX, int fromY, int toX, int toY, float eyeHeightMetres)
+        {
+            if (_blocker == null)
+            {
+                return true;
+            }
+
+            int deltaX = toX - fromX;
+            int deltaY = toY - fromY;
+            int steps = Math.Max(Math.Abs(deltaX), Math.Abs(deltaY));
+            for (int step = 1; step < steps; step++)
+            {
+                int x = fromX + (int)Math.Round((double)deltaX * step / steps);
+                int y = fromY + (int)Math.Round((double)deltaY * step / steps);
+                if (IsInside(x, y) && _blocker.ObstacleHeightAt(x, y) >= eyeHeightMetres)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private float DistanceSquaredToCellCenter(WorldPoint point, int x, int y)

@@ -4,19 +4,30 @@ using UnityEngine;
 
 namespace Stilargo.Gameplay.Fog
 {
-    /// <summary>Reveals fog around this object's transform while enabled.</summary>
+    /// <summary>
+    /// Reveals fog around this object's transform while enabled. It sees further the higher it stands, so a unit
+    /// on a roof or a tower overlooks the streets around it.
+    /// </summary>
     public sealed class VisionSourceComponent : MonoBehaviour, IVisionSource
     {
-        [SerializeField] private float _visionRadius = 10f;
+        // The unit's pivot is the centre of its capsule, a metre above its feet.
+        private const float DefaultPivotHeightMetres = 1f;
+
+        [SerializeField, Min(0f)] private float _pivotHeightMetres = DefaultPivotHeightMetres;
 
         private VisibilityGrid _grid;
+        private VisionSettings _settings;
         private Transform _transform;
 
         public WorldPoint Position => new WorldPoint(_transform.position.x, _transform.position.z);
 
-        public float VisionRadius => _visionRadius;
+        public float VisionRadius => _settings.RadiusAt(FeetHeight, 0f);
 
-        public void Construct(VisibilityGrid grid)
+        public float EyeHeightMetres => FeetHeight + _settings.EyeHeightMetres;
+
+        private float FeetHeight => _transform.position.y - _pivotHeightMetres;
+
+        public void Construct(VisibilityGrid grid, VisionSettings settings)
         {
             if (grid == null)
             {
@@ -28,6 +39,7 @@ namespace Stilargo.Gameplay.Fog
                 throw new InvalidOperationException($"{nameof(VisionSourceComponent)} is already constructed.");
             }
 
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _grid = grid;
             CacheComponents();
             if (isActiveAndEnabled)

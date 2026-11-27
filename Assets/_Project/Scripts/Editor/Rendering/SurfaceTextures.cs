@@ -35,6 +35,15 @@ namespace Stilargo.Editor.Rendering
             return new SurfaceTextures(albedo, normal, mask);
         }
 
+        /// <summary>Loads <c>&lt;name&gt;_albedo.png</c>, <c>_normal.png</c> and <c>_mask.png</c> from any folder, such as a character's textures.</summary>
+        public static SurfaceTextures LoadPng(string folder, string name)
+        {
+            Texture2D albedo = LoadColour($"{folder}/{name}_albedo.png");
+            Texture2D normal = LoadNormal($"{folder}/{name}_normal.png");
+            Texture2D mask = LoadLinear($"{folder}/{name}_mask.png");
+            return new SurfaceTextures(albedo, normal, mask);
+        }
+
         private static Texture2D LoadColour(string path)
         {
             TextureImporter importer = RequireImporter(path);

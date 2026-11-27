@@ -7,14 +7,14 @@ namespace Stilargo.Gameplay.City
     [CreateAssetMenu(fileName = "CityConfig", menuName = "Stilargo/City Config")]
     public sealed class CityConfigAsset : ScriptableObject
     {
-        [SerializeField] private int _blocksX = 4;
-        [SerializeField] private int _blocksY = 4;
+        [SerializeField] private int _blocksX = 5;
+        [SerializeField] private int _blocksY = 5;
         [SerializeField] private int _blockSize = 12;
         [SerializeField] private int _roadWidth = 2;
         [SerializeField] private int _minPlotSize = 3;
         [SerializeField] private int _maxPlotSize = 6;
         [SerializeField] private int _minStoreys = 1;
-        [SerializeField] private int _maxStoreys = 4;
+        [SerializeField] private int _maxStoreys = 2;
         [SerializeField] private float _cellSize = 2f;
 
         public CityConfig ToConfig()

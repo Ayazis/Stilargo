@@ -63,9 +63,9 @@ namespace Stilargo.Gameplay.Hill
 
             Hill = new HillControl(new HillZone(CenterOf(hillSettings), hillSettings.RadiusMetres), hillSettings);
             HouseClaim claim = _fortifications.Claim;
-            LetEnemiesTargetTheHouse(claim);
+            LetBothTeamsTargetHouses(_fortifications.Ledger);
             Referee = new MatchReferee(Hill, claim);
-            Rival = CreateRival(rivalSettings, claim);
+            Rival = CreateRival(rivalSettings, new RivalHouses(_fortifications.Ledger, claim, new HouseClaim(Team.Red, _fortifications.Ledger)));
             Rival.Start();
             _matchLoop.Construct(new HillMatch(Hill, Rival, Referee), _playerUnits.Cast<ICombatTarget>().ToList(), _enemies.Cast<ICombatTarget>().ToList());
             _zoneView.Construct(Hill);
@@ -73,22 +73,29 @@ namespace Stilargo.Gameplay.Hill
             _endPause.Construct(Referee);
         }
 
-        private void LetEnemiesTargetTheHouse(HouseClaim claim)
+        // Each house is a target for both sides; a target only counts while the other team owns the house.
+        private void LetBothTeamsTargetHouses(HouseLedger ledger)
         {
-            claim.Claimed += house => _combat.AddPlayerTarget(house);
-            if (claim.IsClaimed)
+            ledger.HouseCreated += AddHouseTargets;
+            foreach (ClaimedHouse house in ledger.Houses)
             {
-                _combat.AddPlayerTarget(claim.House);
+                AddHouseTargets(house);
             }
         }
 
-        private RivalBrain CreateRival(RivalSettings settings, HouseClaim claim)
+        private void AddHouseTargets(ClaimedHouse house)
+        {
+            _combat.AddPlayerTarget(new HouseTarget(house, Team.Blue));
+            _combat.AddEnemyTarget(new HouseTarget(house, Team.Red));
+        }
+
+        private RivalBrain CreateRival(RivalSettings settings, RivalHouses houses)
         {
             List<IRivalUnit> units = _enemies.Take(settings.SquadSize).Select(enemy => CreateRivalUnit(enemy, settings)).ToList();
             System.Numerics.Vector3 basePosition = AverageGroundPosition(units);
             var dropOff = new DropOff(new WorldPoint(basePosition.X, basePosition.Z), RivalWallet);
             var scavenging = new ScavengingArea(_world.ScavengingArea.Caches, dropOff, settings.ScavengeReachMetres);
-            var world = new RivalWorld(new RivalSquad(units, basePosition), new RivalSurroundings(Hill, claim, scavenging), settings);
+            var world = new RivalWorld(new RivalSquad(units, basePosition), new RivalSurroundings(Hill, houses, scavenging), settings);
             return new RivalBrain(world, new RivalStrategySet());
         }
 
@@ -142,7 +149,7 @@ namespace Stilargo.Gameplay.Hill
                 throw new InvalidOperationException($"{nameof(HillRivalInstaller)} on '{name}' needs the world, combat, fortifications and all views assigned.");
             }
 
-            if (_world.CityLayout == null || _world.ScavengingArea == null || _fortifications.Claim == null)
+            if (_world.CityLayout == null || _world.ScavengingArea == null || _fortifications.Claim == null || _fortifications.Ledger == null)
             {
                 throw new InvalidOperationException(
                     $"List {nameof(WorldInstaller)}, {nameof(CombatInstaller)} and {nameof(FortificationInstaller)} before {nameof(HillRivalInstaller)}.");

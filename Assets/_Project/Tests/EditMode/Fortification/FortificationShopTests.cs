@@ -91,9 +91,10 @@ namespace Stilargo.Tests.EditMode.Fortification
         {
             ClaimHouse();
             Wallet.Deposit(1000);
-            _claim.House.TakeDamage(_claim.House.MaxHealth);
+            ClaimedHouse house = _claim.House;
+            house.TakeDamage(house.MaxHealth);
 
-            Assert.AreEqual(PurchaseResult.HouseDestroyed, _shop.TryBuy(_claim.House, Barricade));
+            Assert.AreEqual(PurchaseResult.HouseDestroyed, _shop.TryBuy(house, Barricade));
             Assert.AreEqual(1000, Wallet.Balance);
         }
 

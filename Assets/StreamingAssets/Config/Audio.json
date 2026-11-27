@@ -1,0 +1,7 @@
+{
+    "masterVolume": 0.8,
+    "effectsVolume": 0.8,
+    "interfaceVolume": 0.6,
+    "fullVolumeDistanceMetres": 25,
+    "silentDistanceMetres": 110
+}

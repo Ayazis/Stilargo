@@ -1,23 +1,31 @@
 using System;
 using Stilargo.Core.Fog;
 using UnityEngine;
+using UnityEngine.Rendering.HighDefinition;
 
 namespace Stilargo.Gameplay.Fog
 {
-    /// <summary>Paints the visibility grid into a texture on this object's renderer (a quad above the map).</summary>
-    [RequireComponent(typeof(Renderer))]
+    /// <summary>
+    /// Paints the visibility grid into a texture that a decal projects straight down onto the map, so the fog
+    /// darkens the ground and buildings themselves instead of floating above them as a sheet.
+    /// </summary>
+    [RequireComponent(typeof(DecalProjector))]
     public sealed class FogOverlay : MonoBehaviour
     {
         private const float Half = 0.5f;
         private const float FlatRotationX = 90f;
 
-        [SerializeField] private Color32 _unseenColor = new Color32(0, 0, 0, 255);
-        [SerializeField] private Color32 _exploredColor = new Color32(0, 0, 0, 160);
-        [SerializeField] private Color32 _visibleColor = new Color32(0, 0, 0, 0);
-        [SerializeField] private string _textureProperty = "_UnlitColorMap";
-        [SerializeField] private float _heightAboveGround = 20f;
+        // Dark earth tones rather than pure black, so fogged areas read as shadowed ground, not holes.
+        [SerializeField] private Color32 _unseenColor = new Color32(14, 12, 10, 235);
+        [SerializeField] private Color32 _exploredColor = new Color32(14, 12, 10, 150);
+        [SerializeField] private Color32 _visibleColor = new Color32(14, 12, 10, 0);
+        [SerializeField] private string _textureProperty = "_BaseColorMap";
 
-        private Renderer _renderer;
+        // Tall enough to reach from the ground over the highest roofs.
+        [SerializeField, Min(1f)] private float _projectionDepthMetres = 80f;
+
+        private DecalProjector _projector;
+        private Material _material;
         private VisibilityGrid _grid;
         private Texture2D _texture;
         private Color32[] _pixels;
@@ -74,33 +82,37 @@ namespace Stilargo.Gameplay.Fog
 
         private void OnDestroy()
         {
-            if (_texture == null)
+            if (_material != null)
             {
-                return;
+                Destroy(_material);
             }
 
-            Destroy(_texture);
+            if (_texture != null)
+            {
+                Destroy(_texture);
+            }
         }
 
         // Construct can run before Awake when the bootstrapper wires scene objects, so both paths cache.
         private void CacheComponents()
         {
-            if (_renderer == null)
+            if (_projector == null)
             {
-                _renderer = GetComponent<Renderer>();
+                _projector = GetComponent<DecalProjector>();
             }
         }
 
-        // Assumes a Unity quad: lying flat (rotated 90 degrees on X) puts its UV origin at world (0, 0)
-        // and its V axis along world Z, matching VisibilityGrid's cell layout.
+        // Rotating 90 degrees on X points the projector down and its V axis along world Z, so the decal UV
+        // origin lands on world (0, 0), matching VisibilityGrid's cell layout. The box spans ground to roofs.
         private void FitToGrid()
         {
             float width = _grid.Width * _grid.CellSize;
             float depth = _grid.Height * _grid.CellSize;
             transform.SetPositionAndRotation(
-                new Vector3(width * Half, _heightAboveGround, depth * Half),
+                new Vector3(width * Half, _projectionDepthMetres * Half, depth * Half),
                 Quaternion.Euler(FlatRotationX, 0f, 0f));
-            transform.localScale = new Vector3(width, depth, 1f);
+            _projector.pivot = Vector3.zero;
+            _projector.size = new Vector3(width, depth, _projectionDepthMetres);
         }
 
         private void CreateTexture()
@@ -111,7 +123,9 @@ namespace Stilargo.Gameplay.Fog
                 wrapMode = TextureWrapMode.Clamp
             };
             _pixels = new Color32[_grid.Width * _grid.Height];
-            _renderer.material.SetTexture(_textureProperty, _texture);
+            _material = new Material(_projector.material);
+            _material.SetTexture(_textureProperty, _texture);
+            _projector.material = _material;
         }
 
         private void Repaint()

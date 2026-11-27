@@ -1,5 +1,6 @@
 using System;
 using Stilargo.Core.Hud;
+using Stilargo.Gameplay.Audio;
 using Stilargo.Gameplay.Composition;
 using Stilargo.Gameplay.Fortification;
 using Stilargo.Gameplay.World;
@@ -17,6 +18,7 @@ namespace Stilargo.UI.Hud
         [SerializeField] private CombatInstaller _combat;
         [SerializeField] private FortificationInstaller _fortification;
         [SerializeField] private HudView _view;
+        [SerializeField] private AudioInstaller _audio;
 
         private IHillStatus _hillStatus = new NoHillStatus();
 
@@ -34,15 +36,19 @@ namespace Stilargo.UI.Hud
 
             ValidateReferences();
             var stanceMenu = new StanceMenu(_combat.SelectionController.Selection, _combat.SelectionStance);
-            HudContent content = new HudContent(_world.Wallet, stanceMenu, _fortification.FortifyMenu).WithHillStatus(_hillStatus);
+            HudContent content = new HudContent(_world.Wallet, stanceMenu, _fortification.FortifyMenu)
+                .WithHillStatus(_hillStatus)
+                .WithOptions(new GameOptions(context.CameraControls, _world.VisibilityGrid));
             var pauseMenu = new PauseMenu(_world.Wallet, new ApplicationQuitter());
             _view.Construct(content, context.PlayerInput, pauseMenu);
+            _view.ShowHealthBars(_combat.HealthBars, _combat.Camera);
+            _view.UseClickSound(_audio.Sounds);
             _combat.SelectionController.UseUiPointerBlocker(_view);
         }
 
         private void ValidateReferences()
         {
-            if (_world == null || _combat == null || _fortification == null || _view == null)
+            if (_world == null || _combat == null || _fortification == null || _view == null || _audio == null)
             {
                 throw new InvalidOperationException($"{nameof(HudInstaller)} on '{name}' needs the world, combat and fortification installers and a HudView.");
             }

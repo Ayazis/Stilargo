@@ -1,18 +1,30 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Stilargo.Core.City
 {
     /// <summary>
-    /// Builds a deterministic grid city: a lattice of roads (including a ring road on the border)
-    /// around square blocks, each block recursively split into building plots.
+    /// Builds a deterministic town on a grid of streets (including a ring road on the border). The
+    /// <see cref="TownPlan"/> puts the open market square in the middle, house blocks with courtyard gardens around
+    /// it and parks further out. The <see cref="StreetShaper"/> merges and splits outskirts blocks so the streets
+    /// there are less regular, and the <see cref="NeighbourhoodPicker"/> turns each outskirts block into a plaza,
+    /// old town, villas or workshops.
     /// </summary>
     public sealed class CityGenerator
     {
         private readonly int _seed;
         private readonly CityConfig _config;
+        private readonly TownSettings _town;
+        private readonly HouseBlockLayout _houseBlocks;
+        private readonly Dictionary<BlockRole, IBlockLayout> _layouts;
 
         public CityGenerator(int seed, CityConfig config)
+            : this(seed, config, new TownSettings())
+        {
+        }
+
+        public CityGenerator(int seed, CityConfig config, TownSettings town)
         {
             if (config == null)
             {
@@ -22,6 +34,9 @@ namespace Stilargo.Core.City
             config.Validate();
             _seed = seed;
             _config = config;
+            _town = town ?? throw new ArgumentNullException(nameof(town));
+            _houseBlocks = new HouseBlockLayout(town.HouseBlock);
+            _layouts = CreateLayouts();
         }
 
         public CityLayout Generate()
@@ -34,14 +49,64 @@ namespace Stilargo.Core.City
                 _config.CellSize);
 
             MarkRoads(grid, period);
-            List<GridRect> blocks = CreateBlocks(period);
+            List<TownBlock> blocks = CreateBlocks(period, random);
+            blocks = new StreetShaper(_town.Streets, _config.BlocksX, _config.MinPlotSize).Shape(blocks, grid, random);
+            blocks = NeighbourhoodPicker.Pick(blocks, _town.Neighbourhoods, random);
+
             List<Plot> plots = new List<Plot>();
-            foreach (GridRect block in blocks)
+            foreach (TownBlock block in blocks)
             {
-                Subdivide(block, random, plots);
+                LayoutFor(block).Lay(block.Area, random, plots);
             }
 
-            return new CityLayout(grid, blocks, plots);
+            return new CityLayout(grid, blocks.Select(block => block.Area).ToList(), plots);
+        }
+
+        private Dictionary<BlockRole, IBlockLayout> CreateLayouts()
+        {
+            var splitter = new PlotSplitter(new IntRange(_config.MinPlotSize, _config.MaxPlotSize));
+            NeighbourhoodSettings neighbourhoods = _town.Neighbourhoods;
+            return new Dictionary<BlockRole, IBlockLayout>
+            {
+                { BlockRole.MarketSquare, new OpenBlockLayout(PlotUse.Market) },
+                { BlockRole.Plaza, new OpenBlockLayout(PlotUse.Plaza) },
+                { BlockRole.Park, new OpenBlockLayout(PlotUse.Park) },
+                { BlockRole.HouseBlock, _houseBlocks },
+                {
+                    BlockRole.OldTown,
+                    new MixedBlockLayout(splitter, new IntRange(_config.MinStoreys, _config.MaxStoreys), OpenGroundShare.None)
+                },
+                {
+                    BlockRole.Villas,
+                    new MixedBlockLayout(
+                        splitter,
+                        new IntRange(neighbourhoods.VillaStoreys, neighbourhoods.VillaStoreys),
+                        new OpenGroundShare(PlotUse.Garden, neighbourhoods.VillaGardenShare))
+                },
+                {
+                    BlockRole.Workshops,
+                    new MixedBlockLayout(
+                        splitter,
+                        new IntRange(neighbourhoods.WorkshopStoreys, neighbourhoods.WorkshopStoreys),
+                        new OpenGroundShare(PlotUse.Yard, neighbourhoods.WorkshopYardShare))
+                },
+            };
+        }
+
+        // A house block too small for two rows and a courtyard gets old-town houses instead.
+        private IBlockLayout LayoutFor(TownBlock block)
+        {
+            if (block.Role == BlockRole.HouseBlock && !_houseBlocks.Fits(block.Area))
+            {
+                return _layouts[BlockRole.OldTown];
+            }
+
+            if (!_layouts.TryGetValue(block.Role, out IBlockLayout layout))
+            {
+                throw new InvalidOperationException($"No layout for {block.Role} blocks.");
+            }
+
+            return layout;
         }
 
         private void MarkRoads(CityGrid grid, int period)
@@ -63,9 +128,10 @@ namespace Stilargo.Core.City
             return coordinate % period < _config.RoadWidth;
         }
 
-        private List<GridRect> CreateBlocks(int period)
+        private List<TownBlock> CreateBlocks(int period, Random random)
         {
-            List<GridRect> blocks = new List<GridRect>();
+            BlockRole[] roles = TownPlan.Assign(_config.BlocksX, _config.BlocksY, _town.ParkBlockCount, random);
+            List<TownBlock> blocks = new List<TownBlock>();
             for (int blockY = 0; blockY < _config.BlocksY; blockY++)
             {
                 for (int blockX = 0; blockX < _config.BlocksX; blockX++)
@@ -73,42 +139,12 @@ namespace Stilargo.Core.City
                     GridPosition min = new GridPosition(
                         _config.RoadWidth + (blockX * period),
                         _config.RoadWidth + (blockY * period));
-                    blocks.Add(new GridRect(min, _config.BlockSize, _config.BlockSize));
+                    var area = new GridRect(min, _config.BlockSize, _config.BlockSize);
+                    blocks.Add(new TownBlock(area, roles[(blockY * _config.BlocksX) + blockX]));
                 }
             }
 
             return blocks;
-        }
-
-        private void Subdivide(GridRect area, Random random, List<Plot> plots)
-        {
-            if (area.Width > _config.MaxPlotSize)
-            {
-                int split = NextSplit(area.Width, random);
-                GridPosition rightMin = new GridPosition(area.Min.X + split, area.Min.Y);
-                Subdivide(new GridRect(area.Min, split, area.Height), random, plots);
-                Subdivide(new GridRect(rightMin, area.Width - split, area.Height), random, plots);
-                return;
-            }
-
-            if (area.Height > _config.MaxPlotSize)
-            {
-                int split = NextSplit(area.Height, random);
-                GridPosition topMin = new GridPosition(area.Min.X, area.Min.Y + split);
-                Subdivide(new GridRect(area.Min, area.Width, split), random, plots);
-                Subdivide(new GridRect(topMin, area.Width, area.Height - split), random, plots);
-                return;
-            }
-
-            int storeys = random.Next(_config.MinStoreys, _config.MaxStoreys + 1);
-            plots.Add(new Plot(area, storeys));
-        }
-
-        // Both halves must stay at least MinPlotSize. Validate guarantees MaxPlotSize >= 2 * MinPlotSize,
-        // so any length above MaxPlotSize always has a valid split point.
-        private int NextSplit(int length, Random random)
-        {
-            return random.Next(_config.MinPlotSize, length - _config.MinPlotSize + 1);
         }
     }
 }

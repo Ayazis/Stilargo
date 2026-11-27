@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using Stilargo.Gameplay.Animation;
+using Stilargo.Gameplay.Audio;
 using Stilargo.Gameplay.CameraControl;
 using Stilargo.Gameplay.Combat;
 using Stilargo.Gameplay.Cover;
@@ -19,6 +21,7 @@ using Stilargo.Editor.Fortification;
 using Stilargo.Editor.Hill;
 using Stilargo.Editor.Hud;
 using Stilargo.Editor.Rendering;
+using Stilargo.Editor.Units;
 using Stilargo.Editor.World;
 using Stilargo.Infrastructure.Composition;
 using Stilargo.UI.Hud;
@@ -42,25 +45,18 @@ namespace Stilargo.Editor.Scenes
         private const string SettingsFolder = "Assets/_Project/Settings";
         private const string CameraSettingsPath = SettingsFolder + "/CameraSettings.asset";
         private const string MaterialsFolder = "Assets/_Project/Materials";
-        private const string UnitMaterialPath = MaterialsFolder + "/Greybox_Unit.mat";
         private const string SelectionMarkerMaterialPath = MaterialsFolder + "/Greybox_SelectionMarker.mat";
         private const string WaypointPathMaterialPath = MaterialsFolder + "/Greybox_WaypointPath.mat";
 
-        // Distinct colours so units and their markers stand out from the city; Unity's default material is plain white.
-        private static readonly Color UnitColor = new Color(0.25f, 0.55f, 0.95f);
+        // Distinct colours so markers stand out from the city.
         private static readonly Color SelectionMarkerColor = new Color(0.3f, 1f, 0.4f);
         private static readonly Color WaypointPathColor = new Color(1f, 0.9f, 0.2f);
 
-        // Enemies read as hostile red against the blue squad; within PBR albedo range (no channel near 0 or 1).
-        private static readonly Color EnemyColor = new Color(0.72f, 0.16f, 0.13f);
+        // The enemy ring reads as hostile red; within PBR albedo range (no channel near 0 or 1).
         private static readonly Color EnemyMarkerColor = new Color(0.94f, 0.22f, 0.16f);
         private static readonly Color PlayerTracerColor = new Color(0.94f, 0.86f, 0.55f);
         private static readonly Color EnemyTracerColor = new Color(0.94f, 0.42f, 0.2f);
 
-        private const string WeaponsFolder = SettingsFolder + "/Weapons";
-        private const string PlayerWeaponPath = WeaponsFolder + "/PlayerRifle.asset";
-        private const string EnemyWeaponPath = WeaponsFolder + "/EnemyRifle.asset";
-        private const string EnemyMaterialPath = MaterialsFolder + "/Greybox_Enemy.mat";
         private const string EnemyMarkerMaterialPath = MaterialsFolder + "/Greybox_EnemyMarker.mat";
         private const string PlayerTracerMaterialPath = MaterialsFolder + "/Greybox_PlayerTracer.mat";
         private const string EnemyTracerMaterialPath = MaterialsFolder + "/Greybox_EnemyTracer.mat";
@@ -80,20 +76,12 @@ namespace Stilargo.Editor.Scenes
         private const string MuzzleName = "Muzzle";
 
         private const string EnemiesField = "_enemies";
-        private const string PlayerSideField = "_playerSide";
-        private const string EnemySideField = "_enemySide";
-        private const string SideWeaponField = "_weapon";
-        private const string SideMaxHealthField = "_maxHealth";
         private const string StanceControllerField = "_stanceController";
         private const string LineRendererField = "_lineRenderer";
-        private const string WeaponDamageField = "_damage";
 
         // Enemies stand in a row on the next street north of home: out of vision at the start, one block away.
         private static readonly float[] EnemyOffsetsX = { -6f, -2f, 2f, 6f };
         private const float EnemyOffsetZ = 28f;
-        private const float EnemyMaxHealth = 60f;
-        private const float PlayerWeaponDamage = 10f;
-        private const float EnemyWeaponDamage = 6f;
         private const float EnemyMarkerDiameter = 1.6f;
         private const float MuzzleHeightAboveCentre = 0.4f;
         private const float TracerWidth = 0.06f;
@@ -107,6 +95,17 @@ namespace Stilargo.Editor.Scenes
         private const string UnitName = "Unit";
         private const string SelectionMarkerName = "Selection Marker";
         private const string WaypointPathName = "Waypoint Path";
+        private const string AvatarName = "Avatar";
+        private const string AnimatorField = "_animator";
+        private const string RunClipSpeedField = "_runClipMetresPerSecond";
+        private const string AudioName = "Audio";
+        private const string AudioField = "_audio";
+        private const string CombatField = "_combat";
+        private const string FortificationField = "_fortification";
+        private const string HillField = "_hill";
+
+        // Player avatars are handed out in turn so the squad does not look cloned.
+        private static readonly string[] PlayerAvatars = { UnitAvatars.PlayerAvatarA, UnitAvatars.PlayerAvatarB, UnitAvatars.PlayerAvatarC };
 
         private const string InstallersField = "_installers";
         private const string CameraRigField = "_cameraRig";
@@ -136,8 +135,9 @@ namespace Stilargo.Editor.Scenes
         private const float UnitColumnSpacing = 3f;
         private const float UnitRowSpacing = 2f;
         private const float UnitHalfHeight = 1f;
-        private const float UnitAgentSpeed = 8f;
-        private const float UnitAgentAcceleration = 40f;
+        // Placeholder speed: player units get theirs from Combat.json and the rival's from Hill.json at startup.
+        private const float UnitAgentSpeed = 3.8f;
+        private const float UnitAgentAcceleration = 16f;
 
         private const float SelectionMarkerDiameter = 1.8f;
         private const float SelectionMarkerThickness = 0.02f;
@@ -170,6 +170,9 @@ namespace Stilargo.Editor.Scenes
         private static void Create()
         {
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            // Makes sure the unit animator has its run-speed parameter before any unit is built from it.
+            UnitAnimatorAsset.LoadOrCreate();
             CreateSun();
             PhotorealSceneDefaults.CreateGlobalVolume();
             WorldInstaller world = CreateWorld();
@@ -181,13 +184,16 @@ namespace Stilargo.Editor.Scenes
             AssignCombat(combatInstaller, enemies);
             CoverGarrisonInstaller coverGarrisonInstaller = CreateCoverGarrisonInstaller(combatInstaller, world, enemies);
             UnitWorldInstaller unitWorldInstaller = CreateUnitWorldInstaller(world, units, enemies);
-            FortificationInstaller fortificationInstaller = FortificationSceneSetup.Create(world, coverGarrisonInstaller, enemies);
+            FortificationInstaller fortificationInstaller = FortificationSceneSetup.Create(world, combatInstaller, coverGarrisonInstaller);
             HillRivalInstaller hillRivalInstaller = HillSceneSetup.Create(world, combatInstaller, fortificationInstaller);
+            AudioInstaller audioInstaller = CreateAudioInstaller(combatInstaller, fortificationInstaller, hillRivalInstaller);
             HudInstaller hudInstaller = HudSceneSetup.Create(world, combatInstaller, fortificationInstaller);
+            SerializedFields.Assign(hudInstaller, AudioField, audioInstaller);
             Installer hillHudLink = HillSceneSetup.LinkToHud(hillRivalInstaller, hudInstaller);
 
             // The link hands the hill to the HUD, so it runs after the hill installer and before the HUD installer.
-            var installers = new Installer[] { world, combatInstaller, coverGarrisonInstaller, unitWorldInstaller, fortificationInstaller, hillRivalInstaller, hillHudLink, hudInstaller };
+            // Audio listens to combat, fortification and the hill, and the HUD plays its clicks through it.
+            var installers = new Installer[] { world, combatInstaller, coverGarrisonInstaller, unitWorldInstaller, fortificationInstaller, hillRivalInstaller, audioInstaller, hillHudLink, hudInstaller };
             CreateBootstrapper(combatInstaller.gameObject, installers);
 
             EnsureFolder(System.IO.Path.GetDirectoryName(ScenePath));
@@ -230,7 +236,7 @@ namespace Stilargo.Editor.Scenes
 
         private static SelectableUnit[] CreateUnits(CitySite site)
         {
-            Material body = LoadOrCreateLitMaterial(UnitMaterialPath, UnitColor);
+            GameObject[] avatars = PlayerAvatars.Select(UnitAvatars.LoadOrCreate).ToArray();
             Material marker = LoadOrCreateUnlitMaterial(SelectionMarkerMaterialPath, SelectionMarkerColor);
             Material path = LoadOrCreateUnlitMaterial(WaypointPathMaterialPath, WaypointPathColor);
 
@@ -243,33 +249,21 @@ namespace Stilargo.Editor.Scenes
                     float z = (row - (UnitRows - 1) / 2f) * UnitRowSpacing;
                     Vector3 position = site.RoadPointNearHome(new Vector3(x, 0f, z)) + Vector3.up * UnitHalfHeight;
                     int index = row * UnitColumns + column;
-                    units[index] = CreateUnit($"{UnitName} {index + 1}", position, new UnitMaterials(body, marker, path));
+                    units[index] = CreateUnit($"{UnitName} {index + 1}", position, new UnitLook(avatars[index % avatars.Length], marker, path));
                 }
             }
 
             return units;
         }
 
-        private static SelectableUnit CreateUnit(string unitName, Vector3 position, UnitMaterials materials)
+        private static SelectableUnit CreateUnit(string unitName, Vector3 position, UnitLook look)
         {
-            GameObject unit = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            unit.name = unitName;
-            unit.transform.position = position;
-            unit.GetComponent<Renderer>().sharedMaterial = materials.Body;
-
-            // The agent stays off until the NavMesh is baked at startup; the unit enables it in Construct.
-            var agent = unit.AddComponent<NavMeshAgent>();
-            agent.speed = UnitAgentSpeed;
-            agent.acceleration = UnitAgentAcceleration;
-
-            // The capsule's pivot is its centre, so the agent lifts it by half its height to stand on the NavMesh.
-            agent.baseOffset = UnitHalfHeight;
-            agent.enabled = false;
+            GameObject unit = CreateBody(unitName, position, look.Avatar);
 
             var selectable = unit.AddComponent<SelectableUnit>();
             var fields = new SerializedObject(selectable);
-            fields.FindProperty(SelectionMarkerField).objectReferenceValue = CreateSelectionMarker(unit.transform, materials.Marker);
-            fields.FindProperty(PathViewField).objectReferenceValue = CreateWaypointPath(unit.transform, materials.Path);
+            fields.FindProperty(SelectionMarkerField).objectReferenceValue = CreateSelectionMarker(unit.transform, look.Marker);
+            fields.FindProperty(PathViewField).objectReferenceValue = CreateWaypointPath(unit.transform, look.Path);
             fields.ApplyModifiedPropertiesWithoutUndo();
 
             unit.AddComponent<CombatUnit>();
@@ -296,16 +290,7 @@ namespace Stilargo.Editor.Scenes
         /// <summary>An enemy is a unit without selection or orders, with a red ring so it reads as hostile. The fog hides it unless seen.</summary>
         private static CombatUnit CreateEnemy(string enemyName, Vector3 position)
         {
-            GameObject enemy = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            enemy.name = enemyName;
-            enemy.transform.position = position;
-            enemy.GetComponent<Renderer>().sharedMaterial = LoadOrCreateLitMaterial(EnemyMaterialPath, EnemyColor);
-
-            var agent = enemy.AddComponent<NavMeshAgent>();
-            agent.speed = UnitAgentSpeed;
-            agent.acceleration = UnitAgentAcceleration;
-            agent.baseOffset = UnitHalfHeight;
-            agent.enabled = false;
+            GameObject enemy = CreateBody(enemyName, position, UnitAvatars.LoadOrCreate(UnitAvatars.EnemyAvatar));
 
             Material marker = LoadOrCreateUnlitMaterial(EnemyMarkerMaterialPath, EnemyMarkerColor);
             CreateGroundRing(enemy.transform, marker, EnemyMarkerDiameter).name = EnemyMarkerName;
@@ -314,6 +299,47 @@ namespace Stilargo.Editor.Scenes
             var combatUnit = enemy.AddComponent<CombatUnit>();
             HillSceneSetup.MakeAutonomous(combatUnit);
             return combatUnit;
+        }
+
+        /// <summary>
+        /// The capsule stays as the unit's collider for selection and hits; the avatar is what is seen.
+        /// The capsule's pivot is its centre, so the avatar is lowered by half the capsule height to stand on the ground.
+        /// </summary>
+        private static GameObject CreateBody(string bodyName, Vector3 position, GameObject avatar)
+        {
+            GameObject body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            body.name = bodyName;
+            body.transform.position = position;
+            UnityEngine.Object.DestroyImmediate(body.GetComponent<MeshRenderer>());
+            UnityEngine.Object.DestroyImmediate(body.GetComponent<MeshFilter>());
+
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(avatar, body.transform);
+            instance.name = AvatarName;
+            instance.transform.localPosition = Vector3.down * UnitHalfHeight;
+
+            // The agent stays off until the NavMesh is baked at startup; the unit enables it in Construct.
+            var agent = body.AddComponent<NavMeshAgent>();
+            agent.speed = UnitAgentSpeed;
+            agent.acceleration = UnitAgentAcceleration;
+
+            // The capsule's pivot is its centre, so the agent lifts it by half its height to stand on the NavMesh.
+            agent.baseOffset = UnitHalfHeight;
+            agent.enabled = false;
+
+            var animation = body.AddComponent<UnitAnimationView>();
+            SerializedFields.Assign(animation, AnimatorField, instance.GetComponentInChildren<Animator>());
+            AssignRunClipSpeed(animation, avatar);
+            return body;
+        }
+
+        /// <summary>The run plays at the measured speed of its feet, so the view can match it to the agent.</summary>
+        private static void AssignRunClipSpeed(UnitAnimationView animation, GameObject avatar)
+        {
+            float metresPerSecond = RunClipSpeed.MeasureMetresPerSecond(avatar, UnitAnimatorAsset.LoadRunClip());
+            var fields = new SerializedObject(animation);
+            fields.FindProperty(RunClipSpeedField).floatValue = metresPerSecond;
+            fields.ApplyModifiedPropertiesWithoutUndo();
+            Debug.Log($"{avatar.name}: run clip covers {metresPerSecond:0.00} m/s.");
         }
 
         private static void CreateMuzzle(Transform unit, Material material)
@@ -345,31 +371,7 @@ namespace Stilargo.Editor.Scenes
                 enemyList.GetArrayElementAtIndex(index).objectReferenceValue = enemies[index];
             }
 
-            fields.FindProperty(PlayerSideField).FindPropertyRelative(SideWeaponField).objectReferenceValue = LoadOrCreateWeapon(PlayerWeaponPath, PlayerWeaponDamage);
-            SerializedProperty enemySide = fields.FindProperty(EnemySideField);
-            enemySide.FindPropertyRelative(SideWeaponField).objectReferenceValue = LoadOrCreateWeapon(EnemyWeaponPath, EnemyWeaponDamage);
-            enemySide.FindPropertyRelative(SideMaxHealthField).floatValue = EnemyMaxHealth;
             fields.ApplyModifiedPropertiesWithoutUndo();
-        }
-
-        /// <summary>Only a newly created weapon gets <paramref name="damage"/>; an existing asset keeps its tuned values.</summary>
-        private static WeaponDefinition LoadOrCreateWeapon(string path, float damage)
-        {
-            var existing = AssetDatabase.LoadAssetAtPath<WeaponDefinition>(path);
-            if (existing != null)
-            {
-                return existing;
-            }
-
-            EnsureFolder(WeaponsFolder);
-            var weapon = ScriptableObject.CreateInstance<WeaponDefinition>();
-            AssetDatabase.CreateAsset(weapon, path);
-            var fields = new SerializedObject(weapon);
-            fields.FindProperty(WeaponDamageField).floatValue = damage;
-            fields.ApplyModifiedPropertiesWithoutUndo();
-
-            AssetDatabase.SaveAssets();
-            return weapon;
         }
 
         private static GameObject CreateSelectionMarker(Transform unit, Material material)
@@ -470,6 +472,16 @@ namespace Stilargo.Editor.Scenes
             SerializedFields.AssignArray(installer, VisionSourcesField, units.Select(unit => unit.GetComponent<VisionSourceComponent>()).ToArray());
             SerializedFields.AssignArray(installer, ScavengersField, units.Select(unit => unit.GetComponent<ScavengerComponent>()).ToArray());
             SerializedFields.AssignArray(installer, FogHideablesField, enemies.Select(enemy => enemy.GetComponent<FogHideable>()).ToArray());
+            return installer;
+        }
+
+        private static AudioInstaller CreateAudioInstaller(CombatInstaller combat, FortificationInstaller fortification, HillRivalInstaller hill)
+        {
+            var audio = new GameObject(AudioName);
+            var installer = audio.AddComponent<AudioInstaller>();
+            SerializedFields.Assign(installer, CombatField, combat);
+            SerializedFields.Assign(installer, FortificationField, fortification);
+            SerializedFields.Assign(installer, HillField, hill);
             return installer;
         }
 

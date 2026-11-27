@@ -14,6 +14,7 @@ namespace Stilargo.UI.Hud
         private readonly FortifyMenu _menu;
         private readonly VisualElement _claimSection = new VisualElement();
         private readonly VisualElement _shopSection = new VisualElement();
+        private readonly Label _infoLabel = HudStyle.CreateLabel(string.Empty);
         private readonly Label _claimHint = HudStyle.CreateLabel(FortifyMenu.ClaimHint);
         private readonly Button _claimButton;
         private readonly Label _incomeLabel = HudStyle.CreateLabel(string.Empty);
@@ -37,20 +38,25 @@ namespace Stilargo.UI.Hud
             _shopSection.Add(_repairButton);
             AddOfferButtons();
             _shopSection.Add(_messageLabel);
+            Add(_infoLabel);
             Add(_shopSection);
             Add(_claimSection);
         }
 
         public void Refresh()
         {
-            bool isClaimed = _menu.IsClaimed;
+            bool hasHouse = _menu.HasHouse;
             bool canClaim = _menu.CanClaim;
-            SetVisible(_claimSection, !isClaimed || canClaim);
-            SetVisible(_claimHint, !isClaimed);
-            SetVisible(_shopSection, isClaimed);
-            _claimButton.SetEnabled(canClaim);
+            bool showsHint = _menu.ShowsClaimHint;
+            SetVisible(_infoLabel, _menu.HasFocusedBuilding);
+            SetVisible(_claimSection, canClaim || showsHint);
+            SetVisible(_claimHint, showsHint);
+            SetVisible(_claimButton, canClaim);
+            SetVisible(_shopSection, hasHouse);
+            _infoLabel.text = _menu.BuildingInfoText();
+            _claimHint.text = _menu.ClaimHintText();
 
-            if (isClaimed)
+            if (hasHouse)
             {
                 RefreshShop();
             }

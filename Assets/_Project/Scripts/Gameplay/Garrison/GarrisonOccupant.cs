@@ -165,8 +165,8 @@ namespace Stilargo.Gameplay.Garrison
                 return;
             }
 
-            float radius = _visionSource.VisionRadius + _setup.Bonuses.For(slot).SightMetres;
-            _rooftopVision = new RooftopVision(_transform, radius);
+            float bonus = _setup.Bonuses.For(slot).SightMetres;
+            _rooftopVision = new RooftopVision(_visionSource, bonus);
             _setup.VisibilityGrid.Register(_rooftopVision);
         }
 

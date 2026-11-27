@@ -14,6 +14,7 @@ namespace Stilargo.Infrastructure.Config
         [SerializeField] private float scavengeSeconds = RivalSettings.DefaultScavengeSeconds;
         [SerializeField] private float contestSeconds = RivalSettings.DefaultContestSeconds;
         [SerializeField] private float raidSeconds = RivalSettings.DefaultRaidSeconds;
+        [SerializeField] private float confiscateSeconds = RivalSettings.DefaultConfiscateSeconds;
         [SerializeField] private float scavengeReachMetres = RivalSettings.DefaultScavengeReachMetres;
         [SerializeField] private float scavengeRadiusMetres = RivalSettings.DefaultScavengeRadiusMetres;
         [SerializeField] private float hillSpreadMetres = RivalSettings.DefaultHillSpreadMetres;
@@ -27,6 +28,7 @@ namespace Stilargo.Infrastructure.Config
                     .WithSquadSize(squadSize)
                     .WithMoveSpeed(moveSpeedMetresPerSecond)
                     .WithStrategyTimes(scavengeSeconds, contestSeconds, raidSeconds)
+                    .WithConfiscateTime(confiscateSeconds)
                     .WithScavengeReach(scavengeReachMetres)
                     .WithScavengeRadius(scavengeRadiusMetres)
                     .WithHillSpread(hillSpreadMetres)

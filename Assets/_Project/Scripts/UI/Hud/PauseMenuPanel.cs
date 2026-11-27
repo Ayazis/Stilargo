@@ -17,15 +17,20 @@ namespace Stilargo.UI.Hud
         private static readonly Color BackdropColor = new Color(0f, 0f, 0f, 0.55f);
 
         private readonly PauseMenu _menu;
+        private readonly GameOptions _options;
+        private readonly VisualElement _cameraHints = new VisualElement();
+        private Button _cameraPresetButton;
+        private Button _fogButton;
         private readonly VisualElement _mainPage = new VisualElement();
         private readonly VisualElement _settingsPage = new VisualElement();
         private readonly TextField _moneyField = new TextField(PauseMenu.MoneyFieldLabel);
         private readonly Label _settingsMessage = HudStyle.CreateLabel(string.Empty);
         private float _timeScaleBeforePause = 1f;
 
-        public PauseMenuPanel(PauseMenu menu)
+        public PauseMenuPanel(PauseMenu menu, GameOptions options)
         {
             _menu = menu ?? throw new ArgumentNullException(nameof(menu));
+            _options = options ?? throw new ArgumentNullException(nameof(options));
             StyleBackdrop();
             VisualElement panel = HudStyle.CreatePanel();
             panel.style.width = PanelWidthPixels;
@@ -71,6 +76,8 @@ namespace Stilargo.UI.Hud
             _settingsPage.Add(_moneyField);
             _settingsPage.Add(HudStyle.CreateButton(PauseMenu.ApplyMoneyLabel, ApplyMoney));
             _settingsPage.Add(_settingsMessage);
+            _fogButton = HudStyle.CreateButton(_options.FogLabel, ToggleFog);
+            _settingsPage.Add(_fogButton);
             AddCameraControls();
             _settingsPage.Add(HudStyle.CreateButton(PauseMenu.BackLabel, _menu.ShowMain));
         }
@@ -78,10 +85,32 @@ namespace Stilargo.UI.Hud
         private void AddCameraControls()
         {
             _settingsPage.Add(HudStyle.CreateLabel(CameraControlHints.Title));
-            foreach (ControlHint hint in CameraControlHints.All)
+            _cameraPresetButton = HudStyle.CreateButton(_options.CameraPresetLabel, NextCameraPreset);
+            _settingsPage.Add(_cameraPresetButton);
+            _settingsPage.Add(_cameraHints);
+            ShowCameraHints();
+        }
+
+        private void NextCameraPreset()
+        {
+            _options.NextCameraPreset();
+            _cameraPresetButton.text = _options.CameraPresetLabel;
+            ShowCameraHints();
+        }
+
+        private void ShowCameraHints()
+        {
+            _cameraHints.Clear();
+            foreach (ControlHint hint in _options.CameraHints)
             {
-                _settingsPage.Add(HudStyle.CreateLabel($"{hint.Action}: {hint.Keys}"));
+                _cameraHints.Add(HudStyle.CreateLabel($"{hint.Action}: {hint.Keys}"));
             }
+        }
+
+        private void ToggleFog()
+        {
+            _options.ToggleFog();
+            _fogButton.text = _options.FogLabel;
         }
 
         private void OpenSettings()

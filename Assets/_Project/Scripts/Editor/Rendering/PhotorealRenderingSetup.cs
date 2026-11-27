@@ -9,7 +9,8 @@ namespace Stilargo.Editor.Rendering
     /// <summary>
     /// Makes HDRP the project's pipeline and applies the settings our photoreal target needs: linear color,
     /// physical light units, high-quality shadows, screen-space effects, and a global volume with a
-    /// physically based sky, automatic exposure, fog and tonemapping.
+    /// physically based sky with sparse volumetric clouds, SSGI, automatic exposure, horizon depth of field
+    /// and filmic grading (atmospheric fog is off).
     /// Safe to rerun. Batch: -executeMethod Stilargo.Editor.Rendering.PhotorealRenderingSetup.Apply
     /// </summary>
     public static class PhotorealRenderingSetup
@@ -18,9 +19,28 @@ namespace Stilargo.Editor.Rendering
         private const string PipelinePath = SettingsFolder + "/HdrpPipeline.asset";
         private const int FullResolutionMipLimit = 0;
 
-        private const float FogMeanFreePathMetres = 700f;
         private const float BloomIntensity = 0.15f;
         private const float VignetteIntensity = 0.2f;
+
+        // Shadows: the RTS camera sees far, so cascades reach the whole city at a sharp resolution.
+        private const int DirectionalShadowResolutionLow = 1024;
+        private const int DirectionalShadowResolutionHigh = 4096;
+        private const float MaxShadowDistanceMeters = 600f;
+        private const int ShadowCascadeCount = 4;
+
+        // Ambient occlusion radius in meters: wide enough to darken street corners and wall bases.
+        private const float AmbientOcclusionIntensity = 1.2f;
+        private const float AmbientOcclusionRadiusMeters = 2f;
+
+        // Grading: slightly warm, a touch more contrast, a little less saturation for a filmic look.
+        private const float ContrastPercent = 8f;
+        private const float SaturationPercent = -5f;
+        private const float WhiteBalanceTemperature = 6f;
+        private const float FilmGrainIntensity = 0.12f;
+
+        // Only the far horizon softens, so zooming never blurs the play area.
+        private const float FarBlurStartMeters = 300f;
+        private const float FarBlurEndMeters = 900f;
 
         [MenuItem("Stilargo/Apply Photoreal Rendering Settings")]
         public static void Apply()
@@ -70,9 +90,20 @@ namespace Stilargo.Editor.Rendering
             settings.supportSSGI = true;
             settings.supportVolumetrics = true;
             settings.supportMotionVectors = true;
+            settings.supportVolumetricClouds = true;
+            ApplyShadowQuality(ref settings);
             pipeline.currentPlatformRenderPipelineSettings = settings;
             EditorUtility.SetDirty(pipeline);
             return pipeline;
+        }
+
+        private static void ApplyShadowQuality(ref RenderPipelineSettings settings)
+        {
+            settings.hdShadowInitParams.directionalShadowFilteringQuality = HDShadowFilteringQuality.High;
+            settings.hdShadowInitParams.maxDirectionalShadowMapResolution = DirectionalShadowResolutionHigh;
+            settings.hdShadowInitParams.shadowResolutionDirectional = new IntScalableSetting(
+                new[] { DirectionalShadowResolutionLow, DirectionalShadowResolutionHigh, DirectionalShadowResolutionHigh, DirectionalShadowResolutionHigh },
+                ScalableSettingSchemaId.With4Levels);
         }
 
         private static void LoadOrCreateVolumeProfile()
@@ -86,8 +117,10 @@ namespace Stilargo.Editor.Rendering
 
             ApplySky(profile);
             ApplyExposureAndFog(profile);
+            ApplyShadows(profile);
             ApplyScreenSpaceEffects(profile);
             ApplyPostProcessing(profile);
+            ApplyGrading(profile);
             EditorUtility.SetDirty(profile);
         }
 
@@ -97,21 +130,40 @@ namespace Stilargo.Editor.Rendering
             environment.skyType.Override((int)SkyType.PhysicallyBased);
             environment.skyAmbientMode.Override(SkyAmbientMode.Dynamic);
             GetOrAdd<PhysicallyBasedSky>(profile);
+
+            VolumetricClouds clouds = GetOrAdd<VolumetricClouds>(profile);
+            clouds.enable.Override(true);
+            clouds.cloudPreset = VolumetricClouds.CloudPresets.Sparse;
+        }
+
+        private static void ApplyShadows(VolumeProfile profile)
+        {
+            HDShadowSettings shadows = GetOrAdd<HDShadowSettings>(profile);
+            shadows.maxShadowDistance.Override(MaxShadowDistanceMeters);
+            shadows.cascadeShadowSplitCount.Override(ShadowCascadeCount);
+            GetOrAdd<MicroShadowing>(profile).enable.Override(true);
         }
 
         private static void ApplyExposureAndFog(VolumeProfile profile)
         {
             GetOrAdd<Exposure>(profile).mode.Override(ExposureMode.AutomaticHistogram);
 
+            // No haze: from the zoomed-out RTS camera it greyed out the whole city instead of adding depth.
             Fog fog = GetOrAdd<Fog>(profile);
-            fog.enabled.Override(true);
-            fog.meanFreePath.Override(FogMeanFreePathMetres);
-            fog.enableVolumetricFog.Override(true);
+            fog.enabled.Override(false);
+            fog.enableVolumetricFog.Override(false);
         }
 
         private static void ApplyScreenSpaceEffects(VolumeProfile profile)
         {
-            GetOrAdd<ScreenSpaceAmbientOcclusion>(profile).intensity.Override(1f);
+            ScreenSpaceAmbientOcclusion ambientOcclusion = GetOrAdd<ScreenSpaceAmbientOcclusion>(profile);
+            ambientOcclusion.intensity.Override(AmbientOcclusionIntensity);
+            ambientOcclusion.radius.Override(AmbientOcclusionRadiusMeters);
+            ambientOcclusion.quality.Override((int)ScalableSettingLevelParameter.Level.High);
+            GlobalIllumination globalIllumination = GetOrAdd<GlobalIllumination>(profile);
+            // SSGI off: at RTS distances it flickered and crushed the alleys to black.
+            globalIllumination.enable.Override(false);
+            globalIllumination.quality.Override((int)ScalableSettingLevelParameter.Level.Medium);
             GetOrAdd<ScreenSpaceReflection>(profile).enabled.Override(true);
             GetOrAdd<ContactShadows>(profile).enable.Override(true);
         }
@@ -121,6 +173,23 @@ namespace Stilargo.Editor.Rendering
             GetOrAdd<Tonemapping>(profile).mode.Override(TonemappingMode.ACES);
             GetOrAdd<Bloom>(profile).intensity.Override(BloomIntensity);
             GetOrAdd<Vignette>(profile).intensity.Override(VignetteIntensity);
+
+            DepthOfField depthOfField = GetOrAdd<DepthOfField>(profile);
+            depthOfField.focusMode.Override(DepthOfFieldMode.Manual);
+            depthOfField.farFocusStart.Override(FarBlurStartMeters);
+            depthOfField.farFocusEnd.Override(FarBlurEndMeters);
+        }
+
+        private static void ApplyGrading(VolumeProfile profile)
+        {
+            ColorAdjustments colorAdjustments = GetOrAdd<ColorAdjustments>(profile);
+            colorAdjustments.contrast.Override(ContrastPercent);
+            colorAdjustments.saturation.Override(SaturationPercent);
+            GetOrAdd<WhiteBalance>(profile).temperature.Override(WhiteBalanceTemperature);
+
+            FilmGrain filmGrain = GetOrAdd<FilmGrain>(profile);
+            filmGrain.type.Override(FilmGrainLookup.Thin1);
+            filmGrain.intensity.Override(FilmGrainIntensity);
         }
 
         private static T GetOrAdd<T>(VolumeProfile profile) where T : VolumeComponent

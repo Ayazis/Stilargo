@@ -19,6 +19,7 @@ namespace Stilargo.Gameplay.Composition
         private readonly List<ICombatTarget> _playerTargets = new List<ICombatTarget>();
         private readonly List<ICombatTarget> _enemyTargets = new List<ICombatTarget>();
         private readonly List<ISelectable> _selectableUnits = new List<ISelectable>();
+        private readonly List<HealthBarSource> _healthBars = new List<HealthBarSource>();
         private readonly Dictionary<ISelectable, UnitCombat> _combatByUnit = new Dictionary<ISelectable, UnitCombat>();
         private readonly CombatRosterSettings _settings;
         private readonly IVisibilityQuery _playerVisibility;
@@ -38,6 +39,9 @@ namespace Stilargo.Gameplay.Composition
 
         public IReadOnlyDictionary<ISelectable, UnitCombat> CombatByUnit => _combatByUnit;
 
+        /// <summary>Live list of every unit's health bar, both sides; a unit's bar leaves when it dies.</summary>
+        public IReadOnlyList<HealthBarSource> HealthBars => _healthBars;
+
         /// <summary>Call once the selection exists, so dead units can leave it.</summary>
         public void AttachSelection(UnitSelection selection)
         {
@@ -54,6 +58,7 @@ namespace Stilargo.Gameplay.Composition
             _playerTargets.Add(combatUnit);
             _selectableUnits.Add(unit);
             _combatByUnit.Add(unit, combat);
+            AddHealthBar(combatUnit, new HealthBarSource(combatUnit, _enemyVisibility, false));
             combatUnit.Died += () => RemovePlayerUnit(unit, combatUnit);
         }
 
@@ -65,6 +70,7 @@ namespace Stilargo.Gameplay.Composition
             Construct(combatUnit, setup, hitEffect);
 
             _enemyTargets.Add(combatUnit);
+            AddHealthBar(combatUnit, new HealthBarSource(combatUnit, _playerVisibility, true));
             combatUnit.Died += () => _enemyTargets.Remove(combatUnit);
         }
 
@@ -80,15 +86,33 @@ namespace Stilargo.Gameplay.Composition
             target.Died += () => _playerTargets.Remove(target);
         }
 
+        /// <summary>Adds something the player's units may shoot that is not a unit, such as a rival house. It leaves when it dies.</summary>
+        public void AddEnemyTarget(ICombatTarget target)
+        {
+            if (target == null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+
+            _enemyTargets.Add(target);
+            target.Died += () => _enemyTargets.Remove(target);
+        }
+
+        private void AddHealthBar(CombatUnit combatUnit, HealthBarSource bar)
+        {
+            _healthBars.Add(bar);
+            combatUnit.Died += () => _healthBars.Remove(bar);
+        }
+
         private static void Construct(CombatUnit combatUnit, CombatUnitSetup setup, HitEffectView hitEffect)
         {
             combatUnit.Construct(setup);
             hitEffect.Construct(combatUnit.Combat);
         }
 
-        private UnitCombat CreateCombat(CombatSide side, IVisibilityQuery visibility)
+        private UnitCombat CreateCombat(UnitSideSettings side, IVisibilityQuery visibility)
         {
-            var combat = new UnitCombat(new Weapon(side.Weapon.ToSettings()), _priority, new CombatAwareness(side.SightRange, visibility));
+            var combat = new UnitCombat(new Weapon(side.Weapon), _priority, new CombatAwareness(side.SightRangeMetres, visibility));
             combat.SetStance(_settings.Stances.Defensive);
             return combat;
         }

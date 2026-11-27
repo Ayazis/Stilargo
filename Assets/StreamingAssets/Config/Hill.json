@@ -7,10 +7,11 @@
     },
     "rival": {
         "squadSize": 4,
-        "moveSpeedMetresPerSecond": 6,
+        "moveSpeedMetresPerSecond": 3.8,
         "scavengeSeconds": 45,
         "contestSeconds": 40,
         "raidSeconds": 30,
+        "confiscateSeconds": 30,
         "scavengeReachMetres": 2.5,
         "scavengeRadiusMetres": 30,
         "hillSpreadMetres": 2,

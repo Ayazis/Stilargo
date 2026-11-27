@@ -1,0 +1,20 @@
+{
+    "player": {
+        "maxHealth": 250,
+        "weaponDamage": 10,
+        "weaponRangeMetres": 14,
+        "weaponCooldownSeconds": 1.1,
+        "weaponHitChance": 0.6,
+        "sightRangeMetres": 20
+    },
+    "enemy": {
+        "maxHealth": 160,
+        "weaponDamage": 7,
+        "weaponRangeMetres": 14,
+        "weaponCooldownSeconds": 1.2,
+        "weaponHitChance": 0.55,
+        "sightRangeMetres": 20
+    },
+    "playerMoveSpeedMetresPerSecond": 3.8,
+    "corpseSeconds": 6
+}

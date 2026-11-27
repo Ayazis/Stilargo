@@ -53,6 +53,18 @@ namespace Stilargo.Editor.World
         private static readonly Color ShutterColor = new Color(0.25f, 0.42f, 0.33f);
         private static readonly Color WoodColor = new Color(0.36f, 0.23f, 0.14f);
 
+        // Landmarks: weathered limestone, an ochre school, a terracotta tavern, Mediterranean greens and a dark pond.
+        private const float WaterSmoothness = 0.95f;
+        private static readonly Color StoneColor = new Color(0.74f, 0.7f, 0.62f);
+        private static readonly Color SchoolWallColor = new Color(0.86f, 0.66f, 0.32f);
+        private static readonly Color TavernWallColor = new Color(0.64f, 0.33f, 0.24f);
+        private static readonly Color GrassColor = new Color(0.3f, 0.42f, 0.19f);
+        private static readonly Color FoliageColor = new Color(0.19f, 0.31f, 0.15f);
+        private static readonly Color BarkColor = new Color(0.3f, 0.22f, 0.16f);
+        private static readonly Color WaterColor = new Color(0.07f, 0.17f, 0.19f);
+        private static readonly Color ClothColor = new Color(0.62f, 0.2f, 0.15f);
+        private static readonly Color ShadowColor = new Color(0.05f, 0.05f, 0.055f);
+
         public static Material GroundMaterial()
         {
             Material material = LoadOrCreateMaterial("Ground", GroundTint);
@@ -77,6 +89,30 @@ namespace Stilargo.Editor.World
             SerializedFields.Assign(spawner, "_windowPrefab", LoadOrCreateKitPrefab("Window"));
             SerializedFields.Assign(spawner, "_doorPrefab", LoadOrCreateKitPrefab("Door"));
             SerializedFields.Assign(spawner, "_cornicePrefab", LoadOrCreateKitPrefab("Cornice"));
+            AssignLandmarkMaterials(spawner, plaster);
+        }
+
+        /// <summary>Placeholder landmark materials; each can be swapped for an authored PBR material on the prefab.</summary>
+        private static void AssignLandmarkMaterials(CitySpawner spawner, SurfaceTextures plaster)
+        {
+            const string Field = "_landmarkMaterials.";
+            SerializedFields.Assign(spawner, Field + "_stone", PlasteredMaterial("LandmarkStone", StoneColor, plaster));
+            SerializedFields.Assign(spawner, Field + "_schoolWall", PlasteredMaterial("LandmarkSchoolWall", SchoolWallColor, plaster));
+            SerializedFields.Assign(spawner, Field + "_tavernWall", PlasteredMaterial("LandmarkTavernWall", TavernWallColor, plaster));
+            SerializedFields.Assign(spawner, Field + "_grass", LoadOrCreateMaterial("LandmarkGrass", GrassColor));
+            SerializedFields.Assign(spawner, Field + "_foliage", LoadOrCreateMaterial("LandmarkFoliage", FoliageColor));
+            SerializedFields.Assign(spawner, Field + "_bark", LoadOrCreateMaterial("LandmarkBark", BarkColor));
+            SerializedFields.Assign(spawner, Field + "_water", KitMaterial("Water", WaterColor, WaterSmoothness));
+            SerializedFields.Assign(spawner, Field + "_wood", KitMaterial("Wood", WoodColor, PaintSmoothness));
+            SerializedFields.Assign(spawner, Field + "_cloth", LoadOrCreateMaterial("LandmarkCloth", ClothColor));
+            SerializedFields.Assign(spawner, Field + "_shadow", LoadOrCreateMaterial("LandmarkShadow", ShadowColor));
+        }
+
+        private static Material PlasteredMaterial(string name, Color color, SurfaceTextures plaster)
+        {
+            Material material = LoadOrCreateMaterial(name, color);
+            HdrpMaterials.ApplyTriplanarTextures(material, plaster, PlasterMetresPerTile);
+            return material;
         }
 
         private static Material[] Palette(string name, Color[] colors, Action<Material> applyTextures)

@@ -9,6 +9,8 @@ namespace Stilargo.Core.Rival
 
         public IRivalStrategy RaidHouse { get; } = new RaidHouseStrategy();
 
+        public IRivalStrategy ConfiscateHouse { get; } = new ConfiscateHouseStrategy();
+
         /// <summary>The rival opens by scavenging, which gives the player time to explore.</summary>
         public IRivalStrategy Initial => Scavenge;
     }

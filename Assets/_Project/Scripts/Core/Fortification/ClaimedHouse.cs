@@ -8,9 +8,10 @@ using Stilargo.Core.Garrison;
 namespace Stilargo.Core.Fortification
 {
     /// <summary>
-    /// A claimed building with fortification slots, its own hit points and an upkeep condition. Enemies can
-    /// shoot it like a unit; losing the base is the step-10 lose condition. Fortifications only add strength, so the
-    /// house has no cover protection of its own.
+    /// A claimed building with fortification slots, its own hit points, an upkeep condition and an owner (Blue, Red
+    /// or none). Enemies can shoot it like a unit; when it is destroyed it becomes unoccupied but stays damaged, so
+    /// whoever claims it next has to repair it. Fortifications only add strength, so the house has no cover
+    /// protection of its own.
     /// </summary>
     public sealed class ClaimedHouse : ICombatTarget
     {
@@ -43,6 +44,14 @@ namespace Stilargo.Core.Fortification
 
         public event Action Died;
 
+        /// <summary>Raised when the house is taken over or becomes unoccupied.</summary>
+        public event Action<ClaimedHouse> OwnerChanged;
+
+        /// <summary>The team that holds the house, or null while it is unoccupied.</summary>
+        public Team? Owner { get; private set; }
+
+        public bool IsUnoccupied => Owner == null;
+
         public event Action<FortificationSlot> FortificationBuilt;
 
         public GarrisonBuilding Building { get; }
@@ -65,6 +74,12 @@ namespace Stilargo.Core.Fortification
         /// <summary>Upkeep from 1 (well kept) down to 0 (run down). It wears over time and is repaired with money.</summary>
         public float Condition { get; private set; } = FullCondition;
 
+        /// <summary>True when worn or damaged, so a repair would change something.</summary>
+        public bool NeedsRepair => Condition < FullCondition || CurrentHealth < MaxHealth;
+
+        /// <summary>Share of the hit points that are missing, 0 to 1.</summary>
+        public float DamagedFraction => 1f - HealthFraction;
+
         /// <summary>How well the house is kept, 0 to 1: both worn condition and battle damage lower it.</summary>
         public float Maintenance => Condition * HealthFraction;
 
@@ -76,6 +91,17 @@ namespace Stilargo.Core.Fortification
 
         /// <summary>Floor area in cells: footprint times storeys, so bigger and taller buildings count for more.</summary>
         public int FloorCells => Building.Plot.Area.Width * Building.Plot.Area.Height * Building.Plot.Storeys;
+
+        public bool IsOwnedBy(Team team)
+        {
+            return Owner == team;
+        }
+
+        /// <summary>A team can take a house it does not own when it is unoccupied or lies in ruins.</summary>
+        public bool IsClaimableBy(Team team)
+        {
+            return !IsOwnedBy(team) && (IsUnoccupied || !IsAlive);
+        }
 
         public bool TryFindFreeSlot(FortificationSlotKind kind, out FortificationSlot slot)
         {
@@ -98,6 +124,7 @@ namespace Stilargo.Core.Fortification
             CurrentHealth = Math.Max(0f, CurrentHealth - amount);
             if (!IsAlive)
             {
+                ChangeOwner(null);
                 Died?.Invoke();
             }
         }
@@ -113,9 +140,21 @@ namespace Stilargo.Core.Fortification
             Condition = Math.Max(0f, Condition - amount);
         }
 
-        internal void RestoreCondition()
+        internal void TakeOver(Team team)
+        {
+            if (!IsClaimableBy(team))
+            {
+                throw new InvalidOperationException($"{team} cannot take over a house held by {Owner}.");
+            }
+
+            ChangeOwner(team);
+        }
+
+        /// <summary>Restores full condition and full health, which brings a ruined house back into use.</summary>
+        internal void Restore()
         {
             Condition = FullCondition;
+            CurrentHealth = MaxHealth;
         }
 
         /// <summary>Builds into the slot and adds its health bonus to both maximum and current health.</summary>
@@ -135,6 +174,17 @@ namespace Stilargo.Core.Fortification
             MaxHealth += fortification.HealthBonusPoints;
             CurrentHealth += fortification.HealthBonusPoints;
             FortificationBuilt?.Invoke(slot);
+        }
+
+        private void ChangeOwner(Team? owner)
+        {
+            if (Owner == owner)
+            {
+                return;
+            }
+
+            Owner = owner;
+            OwnerChanged?.Invoke(this);
         }
 
         private static float FractionOf(int part, int whole)

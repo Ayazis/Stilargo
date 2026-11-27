@@ -34,7 +34,7 @@ namespace Stilargo.Core.Hud
         public string RepairLabel()
         {
             ClaimedHouse house = RequireSelectedHouse();
-            return house.Condition < ClaimedHouse.FullCondition ? $"Repair (${_repair.CostFor(house)})" : NothingToRepairLabel;
+            return house.NeedsRepair ? $"Repair (${_repair.CostFor(house)})" : NothingToRepairLabel;
         }
 
         public bool CanRepair()

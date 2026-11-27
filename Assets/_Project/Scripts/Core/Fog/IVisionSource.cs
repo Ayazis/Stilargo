@@ -5,5 +5,8 @@ namespace Stilargo.Core.Fog
         WorldPoint Position { get; }
 
         float VisionRadius { get; }
+
+        /// <summary>Height of the eyes above the ground in metres; obstacles at least this tall block the view.</summary>
+        float EyeHeightMetres { get; }
     }
 }

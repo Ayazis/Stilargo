@@ -22,6 +22,16 @@ namespace Stilargo.Core.Hud
 
         public IHillStatus HillStatus { get; private set; }
 
+        /// <summary>The settings page's play options; null until <see cref="WithOptions"/> is called.</summary>
+        public GameOptions Options { get; private set; }
+
+        public HudContent WithOptions(GameOptions options)
+        {
+            HudContent copy = (HudContent)MemberwiseClone();
+            copy.Options = options ?? throw new ArgumentNullException(nameof(options));
+            return copy;
+        }
+
         public HudContent WithHillStatus(IHillStatus hillStatus)
         {
             HudContent copy = (HudContent)MemberwiseClone();

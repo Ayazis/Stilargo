@@ -22,6 +22,7 @@ namespace Stilargo.Tests.EditMode.Rival
         public const float ScavengeSeconds = 5f;
         public const float ContestSeconds = 6f;
         public const float RaidSeconds = 7f;
+        public const float ConfiscateSeconds = 8f;
         public const float HillRadius = 4f;
         public const int CacheValue = 30;
 
@@ -36,9 +37,15 @@ namespace Stilargo.Tests.EditMode.Rival
             RivalWallet = new Wallet();
             var scavenging = new ScavengingArea(new[] { Cache }, new DropOff(new WorldPoint(Base.X, Base.Z), RivalWallet), 1f);
             Hill = new HillControl(new HillZone(HillCenter, HillRadius), new HillSettings(HillCenter.X, HillCenter.Z, HillRadius));
-            Claim = FortificationTestHouse.CreateClaim(FortificationTestHouse.CreateDropOff());
-            Settings = new RivalSettings().WithStrategyTimes(ScavengeSeconds, ContestSeconds, RaidSeconds).WithArrivalTolerance(0.5f);
-            World = new RivalWorld(new RivalSquad(Units, Base), new RivalSurroundings(Hill, Claim, scavenging), Settings);
+            Ledger = FortificationTestHouse.CreateLedger();
+            Claim = new HouseClaim(Team.Blue, Ledger);
+            RivalClaim = new HouseClaim(Team.Red, Ledger);
+            Settings = new RivalSettings()
+                .WithStrategyTimes(ScavengeSeconds, ContestSeconds, RaidSeconds)
+                .WithConfiscateTime(ConfiscateSeconds)
+                .WithArrivalTolerance(0.5f);
+            var houses = new RivalHouses(Ledger, Claim, RivalClaim);
+            World = new RivalWorld(new RivalSquad(Units, Base), new RivalSurroundings(Hill, houses, scavenging), Settings);
         }
 
         public FakeRivalUnit[] Units { get; }
@@ -49,7 +56,13 @@ namespace Stilargo.Tests.EditMode.Rival
 
         public HillControl Hill { get; }
 
+        public HouseLedger Ledger { get; }
+
+        /// <summary>The player's (Blue) houses.</summary>
         public HouseClaim Claim { get; }
+
+        /// <summary>The rival's (Red) houses.</summary>
+        public HouseClaim RivalClaim { get; }
 
         public RivalSettings Settings { get; }
 
@@ -57,9 +70,18 @@ namespace Stilargo.Tests.EditMode.Rival
 
         public RivalStrategySet Strategies { get; } = new RivalStrategySet();
 
-        public void ClaimHouse()
+        public ClaimedHouse ClaimHouse()
         {
             Claim.TryClaim(FortificationTestHouse.CreateBuilding());
+            return Claim.Houses[Claim.Houses.Count - 1];
+        }
+
+        /// <summary>Claims a house for the player and destroys it, leaving an unoccupied ruin.</summary>
+        public ClaimedHouse CreateRuin()
+        {
+            ClaimedHouse house = ClaimHouse();
+            house.TakeDamage(house.MaxHealth);
+            return house;
         }
 
         public void PutPlayerOnHill()

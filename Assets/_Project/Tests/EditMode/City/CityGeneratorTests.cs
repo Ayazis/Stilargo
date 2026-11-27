@@ -74,12 +74,13 @@ namespace Stilargo.Tests.EditMode.City
         }
 
         [Test]
-        public void Generate_Plots_RespectSizeRange()
+        public void Generate_OutskirtsPlots_RespectSizeRange()
         {
             CityConfig config = new CityConfig();
-            CityLayout layout = new CityGenerator(Seed, config).Generate();
+            var tooDeepForHouseBlocks = new RowHouseSettings(config.BlockSize, new IntRange(3, 5), new IntRange(3, 4));
+            CityLayout layout = new CityGenerator(Seed, config, new TownSettings(0, tooDeepForHouseBlocks)).Generate();
 
-            foreach (Plot plot in layout.Plots)
+            foreach (Plot plot in layout.Plots.Where(plot => plot.Use == PlotUse.House))
             {
                 Assert.That(plot.Area.Width, Is.InRange(config.MinPlotSize, config.MaxPlotSize));
                 Assert.That(plot.Area.Height, Is.InRange(config.MinPlotSize, config.MaxPlotSize));

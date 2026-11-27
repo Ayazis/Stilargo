@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using Stilargo.Core.Combat;
 using Stilargo.Core.Combat.Stances;
+using Stilargo.Gameplay.Animation;
 using Stilargo.Gameplay.CameraControl;
 using Stilargo.Gameplay.Combat;
 using Stilargo.Gameplay.Orders;
@@ -9,6 +11,7 @@ using Stilargo.Gameplay.Stances;
 using Stilargo.Gameplay.Units;
 using Stilargo.Gameplay.World;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace Stilargo.Gameplay.Composition
 {
@@ -27,8 +30,6 @@ namespace Stilargo.Gameplay.Composition
         [SerializeField] private UnityEngine.Camera _camera;
         [SerializeField] private SelectableUnit[] _units;
         [SerializeField] private CombatUnit[] _enemies;
-        [SerializeField] private CombatSide _playerSide = new CombatSide();
-        [SerializeField] private CombatSide _enemySide = new CombatSide();
         [SerializeField, Min(0.1f)] private float _defensiveLeashRadius = DefaultLeashRadiusMetres;
         [SerializeField] private SelectionController _selectionController;
         [SerializeField] private SelectionBoxView _selectionBoxView;
@@ -38,10 +39,23 @@ namespace Stilargo.Gameplay.Composition
 
         public SelectionController SelectionController => _selectionController;
 
+        public UnityEngine.Camera Camera => _camera;
+
+        /// <summary>The player's soldiers as placed at the start, including ones that have since died.</summary>
+        public IReadOnlyList<CombatUnit> PlayerUnits => _playerUnits;
+
+        /// <summary>The rival's soldiers as placed at the start, including ones that have since died.</summary>
+        public IReadOnlyList<CombatUnit> EnemyUnits => _enemies;
+
+        /// <summary>Live list of every unit's health bar; null until <see cref="Install"/> has run.</summary>
+        public IReadOnlyList<HealthBarSource> HealthBars => _roster == null ? null : _roster.HealthBars;
+
         /// <summary>Sets and reads the selected units' stance; null until <see cref="Install"/> has run.</summary>
         public SelectionStance SelectionStance { get; private set; }
 
+        private readonly List<CombatUnit> _playerUnits = new List<CombatUnit>();
         private CombatRoster _roster;
+        private float _corpseSeconds;
 
         /// <summary>Lets enemies shoot something that is not a unit, such as the claimed house. Call after <see cref="Install"/>.</summary>
         public void AddPlayerTarget(ICombatTarget target)
@@ -52,6 +66,17 @@ namespace Stilargo.Gameplay.Composition
             }
 
             _roster.AddPlayerTarget(target);
+        }
+
+        /// <summary>Lets the player's units shoot something that is not a unit, such as a rival house. Call after <see cref="Install"/>.</summary>
+        public void AddEnemyTarget(ICombatTarget target)
+        {
+            if (_roster == null)
+            {
+                throw new InvalidOperationException($"Run {nameof(CombatInstaller)}.{nameof(Install)} before adding targets.");
+            }
+
+            _roster.AddEnemyTarget(target);
         }
 
         public override void Install(GameContext context)
@@ -66,8 +91,10 @@ namespace Stilargo.Gameplay.Composition
             _cameraRig.Construct(context.PlayerInput, _cameraSettings);
 
             var stances = new StanceSet(new AggressiveStance(), new DefensiveStance(_defensiveLeashRadius), new HoldStance());
-            var roster = new CombatRoster(new CombatRosterSettings(stances, _playerSide, _enemySide), new VisibilityGridQuery(_world.VisibilityGrid));
-            AddPlayerUnits(roster);
+            CombatSettings combat = context.Config.Combat;
+            var roster = new CombatRoster(new CombatRosterSettings(stances, combat.Player, combat.Enemy), new VisibilityGridQuery(_world.VisibilityGrid));
+            _corpseSeconds = combat.CorpseSeconds;
+            AddPlayerUnits(roster, combat.PlayerMoveSpeedMetresPerSecond);
             AddEnemies(roster);
             _roster = roster;
 
@@ -81,12 +108,16 @@ namespace Stilargo.Gameplay.Composition
             _stanceController.Construct(context.PlayerInput, _selectionController.Selection, SelectionStance);
         }
 
-        private void AddPlayerUnits(CombatRoster roster)
+        private void AddPlayerUnits(CombatRoster roster, float moveSpeedMetresPerSecond)
         {
             foreach (SelectableUnit unit in _units)
             {
+                ComponentOf<NavMeshAgent>(unit).speed = moveSpeedMetresPerSecond;
                 unit.Construct();
-                roster.AddPlayerUnit(unit, ComponentOf<CombatUnit>(unit), ChildComponentOf<HitEffectView>(unit));
+                CombatUnit combatUnit = ComponentOf<CombatUnit>(unit);
+                roster.AddPlayerUnit(unit, combatUnit, ChildComponentOf<HitEffectView>(unit));
+                Animate(combatUnit);
+                _playerUnits.Add(combatUnit);
             }
         }
 
@@ -97,7 +128,16 @@ namespace Stilargo.Gameplay.Composition
                 AutonomousUnit autonomous = ComponentOf<AutonomousUnit>(enemy);
                 autonomous.Construct();
                 roster.AddEnemyUnit(enemy, ChildComponentOf<HitEffectView>(enemy), autonomous.Orders);
+                Animate(enemy);
             }
+        }
+
+        // The avatar outlives the unit for a few seconds as a fallen body.
+        private void Animate(CombatUnit unit)
+        {
+            UnitAnimationView view = ComponentOf<UnitAnimationView>(unit);
+            view.Construct(unit.Combat);
+            unit.Died += () => FallenBody.Lay(view.Body, _corpseSeconds);
         }
 
         private T ComponentOf<T>(Component owner) where T : Component
@@ -133,8 +173,6 @@ namespace Stilargo.Gameplay.Composition
             RequireAssigned(_moveOrderController, nameof(MoveOrderController));
             RequireAssigned(_formationLabelView, nameof(FormationLabelView));
             RequireAssigned(_stanceController, nameof(StanceController));
-            RequireAssigned(_playerSide.Weapon, "player " + nameof(WeaponDefinition));
-            RequireAssigned(_enemySide.Weapon, "enemy " + nameof(WeaponDefinition));
             RequireNoEmptySlots(_units, "unit");
             RequireNoEmptySlots(_enemies, "enemy");
         }

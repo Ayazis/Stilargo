@@ -28,7 +28,8 @@ namespace Stilargo.Core.Income
                 return 0f;
             }
 
-            return SizeRate(house) * (1f + Bonus(house));
+            // Landmarks earn more than houses of the same size: a tavern serves the whole quarter.
+            return SizeRate(house) * (1f + Bonus(house)) * house.Building.Plot.IncomeMultiplier;
         }
 
         private float SizeRate(ClaimedHouse house)

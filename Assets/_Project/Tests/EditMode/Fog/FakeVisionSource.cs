@@ -13,5 +13,7 @@ namespace Stilargo.Tests.EditMode.Fog
         public WorldPoint Position { get; set; }
 
         public float VisionRadius { get; set; }
+
+        public float EyeHeightMetres { get; set; } = VisionSettings.DefaultEyeHeightMetres;
     }
 }

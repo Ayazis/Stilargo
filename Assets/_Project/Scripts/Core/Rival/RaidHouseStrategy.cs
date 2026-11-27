@@ -1,19 +1,23 @@
+using Stilargo.Core.Fortification;
+
 namespace Stilargo.Core.Rival
 {
     /// <summary>
-    /// Marches the squad to the claimed house's entrance, where its units shoot the house. Returns to the hill when
-    /// the raid time is up, the house is gone or the player takes the hill.
+    /// Marches the squad to the entrance of the player's oldest standing house, where its units shoot it. Once the
+    /// house falls the squad confiscates it; it returns to the hill when the raid time is up, nothing is left to
+    /// raid or the player takes the hill.
     /// </summary>
     public sealed class RaidHouseStrategy : IRivalStrategy
     {
         private float _elapsedSeconds;
+        private ClaimedHouse _target;
 
         public string Name => "Raiding your house";
 
         public void Enter(RivalWorld world)
         {
             _elapsedSeconds = 0f;
-            if (!world.Surroundings.IsHouseStanding)
+            if (!world.Surroundings.Houses.TryFindRaidTarget(out _target))
             {
                 return;
             }
@@ -22,7 +26,7 @@ namespace Stilargo.Core.Rival
             {
                 if (unit.IsAlive)
                 {
-                    SendToHouse(world, unit);
+                    SendToTarget(world, unit);
                 }
             }
         }
@@ -31,25 +35,30 @@ namespace Stilargo.Core.Rival
         {
             _elapsedSeconds += deltaSeconds;
             RivalSurroundings surroundings = world.Surroundings;
-            if (!surroundings.IsHouseStanding || surroundings.IsPlayerHoldingHill || _elapsedSeconds >= world.Settings.RaidSeconds)
+            if (surroundings.IsPlayerHoldingHill || _elapsedSeconds >= world.Settings.RaidSeconds)
             {
                 return strategies.ContestHill;
+            }
+
+            if (!surroundings.Houses.IsRaidable(_target))
+            {
+                return surroundings.Houses.IsConfiscatable(_target) ? strategies.ConfiscateHouse : strategies.ContestHill;
             }
 
             foreach (IRivalUnit unit in world.Squad.Units)
             {
                 if (unit.IsAlive && unit.Orders.IsIdle)
                 {
-                    SendToHouse(world, unit);
+                    SendToTarget(world, unit);
                 }
             }
 
             return this;
         }
 
-        private static void SendToHouse(RivalWorld world, IRivalUnit unit)
+        private void SendToTarget(RivalWorld world, IRivalUnit unit)
         {
-            RivalSquad.SendUnlessNear(unit, world.Surroundings.Claim.House.Position, world.Settings.ArrivalToleranceMetres);
+            RivalSquad.SendUnlessNear(unit, _target.Position, world.Settings.ArrivalToleranceMetres);
         }
     }
 }

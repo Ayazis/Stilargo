@@ -28,7 +28,7 @@ namespace Stilargo.Gameplay.World
             ValidateReferences();
             foreach (VisionSourceComponent visionSource in _visionSources)
             {
-                visionSource.Construct(_world.VisibilityGrid);
+                visionSource.Construct(_world.VisibilityGrid, context.Config.Vision);
             }
 
             foreach (ScavengerComponent scavenger in _scavengers)
