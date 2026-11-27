@@ -37,6 +37,9 @@ namespace Stilargo.Gameplay.World
 
         public ScavengingArea ScavengingArea { get; private set; }
 
+        /// <summary>Where the city's roof tiles are, so roof turrets sit on them; null until installed.</summary>
+        public RoofHeights Roofs => _citySpawner.Roofs;
+
         public override void Install(GameContext context)
         {
             if (context == null)

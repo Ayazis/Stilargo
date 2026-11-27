@@ -67,7 +67,7 @@ namespace Stilargo.Gameplay.Fortification
             var shop = new FortificationShop(_world.Wallet, settings.Definitions);
 
             IReadOnlyList<ICombatTarget> enemies = _enemies.Cast<ICombatTarget>().ToList();
-            _turretBattery.Construct(Ledger, enemies, _world.VisibilityGrid);
+            _turretBattery.Construct(Ledger, enemies, _world);
             _tracerView.Construct(_turretBattery);
             _fortificationView.Construct(Ledger);
 

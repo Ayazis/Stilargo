@@ -8,6 +8,17 @@ Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handover
 
 ---
 
+### 2026-11-27 · Ci (real turret model, branch `feature/turret-model`)
+
+**@FL: `Main` scene regenerated (regenerate, don't merge YAML); turret contracts changed.**
+- Roof turrets are now a real model: Sketchfab "large-caliber turret" (CC-BY, credit in `Art/Models/Turret/LICENSE-LargeCaliberTurret.md`), prepared by `Tools/Art/prepare_turret.py`. Prefab `World/Turret.prefab` is built by `Editor/Fortification/TurretAssets`.
+- `TurretBattery` spawns the model per turret (`_modelPrefab`) and its `TurretRigView` swings the Yaw/Pitch bones toward `Turret.AimTarget` (new: the chosen enemy, also during cooldown) via `Core/Fortification/TurretAim`.
+- `TurretBattery.Fired` now passes the **muzzle position** instead of the slot position. `FortificationView` skips turrets and no longer needs a Roof look; `Greybox_Turret.mat` is unused.
+- `Fortification.json` turret entry has new keys: `turretYawDegreesPerSecond`, `turretPitchDegreesPerSecond`, `turretMinPitchDegrees`, `turretMaxPitchDegrees`.
+- Turrets stand on a level deck on top of the roof tiles instead of inside the hip roof: `RoofMaker` records each roof as a `Core/City/HipRoofSurface` in `RoofHeights` (exposed as `WorldInstaller.Roofs`). `TurretBattery.Construct` now takes the `WorldInstaller` instead of the grid.
+- Each shot plays a muzzle flash (unlit burst + point light) and a recoil kick (`TurretShotEffects`).
+- Regenerating also refreshed `Settings/CameraSettings.asset` (bounds 144 m and camera fields from the earlier camera work).
+
 ### 2026-11-26 · FL (town plan: market square, house blocks, park blocks, branch `feature/game-feel-city`)
 
 **@Ci: the city is now 5×5 blocks (144 m) with a town plan.** Roads stay on the same 14-cell grid, so home (58, 58), the hill (86, 72) and the rival start are still on roads.

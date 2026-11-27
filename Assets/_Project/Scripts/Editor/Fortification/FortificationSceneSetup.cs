@@ -22,24 +22,21 @@ namespace Stilargo.Editor.Fortification
         private const string MaterialsFolder = "Assets/_Project/Materials";
         private const string BarricadeMaterialPath = MaterialsFolder + "/Greybox_Barricade.mat";
         private const string WindowMaterialPath = MaterialsFolder + "/Greybox_ReinforcedWindow.mat";
-        private const string TurretMaterialPath = MaterialsFolder + "/Greybox_Turret.mat";
         private const string TracerMaterialPath = MaterialsFolder + "/Greybox_TurretTracer.mat";
         private const string OutlineMaterialPath = MaterialsFolder + "/Greybox_BuildingOutline.mat";
         private const float TracerWidthMetres = 0.06f;
 
-        // Weathered timber, galvanised steel plate and olive-drab gun; all inside the PBR albedo range.
+        // Weathered timber and galvanised steel plate; both inside the PBR albedo range.
         private static readonly Color BarricadeColor = new Color(120f / 255f, 92f / 255f, 64f / 255f);
         private static readonly Color WindowColor = new Color(128f / 255f, 132f / 255f, 136f / 255f);
-        private static readonly Color TurretColor = new Color(86f / 255f, 92f / 255f, 60f / 255f);
         private static readonly Color TracerColor = new Color(240f / 255f, 200f / 255f, 120f / 255f);
 
         // The same bright green as the ring under a selected unit, so a selected building reads the same way.
         private static readonly Color OutlineColor = new Color(0.3f, 1f, 0.4f);
 
-        // A door-wide barricade, a plate over a window, and a squat gun on the roof.
+        // A door-wide barricade and a plate over a window. Roof turrets use the turret model instead of a block.
         private static readonly Vector3 BarricadeSizeMetres = new Vector3(2.4f, 1.4f, 0.5f);
         private static readonly Vector3 WindowSizeMetres = new Vector3(1.2f, 1.2f, 0.15f);
-        private static readonly Vector3 TurretSizeMetres = new Vector3(0.9f, 0.9f, 0.9f);
 
         private const string WorldField = "_world";
         private const string GarrisonsField = "_garrisons";
@@ -48,6 +45,7 @@ namespace Stilargo.Editor.Fortification
         private const string EnemiesField = "_enemies";
         private const string TurretBatteryField = "_turretBattery";
         private const string TracerViewField = "_tracerView";
+        private const string TurretModelField = "_modelPrefab";
         private const string FortificationViewField = "_fortificationView";
         private const string LooksField = "_looks";
         private const string LookSlotKindField = "_slotKind";
@@ -67,7 +65,7 @@ namespace Stilargo.Editor.Fortification
             SerializedFields.Assign(installer, CombatField, combat);
             SerializedFields.Assign(installer, OutlineMaterialField, LoadOrCreateMaterial(OutlineMaterialPath, () => HdrpMaterials.CreateUnlit(OutlineColor)));
             SerializedFields.AssignArray(installer, EnemiesField, EnemiesOf(combat));
-            SerializedFields.Assign(installer, TurretBatteryField, holder.AddComponent<TurretBattery>());
+            SerializedFields.Assign(installer, TurretBatteryField, CreateTurretBattery(holder));
             SerializedFields.Assign(installer, TracerViewField, CreateTracerView(holder.transform));
             SerializedFields.Assign(installer, FortificationViewField, fortificationView);
             return installer;
@@ -83,6 +81,13 @@ namespace Stilargo.Editor.Fortification
             }
 
             return result;
+        }
+
+        private static TurretBattery CreateTurretBattery(GameObject holder)
+        {
+            var battery = holder.AddComponent<TurretBattery>();
+            SerializedFields.Assign(battery, TurretModelField, TurretAssets.LoadOrCreatePrefab());
+            return battery;
         }
 
         private static TurretTracerView CreateTracerView(Transform parent)
@@ -104,7 +109,6 @@ namespace Stilargo.Editor.Fortification
             looks.arraySize = 0;
             AddLook(looks, FortificationSlotKind.Entrance, LoadOrCreateMaterial(BarricadeMaterialPath, () => HdrpMaterials.CreateLit(BarricadeColor)), BarricadeSizeMetres);
             AddLook(looks, FortificationSlotKind.Window, LoadOrCreateMaterial(WindowMaterialPath, () => HdrpMaterials.CreateLit(WindowColor)), WindowSizeMetres);
-            AddLook(looks, FortificationSlotKind.Roof, LoadOrCreateMaterial(TurretMaterialPath, () => HdrpMaterials.CreateLit(TurretColor)), TurretSizeMetres);
             fields.ApplyModifiedPropertiesWithoutUndo();
         }
 

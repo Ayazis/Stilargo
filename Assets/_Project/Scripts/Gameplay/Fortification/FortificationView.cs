@@ -7,7 +7,10 @@ using UnityEngine;
 
 namespace Stilargo.Gameplay.Fortification
 {
-    /// <summary>Places a greybox block on every slot of a claimed house that gets a fortification.</summary>
+    /// <summary>
+    /// Places a greybox block on every slot of a claimed house that gets a fortification. Turrets are left out:
+    /// <see cref="TurretBattery"/> places their models, because it also aims them.
+    /// </summary>
     public sealed class FortificationView : MonoBehaviour
     {
         private const string BlockNameFormat = "Fortification ({0})";
@@ -24,7 +27,7 @@ namespace Stilargo.Gameplay.Fortification
             }
 
             _ledger = ledger ?? throw new ArgumentNullException(nameof(ledger));
-            RequireLookForEveryKind();
+            RequireLooksHaveMaterials();
             _ledger.HouseCreated += HandleHouseCreated;
         }
 
@@ -49,7 +52,17 @@ namespace Stilargo.Gameplay.Fortification
 
         private void HandleBuilt(FortificationSlot slot)
         {
-            FortificationLook look = _looks.First(candidate => candidate.SlotKind == slot.Kind);
+            if (slot.Fortification.IsTurret)
+            {
+                return;
+            }
+
+            FortificationLook look = _looks.FirstOrDefault(candidate => candidate.SlotKind == slot.Kind);
+            if (look == null)
+            {
+                throw new InvalidOperationException($"{nameof(FortificationView)} on '{name}' has no look for {slot.Kind} slots.");
+            }
+
             GameObject block = new GameObject(string.Format(BlockNameFormat, slot.Fortification.DisplayName));
             block.transform.SetParent(transform, false);
 
@@ -61,15 +74,12 @@ namespace Stilargo.Gameplay.Fortification
             block.AddComponent<MeshRenderer>().sharedMaterial = look.Material;
         }
 
-        private void RequireLookForEveryKind()
+        private void RequireLooksHaveMaterials()
         {
-            foreach (FortificationSlotKind kind in Enum.GetValues(typeof(FortificationSlotKind)))
+            FortificationLook missing = _looks.FirstOrDefault(look => look == null || look.Material == null);
+            if (_looks.Length == 0 || missing != null)
             {
-                FortificationLook look = _looks.FirstOrDefault(candidate => candidate != null && candidate.SlotKind == kind);
-                if (look == null || look.Material == null)
-                {
-                    throw new InvalidOperationException($"{nameof(FortificationView)} on '{name}' has no look with a material for {kind} slots.");
-                }
+                throw new InvalidOperationException($"{nameof(FortificationView)} on '{name}' needs looks, each with a material.");
             }
         }
     }
