@@ -75,5 +75,18 @@ namespace Stilargo.Tests.EditMode.Fortification
             Assert.AreEqual(FireOutcome.NotFired, early);
             Assert.AreEqual(FireOutcome.Hit, ready);
         }
+
+        [Test]
+        public void Tick_DuringCooldown_KeepsAimingAtTarget()
+        {
+            FakeCombatTarget enemy = new FakeCombatTarget(new Vector3(2f, 0f, 0f), 100f);
+            List<ICombatTarget> enemies = new List<ICombatTarget> { enemy };
+
+            _turret.Tick(0f, enemies);
+            _turret.Tick(CooldownSeconds * 0.5f, enemies);
+
+            Assert.IsNull(_turret.LastTarget);
+            Assert.AreSame(enemy, _turret.AimTarget);
+        }
     }
 }

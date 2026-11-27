@@ -42,6 +42,9 @@ namespace Stilargo.Gameplay.City
         /// <summary>Height of one storey in metres; garrison slots and the fog's skyline use the same value.</summary>
         public float StoreyHeightMetres => _storeyHeight;
 
+        /// <summary>The tiled hip roofs' surfaces; null until <see cref="Construct"/> has run.</summary>
+        public RoofHeights Roofs => _roofs == null ? null : _roofs.Heights;
+
         private void Awake()
         {
             CacheComponents();

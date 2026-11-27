@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Stilargo.Core.City;
+using Stilargo.Core.Fog;
 using UnityEngine;
 
 namespace Stilargo.Gameplay.City
@@ -38,6 +39,9 @@ namespace Stilargo.Gameplay.City
 
         public IReadOnlyList<Mesh> Meshes => _meshes;
 
+        /// <summary>The surface of every roof built so far.</summary>
+        public RoofHeights Heights { get; } = new RoofHeights();
+
         /// <param name="eavesCentre">Centre of the top of the walls the roof sits on.</param>
         /// <param name="footprint">Width (X) and depth (Z) of those walls.</param>
         public GameObject Build(Vector3 eavesCentre, Vector2 footprint, float risePerHalfSpan)
@@ -55,6 +59,7 @@ namespace Stilargo.Gameplay.City
             _meshes.Add(mesh);
             GameObject roof = UnityEngine.Object.Instantiate(_roofPrefab, eavesCentre, rotation, _parent);
             roof.GetComponent<MeshFilter>().sharedMesh = mesh;
+            Heights.Add(new HipRoofSurface(new WorldPoint(eavesCentre.x, eavesCentre.z), eavesCentre.y, width, depth, rise));
             return roof;
         }
 
