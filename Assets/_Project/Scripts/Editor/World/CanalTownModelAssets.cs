@@ -180,15 +180,15 @@ namespace Stilargo.Editor.World
             }
 
             const string Buildings = "_buildingModels.";
-            SerializedFields.Assign(spawner, Buildings + "_rowHouse", Prefab("RowHouse"));
-            SerializedFields.Assign(spawner, Buildings + "_cornerHouse", CornerHouseAssets.LoadOrCreatePrefab());
-            SerializedFields.Assign(spawner, Buildings + "_townhouse", Prefab("Townhouse"));
-            SerializedFields.Assign(spawner, Buildings + "_detachedHome", Prefab("DetachedHome"));
-            SerializedFields.Assign(spawner, Buildings + "_farmhouse", Prefab("Farmhouse"));
-            SerializedFields.Assign(spawner, Buildings + "_workshop", Prefab("Workshop"));
-            SerializedFields.Assign(spawner, Buildings + "_church", Prefab("Church"));
-            SerializedFields.Assign(spawner, Buildings + "_school", Prefab("School"));
-            SerializedFields.Assign(spawner, Buildings + "_tavern", Prefab("Tavern"));
+            SerializedFields.Assign(spawner, Buildings + "_rowHouse", RoofProfileBaker.BakeInto(Prefab("RowHouse")));
+            SerializedFields.Assign(spawner, Buildings + "_cornerHouse", RoofProfileBaker.BakeInto(CornerHouseAssets.LoadOrCreatePrefab()));
+            SerializedFields.Assign(spawner, Buildings + "_townhouse", RoofProfileBaker.BakeInto(Prefab("Townhouse")));
+            SerializedFields.Assign(spawner, Buildings + "_detachedHome", RoofProfileBaker.BakeInto(Prefab("DetachedHome")));
+            SerializedFields.Assign(spawner, Buildings + "_farmhouse", RoofProfileBaker.BakeInto(Prefab("Farmhouse")));
+            SerializedFields.Assign(spawner, Buildings + "_workshop", RoofProfileBaker.BakeInto(Prefab("Workshop")));
+            SerializedFields.Assign(spawner, Buildings + "_church", RoofProfileBaker.BakeInto(Prefab("Church")));
+            SerializedFields.Assign(spawner, Buildings + "_school", RoofProfileBaker.BakeInto(Prefab("School")));
+            SerializedFields.Assign(spawner, Buildings + "_tavern", RoofProfileBaker.BakeInto(Prefab("Tavern")));
             const string Canal = "_canalModels.";
             SerializedFields.Assign(spawner, Canal + "_quayWall", Prefab("QuayWall"));
             SerializedFields.Assign(spawner, Canal + "_quaySteps", Prefab("QuaySteps"));

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Stilargo.Core.City;
 using Stilargo.Core.City.CanalTown;
-using Stilargo.Core.Fog;
 using Unity.AI.Navigation;
 using UnityEngine;
 
@@ -41,7 +40,7 @@ namespace Stilargo.Gameplay.City
         /// <summary>Height of one storey in metres; garrison slots and the fog's skyline use the same value.</summary>
         public float StoreyHeightMetres => _storeyHeight;
 
-        /// <summary>The tops of the building models, for turret decks; null until <see cref="Construct"/> has run.</summary>
+        /// <summary>The building models' roofs, for turret decks; null until <see cref="Construct"/> has run.</summary>
         public RoofHeights Roofs => _roofs;
 
         private void Awake()
@@ -219,25 +218,18 @@ namespace Stilargo.Gameplay.City
             building.GetComponent<Renderer>().enabled = false;
             GameObject model = Instantiate(_buildingModels.For(frame.Plot), frame.GroundCentre, FacingRotation.Of(frame.Plot.Front), transform);
             PropFactory.IgnoredByNavigation(model);
-            _roofs.Add(RoofTopOf(model));
+            _roofs.Add(RoofOf(model).PlacedAt(frame.GroundCentre, frame.Plot.Front));
         }
 
-        // The models are turned in quarter turns, so their world bounds hug the footprint.
-        private static RoofTopBox RoofTopOf(GameObject model)
+        private static RoofProfile RoofOf(GameObject model)
         {
-            Renderer[] renderers = model.GetComponentsInChildren<Renderer>();
-            if (renderers.Length == 0)
+            RoofProfile profile = model.GetComponent<RoofProfile>();
+            if (profile == null)
             {
-                throw new InvalidOperationException($"Building model '{model.name}' has no renderers.");
+                throw new InvalidOperationException($"Building model '{model.name}' has no {nameof(RoofProfile)}. Run Stilargo → Build World Prefab.");
             }
 
-            Bounds bounds = renderers[0].bounds;
-            foreach (Renderer renderer in renderers)
-            {
-                bounds.Encapsulate(renderer.bounds);
-            }
-
-            return new RoofTopBox(new WorldPoint(bounds.min.x, bounds.min.z), new WorldPoint(bounds.max.x, bounds.max.z), bounds.max.y);
+            return profile;
         }
 
     }
