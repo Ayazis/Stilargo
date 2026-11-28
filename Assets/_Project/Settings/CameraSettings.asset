@@ -18,5 +18,9 @@ MonoBehaviour:
   _minHeight: 10
   _maxHeight: 60
   _boundsMin: {x: 0, y: 0}
-  _boundsMax: {x: 116, y: 116}
+  _boundsMax: {x: 272, y: 272}
   _pitchDegrees: 60
+  _turnDegreesPerSecond: 90
+  _dragDegreesPerPixel: 0.25
+  _minTiltDegrees: 25
+  _maxTiltDegrees: 85

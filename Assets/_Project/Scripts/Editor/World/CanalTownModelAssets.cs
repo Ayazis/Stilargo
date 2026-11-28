@@ -1,4 +1,7 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using Stilargo.Gameplay.City;
 using UnityEditor;
 using UnityEngine;
 
@@ -166,6 +169,68 @@ namespace Stilargo.Editor.World
             }
 
             AssetDatabase.SaveAssets();
+        }
+
+        /// <summary>Gives the spawner a model for every house style and landmark, and the canal's quay and bridge pieces.</summary>
+        public static void AssignTo(CitySpawner spawner)
+        {
+            if (spawner == null)
+            {
+                throw new ArgumentNullException(nameof(spawner));
+            }
+
+            const string Buildings = "_buildingModels.";
+            SerializedFields.Assign(spawner, Buildings + "_rowHouse", Prefab("RowHouse"));
+            SerializedFields.Assign(spawner, Buildings + "_cornerHouse", CornerHouseAssets.LoadOrCreatePrefab());
+            SerializedFields.Assign(spawner, Buildings + "_townhouse", Prefab("Townhouse"));
+            SerializedFields.Assign(spawner, Buildings + "_detachedHome", Prefab("DetachedHome"));
+            SerializedFields.Assign(spawner, Buildings + "_farmhouse", Prefab("Farmhouse"));
+            SerializedFields.Assign(spawner, Buildings + "_workshop", Prefab("Workshop"));
+            SerializedFields.Assign(spawner, Buildings + "_church", Prefab("Church"));
+            SerializedFields.Assign(spawner, Buildings + "_school", Prefab("School"));
+            SerializedFields.Assign(spawner, Buildings + "_tavern", Prefab("Tavern"));
+            const string Canal = "_canalModels.";
+            SerializedFields.Assign(spawner, Canal + "_quayWall", Prefab("QuayWall"));
+            SerializedFields.Assign(spawner, Canal + "_quaySteps", Prefab("QuaySteps"));
+            SerializedFields.Assign(spawner, Canal + "_bridge", WalkablePrefab("Bridge"));
+            AssignProps(spawner);
+        }
+
+        // One entry per PropKind; each kind is named after its prefab.
+        private static void AssignProps(CitySpawner spawner)
+        {
+            PropKind[] kinds = (PropKind[])Enum.GetValues(typeof(PropKind));
+            var serialized = new SerializedObject(spawner);
+            SerializedProperty entries = serialized.FindProperty("_propModels._entries");
+            entries.arraySize = kinds.Length;
+            for (int index = 0; index < kinds.Length; index++)
+            {
+                SerializedProperty entry = entries.GetArrayElementAtIndex(index);
+                entry.FindPropertyRelative("_kind").enumValueIndex = (int)kinds[index];
+                entry.FindPropertyRelative("_prefab").objectReferenceValue = Prefab(kinds[index].ToString());
+            }
+
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        // The NavMesh is baked at runtime, which can only read meshes imported with read access.
+        private static GameObject WalkablePrefab(string name)
+        {
+            GameObject prefab = Prefab(name);
+            var importer = (ModelImporter)AssetImporter.GetAtPath($"Assets/_Project/Art/Models/{name}/{name}.fbx");
+            if (!importer.isReadable)
+            {
+                importer.isReadable = true;
+                importer.SaveAndReimport();
+            }
+
+            return prefab;
+        }
+
+        private static GameObject Prefab(string name)
+        {
+            string script = Models.Single(model => model.Name == name).Script;
+            return new BlenderHouseAssets(name, script, Looks, MaterialFolder).LoadOrCreatePrefab();
         }
     }
 }

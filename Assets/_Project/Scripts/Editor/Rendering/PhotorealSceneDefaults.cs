@@ -14,8 +14,9 @@ namespace Stilargo.Editor.Rendering
     {
         public const string VolumeProfilePath = "Assets/_Project/Settings/PhotorealVolumeProfile.asset";
 
-        // Warm late-morning Mediterranean sun: about 5000 K and roughly 100,000 lux of direct light.
-        private const float SunTemperatureKelvin = 5000f;
+        // Late-morning Mediterranean sun: the physically based sky already reddens it near the horizon,
+        // so the light itself stays close to daylight white (5500 K) at roughly 100,000 lux.
+        private const float SunTemperatureKelvin = 5500f;
         private const float SunIlluminanceLux = 100000f;
         // Above HDRP's default of 0.5: crisper TAA at the cost of slight edge ringing.
         private const float TaaSharpenStrength = 0.8f;

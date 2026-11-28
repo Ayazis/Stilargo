@@ -20,41 +20,36 @@ import canal_kit as kit  # noqa: E402
 rng = kit.rng
 PATCH = 4.0
 ROW_SPACING = 0.25
-STALK_WIDTH = 0.08
+STALK_WIDTH = 0.25
 FENCE_LENGTH = 3.0
 TOWN_NAME = "STILARGO"
 
 
 def build_wheat(parts):
-    """Rows of wheat as ribbons of stalks of uneven height, with ears along the top."""
+    """Rows of wheat as ribbons of uneven height. Fields tile this across hectares, so it stays a few hundred faces."""
     mesh = parts.detail
     y = -PATCH / 2 + ROW_SPACING / 2
     while y < PATCH / 2:
         x = -PATCH / 2
         while x < PATCH / 2 - 0.01:
-            height = rng.uniform(0.75, 1.0)
-            lean = rng.uniform(-0.05, 0.05)
             x1 = min(x + STALK_WIDTH, PATCH / 2)
-            mesh.two_sided([Vector((x, y, 0)), Vector((x1, y, 0)), Vector((x1 + lean, y, height)), Vector((x + lean, y, height))],
-                           "Wheat", (0, -1, 0))
-            if rng.random() < 0.5:
-                mesh.cylinder((x + lean + 0.04, y, height - 0.12), (x + lean + 0.04, y, height + 0.04), 0.025, "Hay", segments=5)
+            h0, h1 = rng.uniform(0.75, 1.0), rng.uniform(0.75, 1.0)
+            lean = rng.uniform(-0.06, 0.06)
+            mesh.two_sided([Vector((x, y, 0)), Vector((x1, y, 0)), Vector((x1 + lean, y, h1)), Vector((x + lean, y, h0))], "Wheat", (0, -1, 0))
             x = x1
         y += ROW_SPACING
 
 
 def build_vegetable_rows(parts):
-    mesh = parts.detail
+    """Ridged rows of cabbages, each a low faceted dome so whole fields of them stay light (no bevel either)."""
+    mesh = parts.roof
     for k in range(5):
         y = -PATCH / 2 + 0.4 + k * 0.8
         mesh.box((0, y, 0.06), (PATCH, 0.45, 0.12), "Soil")
         x = -PATCH / 2 + 0.2
         while x < PATCH / 2 - 0.1:
             base = Vector((x + rng.uniform(-0.03, 0.03), y, 0.12))
-            for j in range(5):
-                a = j * 2 * math.pi / 5
-                mesh.sphere(base + Vector((math.cos(a) * 0.06, math.sin(a) * 0.06, 0.05)), 0.065, "Greens")
-            mesh.sphere(base + Vector((0, 0, 0.09)), 0.06, "FoliageLight")
+            mesh.cylinder(base, base + Vector((0, 0, 0.16)), 0.13, rng.choice(("Greens", "FoliageLight")), segments=6, radius_end=0.06)
             x += 0.35
 
 

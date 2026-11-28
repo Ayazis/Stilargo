@@ -15,6 +15,7 @@ namespace Stilargo.Infrastructure.Config
         [SerializeField] private float eyeHeightMetres = VisionSettings.DefaultEyeHeightMetres;
         [SerializeField] private float sightMetresPerMetreOfHeight = VisionSettings.DefaultSightMetresPerMetreOfHeight;
         [SerializeField] private float maxVisionRadiusMetres = VisionSettings.DefaultMaxVisionRadiusMetres;
+        [SerializeField] private int fogCellsPerCityCell = VisionSettings.DefaultFogCellsPerCityCell;
 
         public static VisionSettings Load()
         {
@@ -27,7 +28,8 @@ namespace Stilargo.Infrastructure.Config
             {
                 return new VisionSettings()
                     .WithUnitVision(unitVisionRadiusMetres, eyeHeightMetres)
-                    .WithHeightBonus(sightMetresPerMetreOfHeight, maxVisionRadiusMetres);
+                    .WithHeightBonus(sightMetresPerMetreOfHeight, maxVisionRadiusMetres)
+                    .WithFogResolution(fogCellsPerCityCell);
             }
             catch (ArgumentException exception)
             {

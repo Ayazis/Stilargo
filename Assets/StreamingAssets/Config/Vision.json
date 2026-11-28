@@ -2,5 +2,6 @@
     "unitVisionRadiusMetres": 24,
     "eyeHeightMetres": 1.7,
     "sightMetresPerMetreOfHeight": 1.5,
-    "maxVisionRadiusMetres": 60
+    "maxVisionRadiusMetres": 60,
+    "fogCellsPerCityCell": 4
 }

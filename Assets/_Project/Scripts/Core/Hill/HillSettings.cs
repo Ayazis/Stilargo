@@ -9,8 +9,8 @@ namespace Stilargo.Core.Hill
     public sealed class HillSettings
     {
         // A road stretch about as far from the player's home as from the rival's start in the default city.
-        public const float DefaultCenterXMetres = 86f;
-        public const float DefaultCenterZMetres = 72f;
+        public const float DefaultCenterXMetres = 143f;
+        public const float DefaultCenterZMetres = 137f;
         public const float DefaultRadiusMetres = 6f;
         public const float DefaultHoldDurationSeconds = 180f;
 

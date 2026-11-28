@@ -99,7 +99,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4305976925397735983}
-  - component: {fileID: 5146124980782897301}
   - component: {fileID: 1226705429695550238}
   m_Layer: 0
   m_Name: Fog
@@ -123,36 +122,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 4179896180257031567}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5146124980782897301
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 999425039180461387}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f19d9143a39eb3b46bc4563e9889cfbd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.RenderPipelines.HighDefinition.Runtime::UnityEngine.Rendering.HighDefinition.DecalProjector
-  m_Version: 3
-  m_Material: {fileID: 2100000, guid: 1892112811b34224a9537040b65125b9, type: 2}
-  m_DrawDistance: 1000
-  m_FadeScale: 0.9
-  m_StartAngleFade: 180
-  m_EndAngleFade: 180
-  m_UVScale: {x: 1, y: 1}
-  m_UVBias: {x: 0, y: 0}
-  m_AffectsTransparency: 0
-  m_TransparentTextureResolution:
-    m_Override: 256
-    m_UseOverride: 1
-    m_Level: 0
-  m_DecalLayerMask: 1
-  m_ScaleMode: 0
-  m_Offset: {x: 0, y: 0, z: 0}
-  m_Size: {x: 1, y: 1, z: 1}
-  m_FadeFactor: 1
 --- !u!114 &1226705429695550238
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -167,15 +136,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Stilargo.Gameplay::Stilargo.Gameplay.Fog.FogOverlay
   _unseenColor:
     serializedVersion: 2
-    rgba: 3943304206
-  _exploredColor:
+    rgba: 4278584581
+  _shadowColor:
     serializedVersion: 2
-    rgba: 2517240846
+    rgba: 2769029128
   _visibleColor:
     serializedVersion: 2
-    rgba: 658446
-  _textureProperty: _BaseColorMap
-  _projectionDepthMetres: 80
+    rgba: 788488
+  _outsideColor:
+    serializedVersion: 2
+    rgba: 4278584581
+  _screenMaterial: {fileID: 2100000, guid: e60e635d6356ee14d90b9f49448b304b, type: 2}
 --- !u!1 &1069551782597450373
 GameObject:
   m_ObjectHideFlags: 0
@@ -226,7 +197,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Stilargo.Gameplay::Stilargo.Gameplay.World.WorldInstaller
   _seed: 0
-  _cityConfig: {fileID: 11400000, guid: a83302a9674f15142a0ede8b1dd40b9b, type: 2}
   _citySpawner: {fileID: 2623074342477761889}
   _fogOverlay: {fileID: 1226705429695550238}
   _fogTicker: {fileID: 2827683180481879115}
@@ -377,31 +347,115 @@ MonoBehaviour:
   _showcasePadMarginMetres: 4
   _showcaseHousePrefab: {fileID: 6990358870515077947, guid: c91a699d406c14846a12bc14093cd16d, type: 3}
   _showcaseFacingDegrees: 180
-  _roofPrefab: {fileID: 589556293621245113, guid: 19b1043d6028a004f8ecb8ef83938305, type: 3}
-  _wallMaterials:
-  - {fileID: 2100000, guid: 2c79abd8772d4884f80c671ce638a849, type: 2}
-  - {fileID: 2100000, guid: 5c10718ef8a38934d8c1d5531a0e8d25, type: 2}
-  - {fileID: 2100000, guid: 02a73870f53894d4b9d7558f4110f826, type: 2}
-  - {fileID: 2100000, guid: f53221dea8266a245bf262b366e58f38, type: 2}
-  - {fileID: 2100000, guid: f2435d7153e31d54fba4b20c41fad57a, type: 2}
-  - {fileID: 2100000, guid: 2b44fba0c93e0574385046219e8530f1, type: 2}
-  _roofMaterials:
-  - {fileID: 2100000, guid: 019a139b93d6e634e961626a4ed600a5, type: 2}
-  - {fileID: 2100000, guid: 74d49d68f50c96d4b938e26153d22bee, type: 2}
-  - {fileID: 2100000, guid: fbfa584af939e184db16b3b3e725fa4e, type: 2}
-  _roofOverhangMetres: 0.4
-  _roofRisePerHalfSpan: 0.5
-  _windowPrefab: {fileID: 277055272647644057, guid: 450f6d0153361a84dbd5c6388b75b814, type: 3}
-  _doorPrefab: {fileID: 8589050200725959438, guid: c78b0de2588fbd641b47b562d4b519b4, type: 3}
-  _cornicePrefab: {fileID: 2120939229515361375, guid: c8282b15d925f7c4387b26516a7ef73b, type: 3}
   _landmarkMaterials:
     _stone: {fileID: 2100000, guid: 124c909d3af068844945cf18080cc9c1, type: 2}
-    _schoolWall: {fileID: 2100000, guid: 26cb68936ed8caf4b96e46b7bbd52e8c, type: 2}
-    _tavernWall: {fileID: 2100000, guid: 9906531e31803864ba9047b990b3929a, type: 2}
     _grass: {fileID: 2100000, guid: 03b4f1f2793f5f64caad06508e4b7835, type: 2}
-    _foliage: {fileID: 2100000, guid: 99d4656077f826b48b06efe162281bb0, type: 2}
-    _bark: {fileID: 2100000, guid: 05209a0896668c14791c60532da16ca2, type: 2}
     _water: {fileID: 2100000, guid: e56d7f4a19354dc4bac6e6199777af62, type: 2}
     _wood: {fileID: 2100000, guid: 88f640d586be5f54899c8f6ddb031bb7, type: 2}
-    _cloth: {fileID: 2100000, guid: 65850e648ece1964f9bc09b09c3e29f7, type: 2}
-    _shadow: {fileID: 2100000, guid: 976b947af570fcc459a1a9ced8a660e5, type: 2}
+  _buildingModels:
+    _rowHouse: {fileID: 1110087575969823349, guid: 9390a8b18737cb646986bccbf28a3515, type: 3}
+    _cornerHouse: {fileID: 9028203278145814712, guid: c1ec090a147607d4a8ec200453d7f4c6, type: 3}
+    _townhouse: {fileID: 4572164622221583278, guid: fad8ff3e656ddcc438f1423d0d2930c5, type: 3}
+    _detachedHome: {fileID: 7312690952443569540, guid: c2e8932a11e73674c9621aac083d8fcf, type: 3}
+    _farmhouse: {fileID: 7783977617031793165, guid: 07057d409efeaed4ab2056ead0989be0, type: 3}
+    _workshop: {fileID: 5295651413449231601, guid: 717871592f3420144b8d2702a84f71cb, type: 3}
+    _church: {fileID: 4645845173754664766, guid: 7b3b08b9936ce3946b37aec9401881c4, type: 3}
+    _school: {fileID: 4472183971635357765, guid: 78e9ffbf7d055064381bc20c91ff6001, type: 3}
+    _tavern: {fileID: 452146836551575921, guid: 8853623bb91f1dd4eb2b5913d19ea087, type: 3}
+  _canalModels:
+    _quayWall: {fileID: 6771202368201156902, guid: 3f698fee630e4af45ac8b6ce17322f53, type: 3}
+    _quaySteps: {fileID: 2625521193424274049, guid: 54fd5f23f497cfd468507c74a5c87ce1, type: 3}
+    _bridge: {fileID: 6386839879573829831, guid: 222e9a359863514478b8872fafcd4c26, type: 3}
+    _segmentLengthMetres: 8
+    _waterDepthMetres: 1.2
+    _bedDepthMetres: 2
+    _segmentsPerSteps: 5
+  _propModels:
+    _entries:
+    - _kind: 0
+      _prefab: {fileID: 5608708027314997188, guid: eb707e0ae28da574ca7835838fb4a00a, type: 3}
+    - _kind: 1
+      _prefab: {fileID: 7057064287564325495, guid: 253b24861805a8146a9a7e01b714b179, type: 3}
+    - _kind: 2
+      _prefab: {fileID: 7970886869591902903, guid: 740fe3850d37acc46b4256090c8b34fd, type: 3}
+    - _kind: 3
+      _prefab: {fileID: 8431439435487398694, guid: 6e951810a50b5e44eb88e304fbf91d63, type: 3}
+    - _kind: 4
+      _prefab: {fileID: 8920958357174186997, guid: 42254cd158339bd4cbec8f85d29bcbcd, type: 3}
+    - _kind: 5
+      _prefab: {fileID: 4622578242776486839, guid: 509deeedd42db7340a56d7cac6d5b7fb, type: 3}
+    - _kind: 6
+      _prefab: {fileID: 2319310142533523761, guid: 3b25022622c90e44db32bccb9a2d9d2a, type: 3}
+    - _kind: 7
+      _prefab: {fileID: 2594820668996792976, guid: a80f726598deb9b40ac2bae2b8414a64, type: 3}
+    - _kind: 8
+      _prefab: {fileID: 4208780530704998846, guid: 381fe52c21a2612498988c9b9e93dd45, type: 3}
+    - _kind: 9
+      _prefab: {fileID: 2214752045864706081, guid: bd59f56d2e915204dbba1af2e0d62b26, type: 3}
+    - _kind: 10
+      _prefab: {fileID: 2387417512889222769, guid: 465441a4da39dfa4b85f1160f552efbb, type: 3}
+    - _kind: 11
+      _prefab: {fileID: 1942706207037018441, guid: dd2aad54c2b35544fa0c9c96cb72b094, type: 3}
+    - _kind: 12
+      _prefab: {fileID: 2983407042468259310, guid: 49b35825e560d334288f522bd5e0b942, type: 3}
+    - _kind: 13
+      _prefab: {fileID: 351142434864555872, guid: 6bfb440b04ff6164baf55e8be4151105, type: 3}
+    - _kind: 14
+      _prefab: {fileID: 4586559453993643047, guid: fda7a142d573b5a438a8de75050c8ec5, type: 3}
+    - _kind: 15
+      _prefab: {fileID: 1575637358693502883, guid: 4efddec0be36da041a7be5816fca9150, type: 3}
+    - _kind: 16
+      _prefab: {fileID: 8835354545795896868, guid: 4f587f013b09a75458605a3fb9c09a03, type: 3}
+    - _kind: 17
+      _prefab: {fileID: 83205789088775352, guid: 45571fc65b2db77419558e32b75b266c, type: 3}
+    - _kind: 18
+      _prefab: {fileID: 3655491235744344498, guid: e061d1e18930f9143ae677175bcfe58b, type: 3}
+    - _kind: 19
+      _prefab: {fileID: 2069507812330656627, guid: 8db5496fd156e7444862d3b24a1e7634, type: 3}
+    - _kind: 20
+      _prefab: {fileID: 4016728576401823797, guid: f58408c72aa0b8a44a7786d045b1cdd8, type: 3}
+    - _kind: 21
+      _prefab: {fileID: 4187783537749675134, guid: 733d4c584e2607648a48da8156d9c2ce, type: 3}
+    - _kind: 22
+      _prefab: {fileID: 5171729522787516956, guid: 9cde3983b87410044ab8408ddc6bc8d7, type: 3}
+    - _kind: 23
+      _prefab: {fileID: 4983701440829105425, guid: d7c8038fc6f965b4caae87dbd545aa04, type: 3}
+    - _kind: 24
+      _prefab: {fileID: 3276969345619602678, guid: 91dd02954f8fe3d4196066e4459e0d45, type: 3}
+    - _kind: 25
+      _prefab: {fileID: 4649866852775125919, guid: 784c27573e3b3464293601a977bd7aad, type: 3}
+    - _kind: 26
+      _prefab: {fileID: 5348559997022205120, guid: a4bc8dbe079516f489e87a898e3b0dae, type: 3}
+    - _kind: 27
+      _prefab: {fileID: 2857643217929950936, guid: a7c3888e37af670439c0acf683725385, type: 3}
+    - _kind: 28
+      _prefab: {fileID: 5195083917633941653, guid: 0db748ba4efacfe48b2d064e63f92721, type: 3}
+    - _kind: 29
+      _prefab: {fileID: 3413112846960316940, guid: 2c7dabb23c955c44a8f51ef609d7174e, type: 3}
+    - _kind: 30
+      _prefab: {fileID: 5931862607248961305, guid: 08dd3a5e7f7951844b2f92526fc75c11, type: 3}
+    - _kind: 31
+      _prefab: {fileID: 7118028232899317522, guid: 611e96a319a786d45b67467e3d3ddd2c, type: 3}
+    - _kind: 32
+      _prefab: {fileID: 4833159945590206088, guid: 02e6966db5a29ea41b6bbe2b0af47575, type: 3}
+    - _kind: 33
+      _prefab: {fileID: 1981129641136860687, guid: 7cfa23693fb50cc4ca9c8a6bc6954afa, type: 3}
+    - _kind: 34
+      _prefab: {fileID: 5142859476483202961, guid: 83b7c2f9b04a2404ba19b876d6a4254f, type: 3}
+    - _kind: 35
+      _prefab: {fileID: 4503636233309910024, guid: bb0ea0d1d83262c4b80468af6348d4c6, type: 3}
+    - _kind: 36
+      _prefab: {fileID: 4855566918674102499, guid: 40e7efc45ca87de4282659a60b7d79ed, type: 3}
+    - _kind: 37
+      _prefab: {fileID: 7456488149996687108, guid: 6187f08d8bdd7a84d9039ead8611210d, type: 3}
+    - _kind: 38
+      _prefab: {fileID: 5495082647925191934, guid: 3ad2f8223a36330408a1d66c22b221be, type: 3}
+    - _kind: 39
+      _prefab: {fileID: 3272881056970468871, guid: 922ad724acc18014db8307074310b51a, type: 3}
+    - _kind: 40
+      _prefab: {fileID: 7914768833316187042, guid: bc1a4cbb09db5d240847b4bf23f0e721, type: 3}
+    - _kind: 41
+      _prefab: {fileID: 308946134384550444, guid: 61c9f70d9d2caa74086fb9a05aab2bd3, type: 3}
+    - _kind: 42
+      _prefab: {fileID: 993058129770808294, guid: 9861ce91dab696842b3d138cc04a313f, type: 3}
+  _entryMarkerOffsetCells: 3

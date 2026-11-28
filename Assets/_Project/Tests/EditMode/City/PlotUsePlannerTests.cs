@@ -73,6 +73,19 @@ namespace Stilargo.Tests.EditMode.City
         }
 
         [Test]
+        public void Plan_CountsAChurchTheTownPlanAlreadyHas()
+        {
+            CityLayout town = new Core.City.CanalTown.CanalTownGenerator(Seed, new Core.City.CanalTown.CanalTownSettings()).Generate().Layout;
+            int churchesBefore = town.Plots.Count(plot => plot.Use == PlotUse.Church);
+
+            CityLayout city = new PlotUsePlanner(new DistrictSettings()).Plan(town, Seed);
+
+            Assert.AreEqual(1, churchesBefore);
+            Assert.AreEqual(DistrictSettings.DefaultChurchCount, city.Plots.Count(plot => plot.Use == PlotUse.Church));
+            Assert.IsTrue(city.Plots.Single(plot => plot.Use == PlotUse.Church).HasTower);
+        }
+
+        [Test]
         public void Plan_LeavesEveryOpenPlotAlone()
         {
             CityLayout generated = Generate();

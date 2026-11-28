@@ -5,69 +5,106 @@ using UnityEngine;
 namespace Stilargo.Gameplay.City
 {
     /// <summary>
-    /// A fountain square: a stone-rimmed pond with a fountain in the middle. Its whole footprint is left out of
-    /// the walkable NavMesh, so units go round it.
+    /// A park pond: water inside a stone kerb with rounded corners, reeds and lily pads, and a willow leaning over one
+    /// corner. The whole pond is left out of the walkable NavMesh, so units go round it. (The canal's water plots
+    /// are drawn by <see cref="CanalBuilder"/> instead.)
     /// </summary>
     internal sealed class WaterDressing : IPlotDressing
     {
         private const string PondName = "Pond";
         private const int NotWalkableArea = 1;
         private const float Half = 0.5f;
-        private const float RimMarginMetres = 0.6f;
-        private const float RimHeightMetres = 0.5f;
-        private const float RimThicknessMetres = 0.4f;
-        private const float WaterHeightMetres = 0.32f;
+        private const float MarginMetres = 0.6f;
+
+        // The kit's kerb and water sit below lawn level; the pond is raised so they show above flat ground.
+        private const float LiftMetres = 0.3f;
+        private const float WaterLevelMetres = 0.1f;
         private const float WaterThicknessMetres = 0.04f;
-        private const float BasinDiameterMetres = 1.8f;
-        private const float BasinHeightMetres = 0.7f;
-        private const float ColumnDiameterMetres = 0.3f;
-        private const float ColumnHeightMetres = 1.6f;
-        private const float BowlDiameterMetres = 1f;
-        private const float BowlHeightMetres = 0.15f;
+        private const float EdgeSegmentMetres = 2f;
+        private const float CornerRadiusMetres = 1.2f;
+        private const float QuarterTurnDegrees = 90f;
+        private const int ReedClumps = 3;
+        private const int LilyClusters = 2;
+        private const float PlantInsetMetres = 1.2f;
 
         private readonly LandmarkMaterials _materials;
+        private readonly PropModels _models;
 
-        public WaterDressing(LandmarkMaterials materials)
+        public WaterDressing(LandmarkMaterials materials, PropModels models)
         {
             _materials = materials ?? throw new ArgumentNullException(nameof(materials));
-        }
-
-        public bool TryGetWallMaterial(out Material material)
-        {
-            material = null;
-            return false;
+            _models = models ?? throw new ArgumentNullException(nameof(models));
         }
 
         public void Dress(PlotFrame frame, PropFactory props)
         {
             var pond = new GameObject(PondName);
             pond.transform.SetParent(props.Parent, false);
-            var modifier = pond.AddComponent<NavMeshModifier>();
-            modifier.overrideArea = true;
-            modifier.area = NotWalkableArea;
             var pondProps = new PropFactory(pond.transform);
-
-            float width = frame.Width - (RimMarginMetres * 2f);
-            float depth = frame.Depth - (RimMarginMetres * 2f);
-            Vector3 centre = frame.GroundCentre;
-            AddRim(pondProps, centre, new Vector2(width, depth));
-            var waterSize = new Vector3(width - RimThicknessMetres, WaterThicknessMetres, depth - RimThicknessMetres);
-            pondProps.Box(centre + (Vector3.up * WaterHeightMetres), waterSize, _materials.Water);
-
-            pondProps.Cylinder(centre, BasinDiameterMetres, BasinHeightMetres, _materials.Stone);
-            pondProps.Cylinder(centre, ColumnDiameterMetres, ColumnHeightMetres, _materials.Stone);
-            pondProps.Cylinder(centre + (Vector3.up * ColumnHeightMetres), BowlDiameterMetres, BowlHeightMetres, _materials.Stone);
+            var rect = new Rect(frame.West + MarginMetres, frame.South + MarginMetres, frame.Width - (MarginMetres * 2f), frame.Depth - (MarginMetres * 2f));
+            AddWater(pondProps, rect);
+            AddKerb(pondProps, rect);
+            AddPlants(pondProps, rect, PlotRandom.For(frame.Plot));
+            props.Model(_models[PropKind.Willow], new Vector3(frame.West + MarginMetres, 0f, frame.South + MarginMetres), Quaternion.identity);
         }
 
-        private void AddRim(PropFactory props, Vector3 centre, Vector2 size)
+        private void AddWater(PropFactory props, Rect rect)
         {
-            float y = RimHeightMetres * Half;
-            var alongX = new Vector3(size.x, RimHeightMetres, RimThicknessMetres);
-            var alongZ = new Vector3(RimThicknessMetres, RimHeightMetres, size.y);
-            props.Box(new Vector3(centre.x, y, centre.z - (size.y * Half)), alongX, _materials.Stone);
-            props.Box(new Vector3(centre.x, y, centre.z + (size.y * Half)), alongX, _materials.Stone);
-            props.Box(new Vector3(centre.x - (size.x * Half), y, centre.z), alongZ, _materials.Stone);
-            props.Box(new Vector3(centre.x + (size.x * Half), y, centre.z), alongZ, _materials.Stone);
+            var centre = new Vector3(rect.center.x, WaterLevelMetres, rect.center.y);
+            GameObject water = props.Box(centre, new Vector3(rect.width, WaterThicknessMetres, rect.height), _materials.Water);
+            var modifier = water.AddComponent<NavMeshModifier>();
+            modifier.overrideArea = true;
+            modifier.area = NotWalkableArea;
+        }
+
+        // Rounded corners first, then straight kerb segments stretched to fill each side between them.
+        private void AddKerb(PropFactory props, Rect rect)
+        {
+            float y = LiftMetres;
+            props.Model(_models[PropKind.PondCorner], new Vector3(rect.xMax, y, rect.yMax), Quaternion.identity);
+            props.Model(_models[PropKind.PondCorner], new Vector3(rect.xMax, y, rect.yMin), Quaternion.Euler(0f, QuarterTurnDegrees, 0f));
+            props.Model(_models[PropKind.PondCorner], new Vector3(rect.xMin, y, rect.yMin), Quaternion.Euler(0f, QuarterTurnDegrees * 2f, 0f));
+            props.Model(_models[PropKind.PondCorner], new Vector3(rect.xMin, y, rect.yMax), Quaternion.Euler(0f, QuarterTurnDegrees * 3f, 0f));
+
+            // An edge's water side faces +Z unrotated, so the south side needs no turn.
+            AddSide(props, new Vector3(rect.xMin, y, rect.yMin), new Vector3(rect.xMax, y, rect.yMin), Quaternion.identity);
+            AddSide(props, new Vector3(rect.xMin, y, rect.yMax), new Vector3(rect.xMax, y, rect.yMax), Quaternion.Euler(0f, QuarterTurnDegrees * 2f, 0f));
+            AddSide(props, new Vector3(rect.xMin, y, rect.yMin), new Vector3(rect.xMin, y, rect.yMax), Quaternion.Euler(0f, QuarterTurnDegrees, 0f));
+            AddSide(props, new Vector3(rect.xMax, y, rect.yMin), new Vector3(rect.xMax, y, rect.yMax), Quaternion.Euler(0f, QuarterTurnDegrees * 3f, 0f));
+        }
+
+        private void AddSide(PropFactory props, Vector3 from, Vector3 to, Quaternion facingWater)
+        {
+            Vector3 along = (to - from).normalized;
+            Vector3 start = from + (along * CornerRadiusMetres);
+            float length = Vector3.Distance(from, to) - (CornerRadiusMetres * 2f);
+            if (length <= 0f)
+            {
+                return;
+            }
+
+            int count = Mathf.Max(1, Mathf.RoundToInt(length / EdgeSegmentMetres));
+            float stretch = length / (count * EdgeSegmentMetres);
+            for (int index = 0; index < count; index++)
+            {
+                Vector3 centre = start + (along * (length * (index + Half) / count));
+                props.Model(_models[PropKind.PondEdge], centre, facingWater).transform.localScale = new Vector3(stretch, 1f, 1f);
+            }
+        }
+
+        private void AddPlants(PropFactory props, Rect rect, System.Random random)
+        {
+            Rect inner = new Rect(rect.xMin + PlantInsetMetres, rect.yMin + PlantInsetMetres, rect.width - (PlantInsetMetres * 2f), rect.height - (PlantInsetMetres * 2f));
+            if (inner.width <= 0f || inner.height <= 0f)
+            {
+                return;
+            }
+
+            for (int index = 0; index < ReedClumps + LilyClusters; index++)
+            {
+                var spot = new Vector3(inner.xMin + ((float)random.NextDouble() * inner.width), WaterLevelMetres, inner.yMin + ((float)random.NextDouble() * inner.height));
+                props.Model(_models[index < ReedClumps ? PropKind.Reeds : PropKind.LilyPads], spot, PropScatter.AnyHeading(random));
+            }
         }
     }
 }

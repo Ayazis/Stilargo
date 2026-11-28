@@ -3,7 +3,107 @@ guid: 8f7e5f8b73613f046bf935804b349528
 ModelImporter:
   serializedVersion: 24600
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: BrickA
+    second: {fileID: 2100000, guid: 659caa81e2ac13f44bd59eda5a87f5be, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: BrickB
+    second: {fileID: 2100000, guid: c88cb09251307df49904b091ba5166a7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: BrickC
+    second: {fileID: 2100000, guid: a1a727e006077e449abd9113bf37fdb9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Curtain
+    second: {fileID: 2100000, guid: c5774fdeb608aed43839eeb9d1afa3d7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Flower
+    second: {fileID: 2100000, guid: 80433faef15c04e41841aa281672b6df, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Frame
+    second: {fileID: 2100000, guid: 38c3bec3c08b86c4ab963000cd50c449, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Glass
+    second: {fileID: 2100000, guid: 80ab82ca5259e0f41872d7d8953fcc54, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Iron
+    second: {fileID: 2100000, guid: 40e0c2d0de579cc4cbe7471fa2f1ef42, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Leaf
+    second: {fileID: 2100000, guid: 2dcdc45099127e34bb36acb1317d3c07, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Mortar
+    second: {fileID: 2100000, guid: 229425d4f0d48364997f0ae24e28d47c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Plaster
+    second: {fileID: 2100000, guid: 53dd9f6263912114a82bd31809daf07e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: RoofTileA
+    second: {fileID: 2100000, guid: 476ffc3783ef4f943ae3b93f9184e3c5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: RoofTileB
+    second: {fileID: 2100000, guid: 2f4654fea1784da48b6ca11159ee03c4, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: RoofTileC
+    second: {fileID: 2100000, guid: 8f4bb4f6256dc2a4bb8f03c28522ee71, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: RoofUnder
+    second: {fileID: 2100000, guid: b290556f8db6a414f9d5d5834ff0b735, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Shutter
+    second: {fileID: 2100000, guid: 986d549d70d2e57469d681b0b70c937a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Stone
+    second: {fileID: 2100000, guid: 0da89625cecb9b740889e98df989119d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Terracotta
+    second: {fileID: 2100000, guid: cd040f8f7ccfaf849a3dec895e5a7722, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Wood
+    second: {fileID: 2100000, guid: e63da519377aeee4eac610190fa6fef7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Zinc
+    second: {fileID: 2100000, guid: fbf68d3078251a54393d3e62cde5f9b1, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

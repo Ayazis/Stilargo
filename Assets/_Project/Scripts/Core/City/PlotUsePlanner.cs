@@ -8,6 +8,7 @@ namespace Stilargo.Core.City
     /// Hands house plots of a generated city to its landmarks. The same seed always gives the same city. Landmarks
     /// that want the largest plots, or the largest facing the market square, get them in rule order; the others are
     /// scattered. Uses never share a block while a block without one is left, so the landmarks spread over the city.
+    /// Plots the town plan already gave a rule's use count towards that rule.
     /// </summary>
     public sealed class PlotUsePlanner
     {
@@ -32,7 +33,8 @@ namespace Stilargo.Core.City
 
             foreach (PlotUseRule rule in _settings.Rules)
             {
-                for (int placed = 0; placed < rule.Count; placed++)
+                int alreadyPlaced = ApplyToExisting(rule, plots, taken);
+                for (int placed = alreadyPlaced; placed < rule.Count; placed++)
                 {
                     int index = PickPlot(rule.Placement, layout, taken, usedBlocks, random);
                     if (index < 0)
@@ -47,6 +49,24 @@ namespace Stilargo.Core.City
             }
 
             return layout.WithPlots(plots);
+        }
+
+        // A town plan may already have laid out some of a rule's plots (a church on its square, a canal); those get
+        // the rule's height and income and count towards its total.
+        private static int ApplyToExisting(PlotUseRule rule, List<Plot> plots, ISet<int> taken)
+        {
+            int count = 0;
+            for (int index = 0; index < plots.Count; index++)
+            {
+                if (plots[index].Use == rule.Use)
+                {
+                    plots[index] = plots[index].UsedFor(rule);
+                    taken.Add(index);
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private static int PickPlot(PlotPlacement placement, CityLayout layout, ISet<int> taken, ISet<int> usedBlocks, Random random)

@@ -6,25 +6,23 @@ using UnityEngine.Rendering.HighDefinition;
 namespace Stilargo.Gameplay.Fog
 {
     /// <summary>
-    /// Paints the visibility grid into a texture that a decal projects straight down onto the map, so the fog
-    /// darkens the ground and buildings themselves instead of floating above them as a sheet.
+    /// Paints the visibility grid into a texture that a full-screen pass lays over the rendered frame. Unseen cells
+    /// are black (nothing shows, not even the map), explored cells out of view are in shadow (the map shows dimmed,
+    /// units there are hidden by <see cref="FogHideable"/>), visible cells are clear.
     /// </summary>
-    [RequireComponent(typeof(DecalProjector))]
     public sealed class FogOverlay : MonoBehaviour
     {
-        private const float Half = 0.5f;
-        private const float FlatRotationX = 90f;
+        private static readonly int FogMapId = Shader.PropertyToID("_FogMap");
+        private static readonly int FogMapWorldSizeId = Shader.PropertyToID("_FogMapWorldSize");
+        private static readonly int OutsideColorId = Shader.PropertyToID("_OutsideColor");
 
-        // Dark earth tones rather than pure black, so fogged areas read as shadowed ground, not holes.
-        [SerializeField] private Color32 _unseenColor = new Color32(14, 12, 10, 235);
-        [SerializeField] private Color32 _exploredColor = new Color32(14, 12, 10, 150);
-        [SerializeField] private Color32 _visibleColor = new Color32(14, 12, 10, 0);
-        [SerializeField] private string _textureProperty = "_BaseColorMap";
+        // Near-black rather than pure black, so the edge of the explored map reads as night, not a hole.
+        [SerializeField] private Color32 _unseenColor = new Color32(5, 5, 6, 255);
+        [SerializeField] private Color32 _shadowColor = new Color32(8, 8, 12, 165);
+        [SerializeField] private Color32 _visibleColor = new Color32(8, 8, 12, 0);
+        [SerializeField] private Color32 _outsideColor = new Color32(5, 5, 6, 255);
+        [SerializeField] private Material _screenMaterial;
 
-        // Tall enough to reach from the ground over the highest roofs.
-        [SerializeField, Min(1f)] private float _projectionDepthMetres = 80f;
-
-        private DecalProjector _projector;
         private Material _material;
         private VisibilityGrid _grid;
         private Texture2D _texture;
@@ -42,21 +40,20 @@ namespace Stilargo.Gameplay.Fog
                 throw new InvalidOperationException($"{nameof(FogOverlay)} is already constructed.");
             }
 
+            if (_screenMaterial == null)
+            {
+                throw new InvalidOperationException($"{nameof(FogOverlay)} needs its screen material assigned.");
+            }
+
             _grid = grid;
-            CacheComponents();
-            FitToGrid();
             CreateTexture();
+            CreateScreenPass();
             if (isActiveAndEnabled)
             {
                 _grid.Refreshed += Repaint;
             }
 
             Repaint();
-        }
-
-        private void Awake()
-        {
-            CacheComponents();
         }
 
         private void OnEnable()
@@ -93,28 +90,6 @@ namespace Stilargo.Gameplay.Fog
             }
         }
 
-        // Construct can run before Awake when the bootstrapper wires scene objects, so both paths cache.
-        private void CacheComponents()
-        {
-            if (_projector == null)
-            {
-                _projector = GetComponent<DecalProjector>();
-            }
-        }
-
-        // Rotating 90 degrees on X points the projector down and its V axis along world Z, so the decal UV
-        // origin lands on world (0, 0), matching VisibilityGrid's cell layout. The box spans ground to roofs.
-        private void FitToGrid()
-        {
-            float width = _grid.Width * _grid.CellSize;
-            float depth = _grid.Height * _grid.CellSize;
-            transform.SetPositionAndRotation(
-                new Vector3(width * Half, _projectionDepthMetres * Half, depth * Half),
-                Quaternion.Euler(FlatRotationX, 0f, 0f));
-            _projector.pivot = Vector3.zero;
-            _projector.size = new Vector3(width, depth, _projectionDepthMetres);
-        }
-
         private void CreateTexture()
         {
             _texture = new Texture2D(_grid.Width, _grid.Height, TextureFormat.RGBA32, false)
@@ -123,9 +98,24 @@ namespace Stilargo.Gameplay.Fog
                 wrapMode = TextureWrapMode.Clamp
             };
             _pixels = new Color32[_grid.Width * _grid.Height];
-            _material = new Material(_projector.material);
-            _material.SetTexture(_textureProperty, _texture);
-            _projector.material = _material;
+        }
+
+        // After post processing, so auto exposure and tonemapping can't lift the black back to grey.
+        private void CreateScreenPass()
+        {
+            _material = new Material(_screenMaterial);
+            _material.SetTexture(FogMapId, _texture);
+            _material.SetVector(FogMapWorldSizeId, new Vector4(_grid.Width * _grid.CellSize, _grid.Height * _grid.CellSize, 0f, 0f));
+
+            CustomPassVolume volume = gameObject.AddComponent<CustomPassVolume>();
+            volume.isGlobal = true;
+            volume.injectionPoint = CustomPassInjectionPoint.AfterPostProcess;
+            volume.customPasses.Add(new FullScreenCustomPass
+            {
+                name = "Fog of war",
+                fullscreenPassMaterial = _material,
+                fetchColorBuffer = false
+            });
         }
 
         private void Repaint()
@@ -140,6 +130,8 @@ namespace Stilargo.Gameplay.Fog
 
             _texture.SetPixels32(_pixels);
             _texture.Apply();
+            // Beyond the map is darkness only while the fog is on; with it off, anything placed out there must show too.
+            _material.SetColor(OutsideColorId, _grid.IsFogEnabled ? (Color)_outsideColor : _visibleColor);
         }
 
         private Color32 ColorFor(VisibilityState state)
@@ -149,7 +141,7 @@ namespace Stilargo.Gameplay.Fog
                 case VisibilityState.Visible:
                     return _visibleColor;
                 case VisibilityState.Explored:
-                    return _exploredColor;
+                    return _shadowColor;
                 default:
                     return _unseenColor;
             }

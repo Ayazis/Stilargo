@@ -2,7 +2,13 @@
 
 Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handovers.
 
-- Newest entries go at the top. Start each with the date and author: `### 2026-11-19 · FL`.
+- Newest entries go at the top. Start each with the date and author: `### 2026-11-26 · FL (two-layer fog of war)
+
+**@Ci: `World.prefab` regenerated (rerun `Build World Prefab`, don't merge YAML).**
+- The fog decal is gone (auto exposure brightened it and it skipped water). `FogOverlay` now adds a full-screen custom pass after post processing (`Art/Shaders/FogOfWar.shader`, `World/FogOfWar.mat` via `HdrpMaterials.CreateFogOfWarScreen`). `HdrpMaterials.CreateAlbedoDecal` and `FogDecal*.asset` are removed.
+- Unseen cells are black (nothing shows). Explored cells out of view are in shadow: the map shows dimmed and `FogHideable` hides enemies and loot there.
+
+### 2026-11-19 · FL`.
 - Tag who must act: **@Ci**, **@FL** or **@both**.
 - When something is handled, mark it ~~struck through~~ or delete it. Lasting decisions belong in `docs/` or `CLAUDE.md`, not here.
 
@@ -338,6 +344,16 @@ Opening the project in Unity 6000.6.10f1 (batch test/build) rewrote `GraphicsSet
 - `CityLayout.Blocks` is no longer one block per grid cell (merged and alley-split outskirts), so don't index it by grid position.
 - No scene/prefab change. Core and EditMode tests were compiled and run outside Unity (739 green); Gameplay/Infrastructure still need a Unity compile and exe build.
 
+### 2026-11-26 · FL via Claude (canal town replaces the grid city, branch `ccr-3bace2de-nutzy1`)
+
+**@Ci: the game now plays in a new map; contracts and config changed**
+- New `Core/City/CanalTown`: `CanalTownGenerator` builds a canal town (canal with quays and bridges, staggered streets, main square with fountain, church square, market, parks with ponds/fountains, boatyard, courtyard house blocks, free-standing homes on the edge) inside countryside (lanes, fields, orchards, meadows, farms). Map is 136×136 cells (272 m); the town is the middle 96×96. Streets are 4 cells (8 m) wide.
+- Soldier entry points: player on the west map edge, rival on the east edge, each on a high road. `WorldInstaller.PlayerEntry` / `RivalEntry`; the drop-off (home marker) moves to the player entry at startup. `WorldInstaller` no longer uses `CityConfigAsset` (`_cityConfig` removed). The old `CityGenerator` and its settings are now unused by the game.
+- New `PlotUse`s: `Fountain`, `Meadow`, `Field`, `Orchard` (with dressings in `Gameplay/City`). `PlotUsePlanner` now counts plots the town plan already has (the canal town's church and water) towards a rule.
+- Config: `Town.json` has a new `canalTown` section. `Hill.json` hill centre moved to (143, 137) so it lies on a street; `HillSettings` defaults match.
+- `Main.unity` was regenerated with `Recreate Main Scene` (squads now start on the high roads, camera bounds cover 272 m). Regenerate instead of merging the YAML.
+- Preview without Unity: `dotnet run --project Tools/CityPreview -- <seed> docs/CityPreview.md` writes a text map and an isometric `docs/CityPreview.html`.
+
 ### 2026-11-26 · FL via Claude (canal-town building models, branch `ccr-3bace2de-nutzy1`)
 
 **@Ci: eight Blender-built buildings from `docs/CanalTownArtList.md` (#1, #3–#9)**
@@ -347,3 +363,26 @@ Opening the project in Unity 6000.6.10f1 (batch test/build) rewrote `GraphicsSet
 - Squares (#15�19): `build_fountain.py` (`Fountain`, `Well`), `build_square_props.py` (`SquareInlay`, `ChurchForecourt`, `StoneBench`, `Planter`, `CafeTerrace`), `build_market.py` (`MarketStall`, `MarketHall`). Multi-model scripts take `-- --piece <Name>` to rebuild one.
 - Green, countryside and street (#20�32): `build_trees.py` (plane, umbrella pine, willow, three fruit trees, shrub), `build_garden_props.py` (gazebo, monument, hedge, garden wall, vegetable bed, washing line, farm cart, haystack, woodpile), `build_countryside.py` (wheat and vegetable patches, wildflowers, rocks, sheep, fence, milestone, wayside shrine, town sign), `build_street_props.py` (lamp, bench, crates, barrels, planter, handcart). 57 prefabs in total.
 - Fixed sizes for now; `CitySpawner` doesn't place them yet (it still uses procedural boxes). No scene, prefab-YAML or settings change.
+
+### 2026-11-26 · FL via Claude (canal-town models placed in the game, branch `ccr-3bace2de-nutzy1`)
+
+**@Ci: buildings are now the Blender models; contracts changed**
+- Core: new `HouseStyle` (Row, Corner, Townhouse, Detached, Farmhouse, Workshop) and `Facing`. `Plot.Style`/`Plot.Front` are set by the new `HouseStyler` (from what surrounds each building) at the end of `CanalTownGenerator`; `Plot.UsedFor` keeps them. `Canal` is public and on `CanalTown.Canal` (with `BridgeWidthCells`); `CanalTown`'s constructor takes `(layout, canal, (player, rival))`.
+- Gameplay: `CitySpawner.Construct(layout, streetProps, canal)`. Each building keeps its box (renderer off) as collider, selection and NavMesh obstacle, with its model on top facing `Plot.Front`, at the model's native size (the city will be remapped to the model sizes later). `CanalBuilder` sinks the canal edge to edge (bed 2 m, water 1.2 m down), lines it with `QuayWall`/`QuaySteps` and puts a `Bridge` on each bridge street; the ground is two strips either side.
+- Removed as dead: the box-house roofs and facade kit (`RoofMaker`, `RoofMeshes`, `RoofShape`, window/door/cornice and wall/roof palettes on `CitySpawner`), `House/Church/School/TavernDressing`, `IPlotDressing.TryGetWallMaterial`, and `LandmarkMaterials` school/tavern walls.
+- `World.prefab` was rebuilt with `Build World Prefab`; rebuild it instead of merging the YAML. The Bridge FBX imports with read access, since the runtime NavMesh bake needs it.
+- Props (same day): every open-ground dressing and the street props now place the Blender props (`PropKind`/`PropModels` on `CitySpawner`, filled by `Build World Prefab`): parks, gardens (garden walls), yards, meadows, orchards, fields (light 4 m crop patches tiled at ~8 m), squares, the market, fountains/wells and ponds (kerb kit, reeds, lilies, willow). Boats are moored along the canal and a town sign, milestone and shrine stand at the entry roads. `CitySpawner.Construct` now takes the `CanalTown`. Solid props (fountain, well, gazebo, monument, stalls) get a not-walkable `NavMeshModifierVolume`. `TreeProps` and the foliage/bark/cloth/shadow landmark materials are gone.
+
+### 2026-11-26 · FL via Claude (lighting and atmosphere pass, branch `ccr-3bace2de-nutzy1`)
+
+**@Ci: volume profile and Main scene changed**
+- `PhotorealRenderingSetup`: thin height fog is back for aerial perspective (mean free path 1400 m, up to 120 m high, sky colour). SSAO is softer (0.8, 1.5 m radius), exposure gets +0.4 EV, and the grade is neutral (contrast 0, white balance −4 instead of +6).
+- Sun is 5500 K (was 5000 K) and pitched 52° (was 38°) in `MainSceneCreator`. `PhotorealVolumeProfile.asset` was rewritten with `Apply Photoreal Rendering Settings` and `Main.unity` regenerated with `Recreate Main Scene`; regenerate instead of merging.
+
+### 2026-11-27 · FL via Claude (House 1 photoreal pass, branch `ccr-3bace2de-nutzy1`)
+
+**@Ci: new texture sets and a parallax option for Blender houses**
+- New Poly Haven CC0 sets in `Art/Textures`: `clay_roof_tiles_02` (with `_height.jpg`), `green_rough_planks`, `old_planks_02`.
+- `SurfaceTextures` loads an optional `<name>_height.jpg`; `HdrpMaterials.ApplyParallax` turns on HDRP pixel displacement (POM). `HouseMaterialLook.ScannedRelief(...)` maps a set through UV0 in metres with parallax; `BlenderHouseAssets` handles it.
+- House 1's roof is now one UV-mapped tiled surface per slope (`RoofTiles` material) instead of modelled tiles; `RoofTileA/B`, `TileDark`, `TileLichen` slots are gone from House 1 (still used by `canal_kit` buildings). Shutters, door and flower box use the scanned wood.
+- (later, same day) House 1 window boxes use scanned Poly Haven periwinkle plants (`Tools/Art/Sources/periwinkle_plant`, red copy from `Tools/Art/make_flower_textures.py`) with double-sided `ScannedFoliage` materials. Worn looks: `HouseMaterialLook.Worn()` lays `Art/Textures/wear_detail/wear_detail.png` (from `Tools/Art/make_wear_detail_map.py`) over a scanned set as an HDRP detail map (`HdrpMaterials.SetDetail`). New sets: `brick_4`, `weathered_planks`, `worn_planks`, `green_rough_planks`; `old_planks_02` removed. Only House 1 uses these; canal-town buildings are unchanged.

@@ -27,5 +27,31 @@
         "lampSpacingCells": 7,
         "treeSpacingCells": 3,
         "clutterChance": 0.12
+    },
+    "canalTown": {
+        "mapWidthCells": 136,
+        "mapHeightCells": 136,
+        "cellSizeMetres": 2,
+        "countrysideCells": 20,
+        "minParcelCells": 8,
+        "maxParcelCells": 16,
+        "farmhouseCells": 4,
+        "farmyardCells": 8,
+        "streetWidthCells": 4,
+        "highRoadWidthCells": 4,
+        "canalWidthCells": 5,
+        "canalPositionShare": 0.3,
+        "bridgeCount": 3,
+        "minBlockCells": 9,
+        "maxBlockCells": 15,
+        "houseDepthCells": 4,
+        "minFrontageCells": 3,
+        "maxFrontageCells": 5,
+        "minStoreys": 2,
+        "maxStoreys": 3,
+        "prominentExtraStoreys": 1,
+        "parkCount": 2,
+        "detachedEdgeShare": 0.5,
+        "detachedLotCells": 7
     }
 }

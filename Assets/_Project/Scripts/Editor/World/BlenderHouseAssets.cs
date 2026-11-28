@@ -14,6 +14,10 @@ namespace Stilargo.Editor.World
     public sealed class BlenderHouseAssets
     {
         private const string WorldRoot = "Assets/_Project/World";
+        private const string WearDetailMap = "wear_detail";
+
+        // The grime is painted at about house scale, so dirt patches and run-off don't visibly repeat across a facade.
+        private const float WearMetresPerTile = 5f;
 
         private readonly string _name;
         private readonly string _modelPath;
@@ -71,13 +75,50 @@ namespace Stilargo.Editor.World
                 Material material = LoadOrCreateMaterial(look.Key, look.Value);
                 if (look.Value.IsTextured)
                 {
-                    HdrpMaterials.ApplyTriplanarTextures(material, LoadCached(textureSets, look.Value.TextureSet), look.Value.MetresPerTile);
+                    ApplyTextures(material, look.Value, LoadCached(textureSets, look.Value.TextureSet));
+                    ApplyWear(material, look.Value);
                 }
 
                 importer.AddRemap(new AssetImporter.SourceAssetIdentifier(typeof(Material), look.Key), material);
             }
 
             importer.SaveAndReimport();
+        }
+
+        private static void ApplyWear(Material material, HouseMaterialLook look)
+        {
+            Texture2D wear = look.IsWorn ? SurfaceTextures.LoadDetailMap(WearDetailMap) : null;
+            HdrpMaterials.SetDetail(material, wear, look.MetresPerTile / WearMetresPerTile);
+        }
+
+        private static void ApplyTextures(Material material, HouseMaterialLook look, SurfaceTextures textures)
+        {
+            switch (look.Mapping)
+            {
+                case SurfaceMapping.Projected:
+                    HdrpMaterials.ApplyTriplanarTextures(material, textures, look.MetresPerTile);
+                    return;
+                case SurfaceMapping.MetricUvRelief:
+                    ApplyRelief(material, look, textures);
+                    return;
+                case SurfaceMapping.ScannedFoliage:
+                    HdrpMaterials.ApplyUvTextures(material, textures);
+                    HdrpMaterials.MakeDoubleSided(material);
+                    return;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(look), look.Mapping, "Unknown surface mapping.");
+            }
+        }
+
+        private static void ApplyRelief(Material material, HouseMaterialLook look, SurfaceTextures textures)
+        {
+            if (!textures.HasHeight)
+            {
+                throw new InvalidOperationException($"Texture set '{look.TextureSet}' needs a height map for parallax.");
+            }
+
+            HdrpMaterials.ApplyMetricUvTextures(material, textures, look.MetresPerTile);
+            HdrpMaterials.ApplyParallax(material, textures.Height, look.ParallaxCentimetres);
         }
 
         private static SurfaceTextures LoadCached(Dictionary<string, SurfaceTextures> loaded, string name)
