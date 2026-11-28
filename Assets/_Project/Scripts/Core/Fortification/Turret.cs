@@ -29,6 +29,9 @@ namespace Stilargo.Core.Fortification
         /// <summary>The enemy fired at on the last tick, or null; views draw tracers from it.</summary>
         public ICombatTarget LastTarget { get; private set; }
 
+        /// <summary>The enemy chosen on the last tick, whether fired at or still cooling down; null when none. Views aim at it.</summary>
+        public ICombatTarget AimTarget { get; private set; }
+
         public FireOutcome Tick(float deltaSeconds, IReadOnlyList<ICombatTarget> enemies)
         {
             if (enemies == null)
@@ -39,6 +42,7 @@ namespace Stilargo.Core.Fortification
             _weapon.Tick(deltaSeconds);
             LastTarget = null;
             ICombatTarget target = _priority.Choose(Position, CandidatesFrom(enemies));
+            AimTarget = target;
             if (target == null)
             {
                 return FireOutcome.NotFired;

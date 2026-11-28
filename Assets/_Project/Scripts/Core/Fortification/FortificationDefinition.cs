@@ -25,6 +25,7 @@ namespace Stilargo.Core.Fortification
             DisplayName = id;
             SlotKind = slotKind;
             CostMoney = costMoney;
+            TurretAim = TurretAimSettings.Default;
         }
 
         public string Id { get; }
@@ -40,6 +41,9 @@ namespace Stilargo.Core.Fortification
 
         /// <summary>The turret's gun, or null when this fortification does not shoot.</summary>
         public WeaponSettings TurretWeapon { get; private set; }
+
+        /// <summary>How the turret's gun swings toward targets; only used when <see cref="IsTurret"/>.</summary>
+        public TurretAimSettings TurretAim { get; private set; }
 
         public bool IsTurret => TurretWeapon != null;
 
@@ -71,6 +75,13 @@ namespace Stilargo.Core.Fortification
         {
             FortificationDefinition copy = Copy();
             copy.TurretWeapon = turretWeapon ?? throw new ArgumentNullException(nameof(turretWeapon));
+            return copy;
+        }
+
+        public FortificationDefinition WithTurretAim(TurretAimSettings turretAim)
+        {
+            FortificationDefinition copy = Copy();
+            copy.TurretAim = turretAim ?? throw new ArgumentNullException(nameof(turretAim));
             return copy;
         }
 

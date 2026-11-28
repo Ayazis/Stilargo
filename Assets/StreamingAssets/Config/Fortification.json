@@ -27,7 +27,11 @@
             "turretDamagePerShot": 12,
             "turretRangeMetres": 16,
             "turretCooldownSeconds": 0.8,
-            "turretHitChance": 0.7
+            "turretHitChance": 0.7,
+            "turretYawDegreesPerSecond": 120,
+            "turretPitchDegreesPerSecond": 60,
+            "turretMinPitchDegrees": -15,
+            "turretMaxPitchDegrees": 60
         }
     ]
 }

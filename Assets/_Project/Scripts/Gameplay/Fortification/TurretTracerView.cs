@@ -11,9 +11,6 @@ namespace Stilargo.Gameplay.Fortification
     {
         private const float DefaultVisibleSeconds = 0.08f;
 
-        // Turret slots sit on the roof surface; lift the muzzle so the line starts above it.
-        private const float MuzzleHeightMetres = 0.8f;
-
         [SerializeField, Min(0.01f)] private float _visibleSeconds = DefaultVisibleSeconds;
 
         private LineRenderer _line;
@@ -61,9 +58,9 @@ namespace Stilargo.Gameplay.Fortification
             }
         }
 
-        private void HandleFired(Vector3 turretPosition, ICombatTarget target)
+        private void HandleFired(Vector3 muzzlePosition, ICombatTarget target)
         {
-            _line.SetPosition(0, turretPosition + (Vector3.up * MuzzleHeightMetres));
+            _line.SetPosition(0, muzzlePosition);
             _line.SetPosition(1, target.Position.ToUnity());
             _line.enabled = true;
             _remainingSeconds = _visibleSeconds;

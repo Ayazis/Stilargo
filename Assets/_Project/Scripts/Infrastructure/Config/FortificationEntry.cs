@@ -21,6 +21,10 @@ namespace Stilargo.Infrastructure.Config
         [SerializeField] private float turretRangeMetres;
         [SerializeField] private float turretCooldownSeconds;
         [SerializeField] private float turretHitChance;
+        [SerializeField] private float turretYawDegreesPerSecond = TurretAimSettings.DefaultYawDegreesPerSecond;
+        [SerializeField] private float turretPitchDegreesPerSecond = TurretAimSettings.DefaultPitchDegreesPerSecond;
+        [SerializeField] private float turretMinPitchDegrees = TurretAimSettings.DefaultMinPitchDegrees;
+        [SerializeField] private float turretMaxPitchDegrees = TurretAimSettings.DefaultMaxPitchDegrees;
 
         public static FortificationEntry[] Defaults()
         {
@@ -43,7 +47,7 @@ namespace Stilargo.Infrastructure.Config
                 return definition;
             }
 
-            return definition.WithTurret(ToTurretWeapon());
+            return definition.WithTurret(ToTurretWeapon()).WithTurretAim(ToTurretAim());
         }
 
         private WeaponSettings ToTurretWeapon()
@@ -51,6 +55,18 @@ namespace Stilargo.Infrastructure.Config
             try
             {
                 return new WeaponSettings(turretDamagePerShot, turretRangeMetres, turretCooldownSeconds).WithHitChance(turretHitChance);
+            }
+            catch (ArgumentException exception)
+            {
+                throw new ArgumentException($"Turret of '{id}': {exception.Message}", exception);
+            }
+        }
+
+        private TurretAimSettings ToTurretAim()
+        {
+            try
+            {
+                return new TurretAimSettings(turretYawDegreesPerSecond, turretPitchDegreesPerSecond, turretMinPitchDegrees, turretMaxPitchDegrees);
             }
             catch (ArgumentException exception)
             {
@@ -76,6 +92,10 @@ namespace Stilargo.Infrastructure.Config
                 entry.turretRangeMetres = definition.TurretWeapon.Range;
                 entry.turretCooldownSeconds = definition.TurretWeapon.CooldownSeconds;
                 entry.turretHitChance = definition.TurretWeapon.HitChance;
+                entry.turretYawDegreesPerSecond = definition.TurretAim.YawDegreesPerSecond;
+                entry.turretPitchDegreesPerSecond = definition.TurretAim.PitchDegreesPerSecond;
+                entry.turretMinPitchDegrees = definition.TurretAim.MinPitchDegrees;
+                entry.turretMaxPitchDegrees = definition.TurretAim.MaxPitchDegrees;
             }
 
             return entry;

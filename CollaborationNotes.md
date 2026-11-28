@@ -14,6 +14,17 @@ Scratchpad for Ci and FL: heads-ups, shared-file changes, questions and handover
 
 ---
 
+### 2026-11-27 · Ci (real turret model, branch `feature/turret-model`)
+
+**@FL: `Main` scene regenerated (regenerate, don't merge YAML); turret contracts changed.**
+- Roof turrets are now a real model: Sketchfab "large-caliber turret" (CC-BY, credit in `Art/Models/Turret/LICENSE-LargeCaliberTurret.md`), prepared by `Tools/Art/prepare_turret.py`. Prefab `World/Turret.prefab` is built by `Editor/Fortification/TurretAssets`.
+- `TurretBattery` spawns the model per turret (`_modelPrefab`) and its `TurretRigView` swings the Yaw/Pitch bones toward `Turret.AimTarget` (new: the chosen enemy, also during cooldown) via `Core/Fortification/TurretAim`.
+- `TurretBattery.Fired` now passes the **muzzle position** instead of the slot position. `FortificationView` skips turrets and no longer needs a Roof look; `Greybox_Turret.mat` is unused.
+- `Fortification.json` turret entry has new keys: `turretYawDegreesPerSecond`, `turretPitchDegreesPerSecond`, `turretMinPitchDegrees`, `turretMaxPitchDegrees`.
+- Turrets stand on a level deck on top of the roof tiles instead of inside the hip roof: `RoofMaker` records each roof as a `Core/City/HipRoofSurface` in `RoofHeights` (exposed as `WorldInstaller.Roofs`). `TurretBattery.Construct` now takes the `WorldInstaller` instead of the grid.
+- Each shot plays a muzzle flash (unlit burst + point light) and a recoil kick (`TurretShotEffects`).
+- Regenerating also refreshed `Settings/CameraSettings.asset` (bounds 144 m and camera fields from the earlier camera work).
+
 ### 2026-11-26 · FL (town plan: market square, house blocks, park blocks, branch `feature/game-feel-city`)
 
 **@Ci: the city is now 5×5 blocks (144 m) with a town plan.** Roads stay on the same 14-cell grid, so home (58, 58), the hill (86, 72) and the rival start are still on roads.
@@ -386,3 +397,5 @@ Opening the project in Unity 6000.6.10f1 (batch test/build) rewrote `GraphicsSet
 - `SurfaceTextures` loads an optional `<name>_height.jpg`; `HdrpMaterials.ApplyParallax` turns on HDRP pixel displacement (POM). `HouseMaterialLook.ScannedRelief(...)` maps a set through UV0 in metres with parallax; `BlenderHouseAssets` handles it.
 - House 1's roof is now one UV-mapped tiled surface per slope (`RoofTiles` material) instead of modelled tiles; `RoofTileA/B`, `TileDark`, `TileLichen` slots are gone from House 1 (still used by `canal_kit` buildings). Shutters, door and flower box use the scanned wood.
 - (later, same day) House 1 window boxes use scanned Poly Haven periwinkle plants (`Tools/Art/Sources/periwinkle_plant`, red copy from `Tools/Art/make_flower_textures.py`) with double-sided `ScannedFoliage` materials. Worn looks: `HouseMaterialLook.Worn()` lays `Art/Textures/wear_detail/wear_detail.png` (from `Tools/Art/make_wear_detail_map.py`) over a scanned set as an HDRP detail map (`HdrpMaterials.SetDetail`). New sets: `brick_4`, `weathered_planks`, `worn_planks`, `green_rough_planks`; `old_planks_02` removed. Only House 1 uses these; canal-town buildings are unchanged.
+
+**@Ci: turrets now stand on the canal-town models (merge of #24 with the House 1 / canal-town work).** Houses are Blender models now, so `RoofMaker` is gone. `RoofHeights` takes any `IRoofSurface`: `HipRoofSurface` implements it, and the new `RoofTopBox` (footprint plus highest point of a model's renderer bounds) is what `CitySpawner` registers per building. Turret slot positions are unchanged; the deck sits on the model's highest point (ridge or chimney). Main scene was regenerated, so `CameraSettings` bounds follow the current city size.

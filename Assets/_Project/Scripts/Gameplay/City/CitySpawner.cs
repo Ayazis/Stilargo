@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Stilargo.Core.City;
 using Stilargo.Core.City.CanalTown;
+using Stilargo.Core.Fog;
 using Unity.AI.Navigation;
 using UnityEngine;
 
@@ -35,9 +36,13 @@ namespace Stilargo.Gameplay.City
         private Dictionary<PlotUse, IPlotDressing> _dressings;
         private PropFactory _props;
         private CanalBuilder _canal;
+        private RoofHeights _roofs;
 
         /// <summary>Height of one storey in metres; garrison slots and the fog's skyline use the same value.</summary>
         public float StoreyHeightMetres => _storeyHeight;
+
+        /// <summary>The tops of the building models, for turret decks; null until <see cref="Construct"/> has run.</summary>
+        public RoofHeights Roofs => _roofs;
 
         private void Awake()
         {
@@ -56,6 +61,7 @@ namespace Stilargo.Gameplay.City
             CacheComponents();
             _dressings = CreateDressings();
             _props = new PropFactory(transform);
+            _roofs = new RoofHeights();
             _canal = new CanalBuilder(town.Canal, _canalModels, _landmarkMaterials, layout.CellSize);
 
             SpawnGround(layout);
@@ -211,7 +217,27 @@ namespace Stilargo.Gameplay.City
             GameObject building = Instantiate(_buildingPrefab, position, Quaternion.identity, transform);
             building.transform.localScale = new Vector3(frame.Width, height, frame.Depth);
             building.GetComponent<Renderer>().enabled = false;
-            PropFactory.IgnoredByNavigation(Instantiate(_buildingModels.For(frame.Plot), frame.GroundCentre, FacingRotation.Of(frame.Plot.Front), transform));
+            GameObject model = Instantiate(_buildingModels.For(frame.Plot), frame.GroundCentre, FacingRotation.Of(frame.Plot.Front), transform);
+            PropFactory.IgnoredByNavigation(model);
+            _roofs.Add(RoofTopOf(model));
+        }
+
+        // The models are turned in quarter turns, so their world bounds hug the footprint.
+        private static RoofTopBox RoofTopOf(GameObject model)
+        {
+            Renderer[] renderers = model.GetComponentsInChildren<Renderer>();
+            if (renderers.Length == 0)
+            {
+                throw new InvalidOperationException($"Building model '{model.name}' has no renderers.");
+            }
+
+            Bounds bounds = renderers[0].bounds;
+            foreach (Renderer renderer in renderers)
+            {
+                bounds.Encapsulate(renderer.bounds);
+            }
+
+            return new RoofTopBox(new WorldPoint(bounds.min.x, bounds.min.z), new WorldPoint(bounds.max.x, bounds.max.z), bounds.max.y);
         }
 
     }
