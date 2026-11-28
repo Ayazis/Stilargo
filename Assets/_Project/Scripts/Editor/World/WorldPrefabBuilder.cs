@@ -7,7 +7,6 @@ using Stilargo.Gameplay.World;
 using Unity.AI.Navigation;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Rendering.HighDefinition;
 
 namespace Stilargo.Editor.World
 {
@@ -26,7 +25,7 @@ namespace Stilargo.Editor.World
         private const float HomeMarkerSize = 4f;
         private const float HomeMarkerThickness = 0.1f;
 
-        // Plain base for the building box; CitySpawner gives each building a plaster colour from the palette.
+        // The building box is invisible in play (its model is drawn instead); the colour only shows in the editor.
         private static readonly Color BuildingColor = new Color(0.88f, 0.83f, 0.7f);
         private static readonly Color LootColor = new Color(1f, 0.8f, 0.1f);
         private static readonly Color HomeColor = new Color(0.2f, 0.75f, 0.3f);
@@ -62,16 +61,17 @@ namespace Stilargo.Editor.World
             SerializedFields.Assign(spawner, "_groundPrefab", LoadOrCreateCubePrefab("Ground", CityLookAssets.GroundMaterial()));
             SerializedFields.Assign(spawner, "_buildingPrefab", LoadOrCreateCubePrefab("Building", LoadOrCreateLitMaterial("Building", BuildingColor)));
             CityLookAssets.Dress(spawner);
+            CanalTownModelAssets.AssignTo(spawner);
             SerializedFields.Assign(spawner, "_showcaseHousePrefab", House1Assets.LoadOrCreatePrefab());
-            SerializedFields.Assign(installer, "_cityConfig", LoadOrCreateAsset<CityConfigAsset>("CityConfig"));
             SerializedFields.Assign(installer, "_citySpawner", spawner);
         }
 
         private static void AddFog(WorldInstaller installer)
         {
-            GameObject fog = CreateChild("Fog", installer.transform, typeof(DecalProjector));
-            fog.GetComponent<DecalProjector>().material = LoadOrCreateFogMaterial();
-            SerializedFields.Assign(installer, "_fogOverlay", fog.AddComponent<FogOverlay>());
+            GameObject fog = CreateChild("Fog", installer.transform, typeof(FogOverlay));
+            FogOverlay overlay = fog.GetComponent<FogOverlay>();
+            SerializedFields.Assign(overlay, "_screenMaterial", LoadOrCreateFogMaterial());
+            SerializedFields.Assign(installer, "_fogOverlay", overlay);
             SerializedFields.Assign(installer, "_fogTicker", installer.GetComponent<FogTicker>());
         }
 
@@ -139,33 +139,16 @@ namespace Stilargo.Editor.World
 
         private static Material LoadOrCreateFogMaterial()
         {
-            string path = $"{Root}/FogDecal.mat";
+            string path = $"{Root}/FogOfWar.mat";
             Material existing = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (existing != null)
             {
                 return existing;
             }
 
-            Material material = HdrpMaterials.CreateAlbedoDecal(LoadOrCreateFogPlaceholderTexture());
+            Material material = HdrpMaterials.CreateFogOfWarScreen();
             AssetDatabase.CreateAsset(material, path);
             return material;
-        }
-
-        // FogOverlay paints the real map at runtime; this transparent stand-in keeps the decal's color map enabled.
-        private static Texture2D LoadOrCreateFogPlaceholderTexture()
-        {
-            string path = $"{Root}/FogDecalPlaceholder.asset";
-            Texture2D existing = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-            if (existing != null)
-            {
-                return existing;
-            }
-
-            var texture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
-            texture.SetPixel(0, 0, Color.clear);
-            texture.Apply();
-            AssetDatabase.CreateAsset(texture, path);
-            return texture;
         }
 
         private static GameObject LoadOrCreateCubePrefab(string name, Material material)

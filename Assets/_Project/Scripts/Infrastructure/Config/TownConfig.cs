@@ -16,6 +16,7 @@ namespace Stilargo.Infrastructure.Config
         [SerializeField] private StreetsEntry streets = new StreetsEntry();
         [SerializeField] private NeighbourhoodsEntry neighbourhoods = new NeighbourhoodsEntry();
         [SerializeField] private StreetLifeEntry streetLife = new StreetLifeEntry();
+        [SerializeField] private CanalTownEntry canalTown = new CanalTownEntry();
 
         public static TownSettings Load()
         {
@@ -29,7 +30,8 @@ namespace Stilargo.Infrastructure.Config
                 return new TownSettings(parkBlocks, houseBlock.ToSettings())
                     .WithStreets(streets.ToSettings())
                     .WithNeighbourhoods(neighbourhoods.ToSettings())
-                    .WithStreetLife(streetLife.ToSettings());
+                    .WithStreetLife(streetLife.ToSettings())
+                    .WithCanalTown(canalTown.ToSettings());
             }
             catch (ArgumentException exception)
             {

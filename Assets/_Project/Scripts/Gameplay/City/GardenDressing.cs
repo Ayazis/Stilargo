@@ -1,84 +1,76 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Stilargo.Gameplay.City
 {
     /// <summary>
-    /// A private garden between villas or in a house block's courtyard: lawn inside a low hedge, a few trees and a
-    /// bench. The same plot always gets the same trees.
+    /// A private garden between villas or in a house block's courtyard: lawn inside a low stone wall, fruit trees,
+    /// shrubs, a vegetable bed, a washing line and a bench. The same plot always gets the same garden.
     /// </summary>
     internal sealed class GardenDressing : IPlotDressing
     {
-        private const float Half = 0.5f;
         private const float LawnHeightMetres = 0.05f;
-        private const float HedgeHeightMetres = 0.8f;
-        private const float HedgeThicknessMetres = 0.5f;
-        private const float TreeEveryMetres = 5f;
-        private const float TreeMarginMetres = 1.2f;
-        private const int CypressChanceInThree = 1;
-        private const int Three = 3;
-        private const int SeedXPrime = 73856093;
-        private const int SeedYPrime = 19349663;
-        private static readonly Vector3 BenchSize = new Vector3(1.6f, 0.45f, 0.5f);
+        private const float WallSegmentMetres = 2f;
+        private const float SpotSpacingMetres = 3.5f;
+        private const float SpotMarginMetres = 1.5f;
+        private const float SquareMetresPerTree = 40f;
+        private const float BedMinAreaSquareMetres = 30f;
+        private const float LineMinAreaSquareMetres = 50f;
+        private const int Shrubs = 2;
+
+        private static readonly PropKind[] FruitTrees = { PropKind.FruitTreeA, PropKind.FruitTreeB, PropKind.FruitTreeC };
 
         private readonly LandmarkMaterials _materials;
-        private readonly TreeProps _trees;
+        private readonly PropModels _models;
 
-        public GardenDressing(LandmarkMaterials materials)
+        public GardenDressing(LandmarkMaterials materials, PropModels models)
         {
             _materials = materials ?? throw new ArgumentNullException(nameof(materials));
-            _trees = new TreeProps(materials);
-        }
-
-        public bool TryGetWallMaterial(out Material material)
-        {
-            material = null;
-            return false;
+            _models = models ?? throw new ArgumentNullException(nameof(models));
         }
 
         public void Dress(PlotFrame frame, PropFactory props)
         {
-            Vector3 centre = frame.GroundCentre;
-            var lawn = new Vector3(frame.Width, LawnHeightMetres, frame.Depth);
-            PropFactory.IgnoredByNavigation(props.Box(centre + (Vector3.up * (LawnHeightMetres * Half)), lawn, _materials.Grass));
-            AddHedge(props, frame);
+            System.Random random = PlotRandom.For(frame.Plot);
+            GroundCover.Lay(props, frame, LawnHeightMetres, _materials.Grass);
+            PlotEdges.Line(props, frame, _models[PropKind.GardenWall], WallSegmentMetres);
 
-            var random = new System.Random((frame.Plot.Area.Min.X * SeedXPrime) ^ (frame.Plot.Area.Min.Y * SeedYPrime));
-            int trees = Math.Max(1, (int)((frame.Width * frame.Depth) / (TreeEveryMetres * TreeEveryMetres)));
+            var spots = new Queue<Vector3>(PropScatter.Spots(frame, SpotSpacingMetres, SpotMarginMetres, random));
+            foreach (PropKind kind in Contents(frame.Width * frame.Depth, random))
+            {
+                if (spots.Count == 0)
+                {
+                    return;
+                }
+
+                props.Model(_models[kind], spots.Dequeue(), PropScatter.SquareHeading(random));
+            }
+        }
+
+        private static IEnumerable<PropKind> Contents(float area, System.Random random)
+        {
+            int trees = Math.Max(1, (int)(area / SquareMetresPerTree));
             for (int index = 0; index < trees; index++)
             {
-                AddTree(props, frame, random);
+                yield return FruitTrees[random.Next(FruitTrees.Length)];
             }
 
-            PropFactory.IgnoredByNavigation(props.Box(centre + (Vector3.up * (BenchSize.y * Half)), BenchSize, _materials.Wood));
-        }
-
-        private void AddHedge(PropFactory props, PlotFrame frame)
-        {
-            float y = HedgeHeightMetres * Half;
-            float inset = HedgeThicknessMetres * Half;
-            float midX = frame.West + (frame.Width * Half);
-            float midZ = frame.South + (frame.Depth * Half);
-            var alongX = new Vector3(frame.Width, HedgeHeightMetres, HedgeThicknessMetres);
-            var alongZ = new Vector3(HedgeThicknessMetres, HedgeHeightMetres, frame.Depth);
-            PropFactory.Decorative(props.Box(new Vector3(midX, y, frame.South + inset), alongX, _materials.Foliage));
-            PropFactory.Decorative(props.Box(new Vector3(midX, y, frame.South + frame.Depth - inset), alongX, _materials.Foliage));
-            PropFactory.Decorative(props.Box(new Vector3(frame.West + inset, y, midZ), alongZ, _materials.Foliage));
-            PropFactory.Decorative(props.Box(new Vector3(frame.West + frame.Width - inset, y, midZ), alongZ, _materials.Foliage));
-        }
-
-        private void AddTree(PropFactory props, PlotFrame frame, System.Random random)
-        {
-            float x = frame.West + TreeMarginMetres + ((float)random.NextDouble() * Math.Max(0f, frame.Width - (TreeMarginMetres * 2f)));
-            float z = frame.South + TreeMarginMetres + ((float)random.NextDouble() * Math.Max(0f, frame.Depth - (TreeMarginMetres * 2f)));
-            var foot = new Vector3(x, 0f, z);
-            if (random.Next(Three) < CypressChanceInThree)
+            if (area >= BedMinAreaSquareMetres)
             {
-                _trees.AddCypress(props, foot);
-                return;
+                yield return PropKind.VegetableBed;
             }
 
-            _trees.AddPine(props, foot);
+            if (area >= LineMinAreaSquareMetres)
+            {
+                yield return PropKind.WashingLine;
+            }
+
+            yield return PropKind.ParkBench;
+            for (int index = 0; index < Shrubs; index++)
+            {
+                yield return PropKind.Shrub;
+            }
         }
     }
 }

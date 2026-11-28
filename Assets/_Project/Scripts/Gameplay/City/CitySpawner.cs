@@ -1,15 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Stilargo.Core.City;
+using Stilargo.Core.City.CanalTown;
 using Unity.AI.Navigation;
 using UnityEngine;
 
 namespace Stilargo.Gameplay.City
 {
     /// <summary>
-    /// Turns a <see cref="CityLayout"/> into buildings (plaster walls, tiled hip roofs, facade kit pieces) and the
-    /// city's landmarks (church, school, taverns, parks, a fountain square), plazas, gardens, yards and street
-    /// life (lamps, trees, clutter), then bakes the NavMesh over it.
+    /// Turns a <see cref="CityLayout"/> into buildings (the Blender-built model for each house style and landmark,
+    /// over an invisible box that units garrison and the camera picks), the sunken canal with its quays and bridges,
+    /// parks, plazas, gardens, yards and street life (lamps, trees, clutter), then bakes the NavMesh over it.
     /// </summary>
     [RequireComponent(typeof(NavMeshSurface))]
     public sealed class CitySpawner : MonoBehaviour
@@ -23,73 +25,55 @@ namespace Stilargo.Gameplay.City
         [SerializeField] private float _showcasePadMarginMetres = 4f;
         [SerializeField] private GameObject _showcaseHousePrefab;
         [SerializeField] private float _showcaseFacingDegrees = 180f;
-        [SerializeField] private GameObject _roofPrefab;
-        [SerializeField] private Material[] _wallMaterials = Array.Empty<Material>();
-        [SerializeField] private Material[] _roofMaterials = Array.Empty<Material>();
-        [SerializeField] private float _roofOverhangMetres = 0.4f;
-        [SerializeField] private float _roofRisePerHalfSpan = 0.5f;
-        [SerializeField] private GameObject _windowPrefab;
-        [SerializeField] private GameObject _doorPrefab;
-        [SerializeField] private GameObject _cornicePrefab;
         [SerializeField] private LandmarkMaterials _landmarkMaterials = new LandmarkMaterials();
+        [SerializeField] private BuildingModels _buildingModels = new BuildingModels();
+        [SerializeField] private CanalModels _canalModels = new CanalModels();
+        [SerializeField] private PropModels _propModels = new PropModels();
+        [SerializeField] private float _entryMarkerOffsetCells = 3f;
 
         private NavMeshSurface _navMeshSurface;
-        private Dictionary<FacadePieceKind, GameObject> _facadePrefabs;
         private Dictionary<PlotUse, IPlotDressing> _dressings;
-        private RoofMaker _roofs;
         private PropFactory _props;
+        private CanalBuilder _canal;
+        private RoofHeights _roofs;
 
         /// <summary>Height of one storey in metres; garrison slots and the fog's skyline use the same value.</summary>
         public float StoreyHeightMetres => _storeyHeight;
 
-        /// <summary>The tiled hip roofs' surfaces; null until <see cref="Construct"/> has run.</summary>
-        public RoofHeights Roofs => _roofs == null ? null : _roofs.Heights;
+        /// <summary>The building models' roofs, for turret decks; null until <see cref="Construct"/> has run.</summary>
+        public RoofHeights Roofs => _roofs;
 
         private void Awake()
         {
             CacheComponents();
         }
 
-        private void OnDestroy()
+        /// <summary>Builds the planned <paramref name="layout"/> of <paramref name="town"/>, whose canal and entries it also draws.</summary>
+        public void Construct(CityLayout layout, IReadOnlyList<StreetProp> streetProps, CanalTown town)
         {
-            if (_roofs == null)
+            if (layout == null || streetProps == null || town == null)
             {
-                return;
-            }
-
-            foreach (Mesh mesh in _roofs.Meshes)
-            {
-                Destroy(mesh);
-            }
-        }
-
-        public void Construct(CityLayout layout, IReadOnlyList<StreetProp> streetProps)
-        {
-            if (layout == null || streetProps == null)
-            {
-                throw new ArgumentNullException(layout == null ? nameof(layout) : nameof(streetProps));
+                throw new ArgumentNullException(layout == null ? nameof(layout) : streetProps == null ? nameof(streetProps) : nameof(town));
             }
 
             RequireAssets();
             CacheComponents();
-            _facadePrefabs = new Dictionary<FacadePieceKind, GameObject>
-            {
-                { FacadePieceKind.Window, _windowPrefab },
-                { FacadePieceKind.Door, _doorPrefab },
-                { FacadePieceKind.Cornice, _cornicePrefab },
-            };
             _dressings = CreateDressings();
-            _roofs = new RoofMaker(_roofPrefab, new RoofShape(_roofOverhangMetres, _roofRisePerHalfSpan), transform);
             _props = new PropFactory(transform);
+            _roofs = new RoofHeights();
+            _canal = new CanalBuilder(town.Canal, _canalModels, _landmarkMaterials, layout.CellSize);
 
             SpawnGround(layout);
-            foreach (Plot plot in layout.Plots)
+            _canal.Build(transform, layout.Width * layout.CellSize, _propModels[PropKind.RowingBoat]);
+            ShowcaseSite showcase = ShowcaseHouse.Place(layout);
+            foreach (Plot plot in layout.Plots.Where(plot => !_canal.IsCanal(plot) && plot != showcase.Replaced))
             {
-                SpawnPlot(plot, DressingFor(plot), layout.CellSize);
+                SpawnPlot(plot, layout.CellSize);
             }
 
             SpawnStreetProps(streetProps, layout.CellSize);
-            SpawnShowcaseHouse(layout);
+            SpawnEntryMarkers(town, layout.CellSize);
+            SpawnShowcaseHouse(showcase.House, layout.CellSize);
             _navMeshSurface.BuildNavMesh();
 
             // BuildNavMesh only registers the data once the surface is enabled. The bootstrapper runs before
@@ -101,34 +85,35 @@ namespace Stilargo.Gameplay.City
         {
             return new Dictionary<PlotUse, IPlotDressing>
             {
-                { PlotUse.House, new HouseDressing() },
-                { PlotUse.Church, new ChurchDressing(_landmarkMaterials) },
-                { PlotUse.School, new SchoolDressing(_landmarkMaterials) },
-                { PlotUse.Tavern, new TavernDressing(_landmarkMaterials) },
-                { PlotUse.Park, new ParkDressing(_landmarkMaterials) },
-                { PlotUse.Water, new WaterDressing(_landmarkMaterials) },
-                { PlotUse.Market, new MarketDressing(_landmarkMaterials) },
-                { PlotUse.Plaza, new PlazaDressing(_landmarkMaterials) },
-                { PlotUse.Garden, new GardenDressing(_landmarkMaterials) },
-                { PlotUse.Yard, new YardDressing(_landmarkMaterials) },
+                { PlotUse.Park, new ParkDressing(_landmarkMaterials, _propModels) },
+                { PlotUse.Water, new WaterDressing(_landmarkMaterials, _propModels) },
+                { PlotUse.Market, new MarketDressing(_landmarkMaterials, _propModels) },
+                { PlotUse.Plaza, new PlazaDressing(_landmarkMaterials, _propModels) },
+                { PlotUse.Garden, new GardenDressing(_landmarkMaterials, _propModels) },
+                { PlotUse.Yard, new YardDressing(_landmarkMaterials, _propModels) },
+                { PlotUse.Fountain, new FountainDressing(_propModels) },
+                { PlotUse.Meadow, new MeadowDressing(_landmarkMaterials, _propModels) },
+                { PlotUse.Field, new FieldDressing(_landmarkMaterials, _propModels) },
+                { PlotUse.Orchard, new OrchardDressing(_landmarkMaterials, _propModels) },
             };
         }
 
         private void RequireAssets()
         {
-            if (_groundPrefab == null || _buildingPrefab == null || _roofPrefab == null)
+            if (_groundPrefab == null || _buildingPrefab == null)
             {
-                throw new InvalidOperationException($"{nameof(CitySpawner)} needs a ground, a building and a roof prefab.");
-            }
-
-            if (_windowPrefab == null || _doorPrefab == null || _cornicePrefab == null)
-            {
-                throw new InvalidOperationException($"{nameof(CitySpawner)} needs window, door and cornice prefabs. Run Stilargo → Build World Prefab.");
+                throw new InvalidOperationException($"{nameof(CitySpawner)} needs a ground and a building prefab.");
             }
 
             if (_showcaseHousePrefab == null)
             {
                 throw new InvalidOperationException($"{nameof(CitySpawner)} needs the showcase house prefab. Run Stilargo → Build World Prefab.");
+            }
+
+            if (_buildingModels == null || !_buildingModels.IsComplete || _canalModels == null || !_canalModels.IsComplete
+                || _propModels == null || !_propModels.IsComplete)
+            {
+                throw new InvalidOperationException($"{nameof(CitySpawner)} is missing building, canal or prop models. Run Stilargo → Build Canal Town Prefabs, then Stilargo → Build World Prefab.");
             }
 
             if (_landmarkMaterials == null || !_landmarkMaterials.IsComplete)
@@ -146,45 +131,71 @@ namespace Stilargo.Gameplay.City
             }
         }
 
+        // Ground south and north of the canal; the canal's band is left open down to its bed.
         private void SpawnGround(CityLayout layout)
         {
             float width = layout.Width * layout.CellSize;
             float depth = layout.Height * layout.CellSize;
-            Vector3 position = new Vector3(width * Half, -_groundThickness * Half, depth * Half);
+            SpawnGroundStrip(width, 0f, _canal.SouthBank);
+            SpawnGroundStrip(width, _canal.NorthBank, depth);
+        }
+
+        private void SpawnGroundStrip(float width, float southZ, float northZ)
+        {
+            var position = new Vector3(width * Half, -_groundThickness * Half, (southZ + northZ) * Half);
             GameObject ground = Instantiate(_groundPrefab, position, Quaternion.identity, transform);
-            ground.transform.localScale = new Vector3(width, _groundThickness, depth);
+            ground.transform.localScale = new Vector3(width, _groundThickness, northZ - southZ);
         }
 
         private void SpawnStreetProps(IReadOnlyList<StreetProp> streetProps, float cellSize)
         {
-            var builder = new StreetPropBuilder(_landmarkMaterials);
+            var builder = new StreetPropBuilder(_propModels);
             foreach (StreetProp prop in streetProps)
             {
                 builder.Build(prop, cellSize, _props);
             }
         }
 
-        // The concept-art showcase house (built in Blender by a script under Tools/Art) stands outside the city on its own patch of cobbles.
-        private void SpawnShowcaseHouse(CityLayout layout)
+        // A town sign and a milestone flank each high road where the soldiers come in, with a wayside shrine on the
+        // player's side. Each faces the road.
+        private void SpawnEntryMarkers(CanalTown town, float cellSize)
         {
-            Plot plot = ShowcaseHouse.BesideCity(layout);
-            var frame = new PlotFrame(plot, layout.CellSize, _storeyHeight);
+            SpawnEntryMarker(town.PlayerEntry, cellSize, PropKind.WaysideShrine);
+            SpawnEntryMarker(town.RivalEntry, cellSize, PropKind.Milestone);
+        }
+
+        private void SpawnEntryMarker(GridPosition entry, float cellSize, PropKind second)
+        {
+            bool fromWest = entry.X == 0;
+            float x = (entry.X + Half + (fromWest ? _entryMarkerOffsetCells : -_entryMarkerOffsetCells)) * cellSize;
+            float roadZ = (entry.Y + Half) * cellSize;
+            float offset = _entryMarkerOffsetCells * cellSize;
+            _props.Model(_propModels[PropKind.TownSign], new Vector3(x, 0f, roadZ + offset), FacingRotation.Of(Facing.South));
+            _props.Model(_propModels[second], new Vector3(x, 0f, roadZ - offset), FacingRotation.Of(Facing.North));
+        }
+
+        // The concept-art showcase house (built in Blender by a script under Tools/Art) stands in the countryside on its own patch of cobbles.
+        private void SpawnShowcaseHouse(Plot plot, float cellSize)
+        {
+            var frame = new PlotFrame(plot, cellSize, _storeyHeight);
             Vector3 position = frame.GroundCentre + (Vector3.down * (_groundThickness * Half));
             GameObject pad = Instantiate(_groundPrefab, position, Quaternion.identity, transform);
             float margin = _showcasePadMarginMetres + _showcasePadMarginMetres;
             pad.transform.localScale = new Vector3(frame.Width + margin, _groundThickness, frame.Depth + margin);
-            Instantiate(_showcaseHousePrefab, frame.GroundCentre, Quaternion.Euler(0f, _showcaseFacingDegrees, 0f), transform);
+            PropFactory.IgnoredByNavigation(Instantiate(_showcaseHousePrefab, frame.GroundCentre, Quaternion.Euler(0f, _showcaseFacingDegrees, 0f), transform));
         }
 
-        private void SpawnPlot(Plot plot, IPlotDressing dressing, float cellSize)
+        // A building's model carries everything its old dressing added (doors, towers, flags), so only open ground is dressed.
+        private void SpawnPlot(Plot plot, float cellSize)
         {
             var frame = new PlotFrame(plot, cellSize, _storeyHeight);
             if (plot.HasBuilding)
             {
-                SpawnBuilding(frame, dressing);
+                SpawnBuilding(frame);
+                return;
             }
 
-            dressing.Dress(frame, _props);
+            DressingFor(plot).Dress(frame, _props);
         }
 
         private IPlotDressing DressingFor(Plot plot)
@@ -197,45 +208,29 @@ namespace Stilargo.Gameplay.City
             return dressing;
         }
 
-        private void SpawnBuilding(PlotFrame frame, IPlotDressing dressing)
+        // The box stays as the building's collider, selection volume and NavMesh obstacle; the model is only seen.
+        private void SpawnBuilding(PlotFrame frame)
         {
             float height = frame.BuildingHeight;
             Vector3 position = frame.GroundCentre + (Vector3.up * (height * Half));
             GameObject building = Instantiate(_buildingPrefab, position, Quaternion.identity, transform);
             building.transform.localScale = new Vector3(frame.Width, height, frame.Depth);
-            Renderer walls = building.GetComponent<Renderer>();
-            if (dressing.TryGetWallMaterial(out Material wall))
-            {
-                walls.sharedMaterial = wall;
-            }
-            else
-            {
-                ApplyVariant(walls, _wallMaterials, frame.Plot);
-            }
-
-            GameObject roof = _roofs.Build(new Vector3(position.x, height, position.z), new Vector2(frame.Width, frame.Depth));
-            ApplyVariant(roof.GetComponent<Renderer>(), _roofMaterials, frame.Plot);
-            SpawnFacade(frame);
+            building.GetComponent<Renderer>().enabled = false;
+            GameObject model = Instantiate(_buildingModels.For(frame.Plot), frame.GroundCentre, FacingRotation.Of(frame.Plot.Front), transform);
+            PropFactory.IgnoredByNavigation(model);
+            _roofs.Add(RoofOf(model).PlacedAt(frame.GroundCentre, frame.Plot.Front));
         }
 
-        private void SpawnFacade(PlotFrame frame)
+        private static RoofProfile RoofOf(GameObject model)
         {
-            foreach (FacadePiece piece in FacadeLayout.For(frame.Plot, frame.CellSize, _storeyHeight))
+            RoofProfile profile = model.GetComponent<RoofProfile>();
+            if (profile == null)
             {
-                Vector3 position = new Vector3(piece.Position.X, piece.Position.Y, piece.Position.Z);
-                Quaternion rotation = Quaternion.Euler(0f, piece.FacingDegrees, 0f);
-                Instantiate(_facadePrefabs[piece.Kind], position, rotation, transform);
-            }
-        }
-
-        private static void ApplyVariant(Renderer renderer, Material[] variants, Plot plot)
-        {
-            if (variants.Length == 0)
-            {
-                return;
+                throw new InvalidOperationException($"Building model '{model.name}' has no {nameof(RoofProfile)}. Run Stilargo → Build World Prefab.");
             }
 
-            renderer.sharedMaterial = variants[PlotVariation.Pick(plot, variants.Length)];
+            return profile;
         }
+
     }
 }

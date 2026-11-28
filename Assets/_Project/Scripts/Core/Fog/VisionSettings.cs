@@ -13,6 +13,7 @@ namespace Stilargo.Core.Fog
         public const float DefaultEyeHeightMetres = 1.7f;
         public const float DefaultSightMetresPerMetreOfHeight = 1.5f;
         public const float DefaultMaxVisionRadiusMetres = 60f;
+        public const int DefaultFogCellsPerCityCell = 4;
 
         /// <summary>How far a soldier on the street sees where nothing is in the way.</summary>
         public float UnitVisionRadiusMetres { get; private set; } = DefaultUnitVisionRadiusMetres;
@@ -24,6 +25,20 @@ namespace Stilargo.Core.Fog
 
         /// <summary>No source sees further than this, however high it stands.</summary>
         public float MaxVisionRadiusMetres { get; private set; } = DefaultMaxVisionRadiusMetres;
+
+        /// <summary>How many fog cells span one city cell along each axis; higher gives smoother fog edges but costs more per refresh.</summary>
+        public int FogCellsPerCityCell { get; private set; } = DefaultFogCellsPerCityCell;
+
+        public VisionSettings WithFogResolution(int fogCellsPerCityCell)
+        {
+            if (fogCellsPerCityCell < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(fogCellsPerCityCell), fogCellsPerCityCell, "Must be at least 1.");
+            }
+
+            FogCellsPerCityCell = fogCellsPerCityCell;
+            return this;
+        }
 
         public VisionSettings WithUnitVision(float radiusMetres, float eyeHeightMetres)
         {

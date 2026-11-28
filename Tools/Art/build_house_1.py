@@ -34,8 +34,8 @@ CORE_INSET = 0.26
 BAY_FRACTIONS = (0.29, 0.71)
 
 WINDOW_W = 0.95
-GROUND_WINDOW = (0.95, 1.75, 0.24)  # bottom, height to the arch spring, arch rise
-UPPER_WINDOW = (0.9, 1.45, 0.22)
+GROUND_WINDOW = (0.85, 1.95, 0.1)  # bottom, height to the arch spring, arch rise
+UPPER_WINDOW = (0.85, 1.55, 0.09)
 DOOR = (0.22, 2.15, 0.6)
 DOOR_W = 1.2
 REVEAL = 0.22
@@ -46,53 +46,77 @@ BEVEL_WIDTH = 0.012
 BEVEL_ANGLE = math.radians(50)  # bevels boxes, leaves the rounder leaves, flowers and pipes alone
 STONE_JITTER = 0.012
 
-ROOF_PITCH = math.radians(31)
+ROOF_PITCH = math.radians(34)
 OVERHANG = 0.4
-TILE_W = 0.2
-TILE_ROW = 0.28
-TILE_R = 0.115
+ROOF_COVER = 0.06  # the tiled surface sits this far above the roof deck
+EAVE_EDGE = 0.07  # visible thickness of the tile course at the eaves
 
 CHIMNEY_XY = (1.5, -1.9)
 SKYLIGHT = (2, 5.0, 5.85, 1.4, 2.3)  # roof face, u range along the eave, p range up the slope (plan metres)
 
 MATERIALS = {
     "Mortar": (0.6, 0.55, 0.47),
-    "Brick": (0.9, 0.88, 0.86),
+    "Brick": (1.0, 0.97, 0.94),
     "Stone": (0.95, 0.93, 0.88),
     "StoneDark": (0.84, 0.8, 0.72),
     "Moss": (0.3, 0.32, 0.17),
-    "RoofTileA": (0.6, 0.24, 0.12),
-    "RoofTileB": (0.68, 0.32, 0.17),
+    "RoofTiles": (1.0, 0.95, 0.9),
     "RoofTileC": (0.5, 0.2, 0.11),
     "RoofUnder": (0.25, 0.1, 0.06),
     "Zinc": (0.55, 0.57, 0.58),
     "Glass": (0.04, 0.05, 0.06),
     "Frame": (0.78, 0.75, 0.68),
-    "Shutter": (0.27, 0.3, 0.14),
+    "Shutter": (1.0, 0.92, 0.55),
     "Curtain": (0.75, 0.72, 0.64),
-    "Wood": (0.16, 0.09, 0.05),
+    "Wood": (0.75, 0.7, 0.65),
     "Iron": (0.05, 0.05, 0.05),
     "Terracotta": (0.55, 0.32, 0.18),
-    "FlowerRed": (0.7, 0.04, 0.04),
-    "FlowerPink": (0.8, 0.35, 0.45),
-    "FlowerWhite": (0.8, 0.8, 0.76),
-    "Leaf": (0.12, 0.25, 0.07),
     "Plaque": (0.8, 0.79, 0.75),
     "LampGlow": (1.0, 0.7, 0.35),
     "StoneGrime": (0.7, 0.65, 0.56),
-    "TileLichen": (0.44, 0.32, 0.21),
-    "TileDark": (0.36, 0.14, 0.08),
-    "ShutterFaded": (0.38, 0.4, 0.24),
+    "ShutterFaded": (1.0, 1.0, 0.72),
+    "BoxWood": (0.9, 0.82, 0.72),
 }
 # Scanned CC0 textures (Poly Haven) under Assets/_Project/Art/Textures, with the metres one tile covers.
 # Unity applies the same sets in House1Assets; here they only make the .blend and previews honest.
 TEXTURES = {
-    "Brick": ("red_brick", 1.4),
+    "Brick": ("brick_4", 1.05),
     "Stone": ("beige_wall_001", 2.0),
     "StoneDark": ("beige_wall_001", 2.0),
     "StoneGrime": ("beige_wall_001", 2.0),
+    "Wood": ("weathered_planks", 2.0),
+    "BoxWood": ("worn_planks", 1.4),
+    "Shutter": ("green_rough_planks", 1.5),
+    "ShutterFaded": ("green_rough_planks", 1.5),
+}
+# Sets mapped through the mesh UVs (in metres) instead of projected, so their pattern follows the surface:
+# roof tiles must run down each slope whichever way the face points.
+UV_TEXTURES = {
+    "RoofTiles": ("clay_roof_tiles_02", 2.5),
 }
 TEXTURE_ROOT = Path("Assets/_Project/Art/Textures")
+# Large-scale dirt and run-off over every scanned set above (Tools/Art/make_wear_detail_map.py); Unity lays the same
+# map over House 1's worn materials as an HDRP detail map at this size.
+WEAR_DETAIL = TEXTURE_ROOT / "wear_detail" / "wear_detail.png"
+WEAR_METRES_PER_TILE = 5.0
+
+# Scanned Poly Haven periwinkle (CC0): six photo-textured plants. Tools/Art/make_flower_textures.py makes the HDRP sets,
+# including a copy with geranium-red petals. Material names must match House1Assets.
+PLANT_SOURCE = Path("Tools/Art/Sources/periwinkle_plant/periwinkle_plant_2k.gltf")
+PLANT_MATERIALS = {"PlantPink": "periwinkle_plant", "PlantRed": "periwinkle_plant_red"}
+UPRIGHT_PLANTS = 24
+HANGING_PLANTS = 14
+PLANT_SCALE = (1.1, 1.6)
+PLANT_SINK = 0.12  # plants start below the soil so their bare lower stems are hidden
+PLANT_DECIMATE = 0.22  # the scans are dense; at window-box distance a fifth of the triangles reads the same
+
+BOX_CENTRE_PROUD = 0.22
+BOX_DEPTH = 0.24
+BOX_HEIGHT = 0.22
+BOX_EXTRA_LENGTH = 0.45  # beyond the window width
+SOIL_TOP = 0.21  # above the box bottom
+
+window_boxes = []  # (side, s, base) of every flower box, planted once the house mesh is built
 
 MATERIAL_INDEX = {name: index for index, name in enumerate(MATERIALS)}
 
@@ -106,6 +130,7 @@ class Mesh:
 
     def __init__(self):
         self.bm = bmesh.new()
+        self.uv = self.bm.loops.layers.uv.new("UVMap")
 
     def poly(self, corners, material, facing):
         """A single-sided face; it is flipped if needed so its visible side looks along `facing`.
@@ -117,6 +142,18 @@ class Mesh:
         face.normal_update()
         if face.normal.dot(Vector(facing)) < 0:
             face.normal_flip()
+
+    def poly_uv(self, corners, uvs, material, facing):
+        """Like poly, with a UV (in metres) per corner for UV-mapped materials."""
+        verts = [self.bm.verts.new(c) for c in corners]
+        uv_of = dict(zip(verts, uvs))
+        face = self.bm.faces.new(verts)
+        face.material_index = MATERIAL_INDEX[material]
+        face.normal_update()
+        if face.normal.dot(Vector(facing)) < 0:
+            face.normal_flip()
+        for loop in face.loops:
+            loop[self.uv].uv = uv_of[loop.vert]
 
     def hexahedron(self, front, back, material):
         """Two matching quads (counter-clockwise seen from the front) joined into a closed block."""
@@ -324,7 +361,7 @@ def stone_material(h):
         return "Moss"
     if roll < 0.25 + 0.35 * lowness(h):
         return "StoneGrime"
-    return "Stone" if rng.random() > 0.3 else "StoneDark"
+    return "Stone" if rng.random() > 0.15 else "StoneDark"
 
 
 def in_opening_column(holes, s, h0, h1):
@@ -507,7 +544,7 @@ def build_shutters(mesh, side, opening):
     height = opening.top - opening.bottom + 0.05
     mid = opening.bottom + height / 2 - 0.03
     rail = 0.06
-    paint = "ShutterFaded" if rng.random() < 0.4 else "Shutter"
+    paint = "ShutterFaded" if rng.random() < 0.15 else "Shutter"
     for sign in (-1, 1):
         centre = opening.s + sign * (opening.width / 2 + 0.34 + width / 2)
         jitter = rng.uniform(-0.008, 0.008)
@@ -516,40 +553,150 @@ def build_shutters(mesh, side, opening):
             side.box(mesh, centre, h, 0.065 + jitter, (width, rail, 0.025), paint)
         for s in (centre - width / 2 + rail / 2, centre + width / 2 - rail / 2):
             side.box(mesh, s, mid, 0.065 + jitter, (rail, height, 0.025), paint)
-        slats = 11
-        for half in (-1, 1):
-            base = mid + half * height / 4
-            span = height / 2 - 1.5 * rail
-            for k in range(slats):
-                h = base - span / 2 + (k + 0.5) * span / slats
-                side.box(mesh, centre, h, 0.062 + jitter, (width - 2 * rail, 0.022, 0.014), paint)
+        build_louvres(mesh, side, centre, mid, (width - 2 * rail, height - 3 * rail), paint)
         for h in (mid - height * 0.32, mid + height * 0.32):
             side.box(mesh, centre - sign * width / 2, h, 0.06, (0.04, 0.025, 0.03), "Iron")
 
 
+def build_louvres(mesh, side, centre, mid, size, paint):
+    """Slats tilted about 45 degrees, front edge low, so each casts a dark shadow line like real louvred shutters."""
+    width, span = size
+    pitch = 0.075
+    drop, depth, thickness = 0.045, 0.04, 0.01
+    front, back = 0.075, 0.075 - depth
+    for half in (-1, 1):
+        base = mid + half * (span / 4 + 0.015)
+        count = int((span / 2) / pitch)
+        for k in range(count):
+            h = base - span / 4 + (k + 0.5) * (span / 2) / count
+            s0, s1 = centre - width / 2, centre + width / 2
+            top = [side.point(s0, h - drop / 2, front), side.point(s1, h - drop / 2, front),
+                   side.point(s1, h + drop / 2, back), side.point(s0, h + drop / 2, back)]
+            under = [p - Vector((0, 0, thickness)) for p in top]
+            mesh.hexahedron(top, under, paint)
+
+
 def build_flower_box(mesh, side, opening):
+    """A wooden window box; the scanned plants are added after the house mesh is built (see build_plants)."""
     base = opening.bottom - 0.12
-    side.box(mesh, opening.s, base + 0.1, 0.22, (opening.width + 0.25, 0.2, 0.2), "Terracotta")
-    span = opening.width / 2 + 0.12
-    for _ in range(26):
-        p = side.point(opening.s + rng.uniform(-span, span), base + 0.22 + rng.uniform(0, 0.16), 0.22 + rng.uniform(-0.08, 0.1))
-        mesh.sphere(p, rng.uniform(0.05, 0.08), "Leaf")
-    for _ in range(22):
-        p = side.point(opening.s + rng.uniform(-span, span), base + 0.3 + rng.uniform(0, 0.16), 0.24 + rng.uniform(-0.05, 0.12))
-        mesh.sphere(p, rng.uniform(0.035, 0.055), rng.choice(("FlowerRed", "FlowerRed", "FlowerPink", "FlowerWhite")))
-    for _ in range(7):
-        build_trailing_stem(mesh, side, opening.s + rng.uniform(-span, span), base)
+    length = opening.width + BOX_EXTRA_LENGTH
+    side.box(mesh, opening.s, base + BOX_HEIGHT / 2, BOX_CENTRE_PROUD, (length, BOX_HEIGHT, BOX_DEPTH), "BoxWood")
+    side.box(mesh, opening.s, base + SOIL_TOP - 0.005, BOX_CENTRE_PROUD, (length - 0.08, 0.01, BOX_DEPTH - 0.06), "Wood")  # soil
+    window_boxes.append((side, opening.s, base, length / 2))
 
 
-def build_trailing_stem(mesh, side, s, base):
-    """Ivy-like strands spilling over the front of the box."""
-    length = rng.uniform(0.25, 0.6)
-    d = 0.34 + rng.uniform(0, 0.04)
-    steps = int(length / 0.06)
-    for k in range(steps):
-        h = base + 0.18 - k * 0.06
-        sway = math.sin(k * 0.9 + s * 7) * 0.03
-        mesh.sphere(side.point(s + sway, h, d), 0.035, "Leaf" if k % 3 else "FlowerWhite")
+def import_plant_templates():
+    bpy.ops.import_scene.gltf(filepath=str(PLANT_SOURCE.resolve()))
+    # The two smallest scans are single shoots; only the bushy ones build a full window box.
+    templates = sorted((o for o in bpy.context.scene.objects if o.type == "MESH" and o.name.startswith("periwinkle_plant")),
+                       key=lambda o: len(o.data.polygons))[2:]
+    if not templates:
+        raise RuntimeError(f"No periwinkle meshes in {PLANT_SOURCE}")
+    return templates, {name: plant_material(name, texture_set) for name, texture_set in PLANT_MATERIALS.items()}
+
+
+def plant_material(name, texture_set):
+    """Opaque scanned-leaf material through the mesh UVs.
+
+    The glTF import's own material fades alpha with vertex colours, which joining into the house drops (the plants
+    would vanish), so the preview gets a plain one; Unity remaps the slot anyway.
+    """
+    material = bpy.data.materials.new(name)
+    material.use_nodes = True
+    nodes, links = material.node_tree.nodes, material.node_tree.links
+    bsdf = nodes.get("Principled BSDF")
+    folder = (TEXTURE_ROOT / texture_set).resolve()
+    albedo = nodes.new("ShaderNodeTexImage")
+    albedo.image = bpy.data.images.load(str(folder / f"{texture_set}_albedo.jpg"))
+    links.new(albedo.outputs["Color"], bsdf.inputs["Base Color"])
+    normal_image = nodes.new("ShaderNodeTexImage")
+    normal_image.image = bpy.data.images.load(str(folder / f"{texture_set}_normal.jpg"))
+    normal_image.image.colorspace_settings.name = "Non-Color"
+    normal_map = nodes.new("ShaderNodeNormalMap")
+    links.new(normal_image.outputs["Color"], normal_map.inputs["Color"])
+    links.new(normal_map.outputs["Normal"], bsdf.inputs["Normal"])
+    bsdf.inputs["Roughness"].default_value = 0.55
+    return material
+
+
+def plant(template, material, matrix):
+    data = template.data.copy()
+    data.materials.clear()
+    data.materials.append(material)
+    obj = bpy.data.objects.new("Plant", data)
+    bpy.context.collection.objects.link(obj)
+    obj.matrix_world = matrix
+    return obj
+
+
+def clip_outside_box(obj, side, s, base, half_length):
+    """Deletes the parts of a plant that would show through the box or the wall: below the soil inside the box, or
+    behind the facade. The scans are whole plants, so whatever is sunk into the soil would poke out of the box sides."""
+    front = BOX_CENTRE_PROUD + BOX_DEPTH / 2
+    soil = base + SOIL_TOP
+    to_world = obj.matrix_world
+
+    def hidden(co):
+        offset = to_world @ co - side.origin
+        d, h = offset.dot(side.outward), offset.z
+        inside_box = abs(offset.dot(side.along) - s) < half_length + 0.02 and d < front + 0.01 and h < soil
+        return d < 0.0 or inside_box
+
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if hidden(v.co)], context="VERTS")
+    bm.to_mesh(obj.data)
+    bm.free()
+
+
+def plant_matrix(position, up, along, scale):
+    """A plant standing at `position` with its own +Z along `up`, spun freely about it."""
+    up = up.normalized()
+    x = (along - up * along.dot(up)).normalized()
+    y = up.cross(x)
+    spin = Matrix.Rotation(rng.uniform(0, math.tau), 4, "Z")
+    basis = Matrix((x, y, up)).transposed().to_4x4()
+    return Matrix.Translation(position) @ basis @ spin @ Matrix.Scale(scale, 4)
+
+
+def build_plants():
+    """Scanned plants in every window box: a row standing in the soil and a row hanging over the front edge."""
+    templates, materials = import_plant_templates()
+    up = Vector((0, 0, 1))
+    planted = []
+    for box in window_boxes:
+        side, s, base, half_length = box
+        span = half_length - 0.04
+        for k in range(UPRIGHT_PLANTS):
+            u = -span + (k + rng.uniform(0.2, 0.8)) * 2 * span / UPRIGHT_PLANTS
+            where = side.point(s + u, base + SOIL_TOP - PLANT_SINK, BOX_CENTRE_PROUD + rng.uniform(-0.07, 0.07))
+            planted.append((box, where, up))
+        for k in range(HANGING_PLANTS):
+            u = -span + (k + rng.uniform(0.2, 0.8)) * 2 * span / HANGING_PLANTS
+            # Rooted on the box's top front edge, so they spill over it instead of growing out through its front.
+            where = side.point(s + u, base + SOIL_TOP, BOX_CENTRE_PROUD + BOX_DEPTH / 2)
+            droop = side.outward * rng.uniform(0.7, 1.0) - up * rng.uniform(0.4, 0.75)
+            planted.append((box, where, droop))
+    objects = []
+    for box, where, direction in planted:
+        side, s, base, half_length = box
+        material = materials["PlantRed" if rng.random() < 0.55 else "PlantPink"]
+        obj = plant(rng.choice(templates), material, plant_matrix(where, direction, side.along, rng.uniform(*PLANT_SCALE)))
+        clip_outside_box(obj, side, s, base, half_length)
+        objects.append(obj)
+    for template in templates:
+        bpy.data.objects.remove(template)
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in objects:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = objects[0]
+    bpy.ops.object.join()
+    plants = bpy.context.view_layer.objects.active
+    plants.name = "Plants"
+    plants.data.uv_layers[0].name = "UVMap"
+    decimate = plants.modifiers.new("Decimate", "DECIMATE")
+    decimate.ratio = PLANT_DECIMATE
+    return plants
 
 
 def build_door(mesh, side, opening):
@@ -584,11 +731,6 @@ def roof_faces():
     ]
 
 
-def in_skylight(face, u, p):
-    index, u0, u1, p0, p1 = SKYLIGHT
-    return face == index and u0 - 0.1 < u < u1 + 0.1 and p0 - 0.1 < p < p1 + 0.1
-
-
 def build_roof(mesh):
     base = EAVES + 0.02
     rise = math.tan(ROOF_PITCH)
@@ -604,18 +746,7 @@ def build_roof(mesh):
             return start + along * u + inward * p + up * (base + p * rise) + normal * lift
 
         mesh.poly([at(0, 0), at(length, 0), at(length - run, run), at(run, run)], "RoofUnder", normal)
-        rows = int(run * slope_len / TILE_ROW)
-        for row in range(rows):
-            p = (row * TILE_ROW + TILE_ROW / 2) / slope_len
-            u0, u1 = p + 0.06, length - p - 0.06
-            count = int((u1 - u0) / TILE_W)
-            margin = (u1 - u0 - count * TILE_W) / 2
-            for k in range(max(0, count)):
-                u = u0 + margin + (k + 0.5) * TILE_W
-                if not in_skylight(face, u, p):
-                    is_pan = (row + k) % 2 == 0
-                    lift = (0.05 if is_pan else 0.1) + rng.uniform(-0.01, 0.01)
-                    build_tile(mesh, at(u, p, lift), slope, normal, along, is_pan)
+        build_tiled_surface(mesh, at, normal, inward, length, run, slope_len)
         build_hip(mesh, at(0, 0), at(run, run))
         build_hip(mesh, at(length, 0), at(length - run, run))
         build_gutter(mesh, at(0, 0) - inward * 0.08, at(length, 0) - inward * 0.08)
@@ -627,23 +758,15 @@ def build_roof(mesh):
     build_hip(mesh, Vector((0, -half, ridge_h)), Vector((0, half, ridge_h)))
 
 
-def build_tile(mesh, centre, slope, normal, along, is_pan):
-    """A canal tile: a half pipe along the slope, pans open upwards, caps over the joints."""
-    length = TILE_ROW * 1.35
-    segments = 6
-    material = rng.choice(("RoofTileA", "RoofTileA", "RoofTileB", "RoofTileB", "RoofTileC", "RoofTileC", "TileDark", "TileDark",
-                           "TileLichen"))
-    slope = (slope + along * rng.uniform(-0.015, 0.015)).normalized()
-    radius = TILE_R if is_pan else TILE_R * 0.8
-    bulge = -0.55 if is_pan else 1.0
-    ring = [along * (math.cos(math.pi * k / segments) * radius) + normal * (math.sin(math.pi * k / segments) * radius * bulge)
-            for k in range(segments + 1)]
-    tail, head = slope * (-length / 2), slope * (length / 2)
-    for k in range(segments):
-        # Caps are seen from outside the pipe, pans from inside the trough.
-        outward = (ring[k] + ring[k + 1]) * (-1 if is_pan else 1)
-        mesh.poly([centre + tail + ring[k], centre + tail + ring[k + 1], centre + head + ring[k + 1], centre + head + ring[k]],
-                  material, outward)
+def build_tiled_surface(mesh, at, normal, inward, length, run, slope_len):
+    """The tiles as one UV-mapped face (scanned clay tiles, parallax in HDRP) plus their visible edge at the eaves.
+
+    UVs are metres: u along the eave, v up the slope, so the tile courses run level and the barrels run downhill.
+    """
+    corners = [(0, 0), (length, 0), (length - run, run), (run, run)]
+    mesh.poly_uv([at(u, p, ROOF_COVER) for u, p in corners], [(u, p * slope_len) for u, p in corners], "RoofTiles", normal)
+    edge = [at(0, 0, ROOF_COVER - EAVE_EDGE), at(length, 0, ROOF_COVER - EAVE_EDGE), at(length, 0, ROOF_COVER), at(0, 0, ROOF_COVER)]
+    mesh.poly_uv(edge, [(0, 0), (length, 0), (length, EAVE_EDGE), (0, EAVE_EDGE)], "RoofTiles", -inward)
 
 
 def build_hip(mesh, a, b):
@@ -764,6 +887,68 @@ def make_materials():
             bsdf.inputs["Emission Strength"].default_value = 6.0
         if name in TEXTURES:
             add_box_projected_texture(material, *TEXTURES[name])
+        if name in UV_TEXTURES:
+            add_uv_texture(material, *UV_TEXTURES[name])
+
+
+def add_uv_texture(material, texture_set, metres_per_tile):
+    """Albedo, normal and height through UVs in metres, the Blender counterpart of HDRP's UV0 mapping with parallax."""
+    nodes, links = material.node_tree.nodes, material.node_tree.links
+    bsdf = nodes.get("Principled BSDF")
+    coords = nodes.new("ShaderNodeTexCoord")
+    mapping = nodes.new("ShaderNodeMapping")
+    mapping.inputs["Scale"].default_value = (1 / metres_per_tile,) * 3
+    links.new(coords.outputs["UV"], mapping.inputs["Vector"])
+    folder = (TEXTURE_ROOT / texture_set).resolve()
+
+    def image(suffix, colour=True):
+        node = nodes.new("ShaderNodeTexImage")
+        node.image = bpy.data.images.load(str(folder / f"{texture_set}_{suffix}.jpg"))
+        if not colour:
+            node.image.colorspace_settings.name = "Non-Color"
+        links.new(mapping.outputs["Vector"], node.inputs["Vector"])
+        return node
+
+    tint = nodes.new("ShaderNodeMix")
+    tint.data_type = "RGBA"
+    tint.blend_type = "MULTIPLY"
+    tint.inputs["Factor"].default_value = 1.0
+    tint.inputs["A"].default_value = bsdf.inputs["Base Color"].default_value
+    links.new(image("albedo").outputs["Color"], tint.inputs["B"])
+    links.new(tint.outputs["Result"], bsdf.inputs["Base Color"])
+    normal_map = nodes.new("ShaderNodeNormalMap")
+    links.new(image("normal", colour=False).outputs["Color"], normal_map.inputs["Color"])
+    bump = nodes.new("ShaderNodeBump")
+    bump.inputs["Distance"].default_value = 0.04
+    links.new(image("height", colour=False).outputs["Color"], bump.inputs["Height"])
+    links.new(normal_map.outputs["Normal"], bump.inputs["Normal"])
+    links.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
+
+
+def add_wear(nodes, links, coords, colour):
+    """Darkens `colour` by the wear detail map the way HDRP applies a detail albedo (x 2 * R, 0.5 is neutral)."""
+    mapping = nodes.new("ShaderNodeMapping")
+    mapping.inputs["Scale"].default_value = (1 / WEAR_METRES_PER_TILE,) * 3
+    links.new(coords.outputs["Object"], mapping.inputs["Vector"])
+    wear = nodes.new("ShaderNodeTexImage")
+    wear.image = bpy.data.images.load(str(WEAR_DETAIL.resolve()))
+    wear.image.colorspace_settings.name = "Non-Color"
+    wear.projection = "BOX"
+    wear.projection_blend = 0.2
+    links.new(mapping.outputs["Vector"], wear.inputs["Vector"])
+    channels = nodes.new("ShaderNodeSeparateColor")
+    links.new(wear.outputs["Color"], channels.inputs["Color"])
+    double = nodes.new("ShaderNodeMath")
+    double.operation = "MULTIPLY"
+    double.inputs[1].default_value = 2.0
+    links.new(channels.outputs["Red"], double.inputs[0])
+    worn = nodes.new("ShaderNodeMix")
+    worn.data_type = "RGBA"
+    worn.blend_type = "MULTIPLY"
+    worn.inputs["Factor"].default_value = 1.0
+    links.new(colour, worn.inputs["A"])
+    links.new(double.outputs["Value"], worn.inputs["B"])
+    return worn.outputs["Result"]
 
 
 def add_box_projected_texture(material, texture_set, metres_per_tile):
@@ -786,7 +971,7 @@ def add_box_projected_texture(material, texture_set, metres_per_tile):
     tint.inputs["Factor"].default_value = 1.0
     tint.inputs["A"].default_value = bsdf.inputs["Base Color"].default_value
     links.new(albedo.outputs["Color"], tint.inputs["B"])
-    links.new(tint.outputs["Result"], bsdf.inputs["Base Color"])
+    links.new(add_wear(nodes, links, coords, tint.outputs["Result"]), bsdf.inputs["Base Color"])
     normal_image = nodes.new("ShaderNodeTexImage")
     normal_image.image = bpy.data.images.load(str(folder / f"{texture_set}_normal.jpg"))
     normal_image.image.colorspace_settings.name = "Non-Color"
@@ -815,7 +1000,7 @@ def build_house():
     build_drainpipes(detail)
     # Real masonry and joinery have worn edges; perfectly sharp boxes are what make a model read as a toy.
     parts = [stone.to_object("Stone", bevel=BEVEL_WIDTH), detail.to_object("Detail", bevel=BEVEL_WIDTH),
-             roof.to_object("Roof"), build_house_number(*number)]
+             roof.to_object("Roof"), build_house_number(*number), build_plants()]
     apply_modifiers(parts)
     bpy.ops.object.select_all(action="DESELECT")
     for part in parts:

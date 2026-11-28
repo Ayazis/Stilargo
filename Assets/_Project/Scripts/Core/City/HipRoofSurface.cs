@@ -7,7 +7,7 @@ namespace Stilargo.Core.City
     /// The top surface of one hip roof built by <see cref="HipRoofBuilder"/>. All four slopes share one pitch, so the
     /// height anywhere is the pitch times the distance to the nearest eave, capped at the ridge.
     /// </summary>
-    public sealed class HipRoofSurface
+    public sealed class HipRoofSurface : IRoofSurface
     {
         private const float Half = 0.5f;
 

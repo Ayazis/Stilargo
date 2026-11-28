@@ -12,6 +12,10 @@ namespace Stilargo.Core.City
         Market,
         Plaza,
         Garden,
-        Yard
+        Yard,
+        Fountain,
+        Meadow,
+        Field,
+        Orchard
     }
 }

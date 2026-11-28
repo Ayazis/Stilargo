@@ -4,111 +4,68 @@ using UnityEngine;
 namespace Stilargo.Gameplay.City
 {
     /// <summary>
-    /// The market square in the middle of town, after the church-square concept art: open stone paving with a
-    /// fountain in the centre, a few trees and benches round it, and rows of market stalls along two sides.
-    /// Units cross the paving freely; only the fountain and the stall tables are in the way.
+    /// The market square, after the market-and-chapel concept art: open paving with a timber market hall in the
+    /// middle where it fits, rows of striped stalls along two sides facing inwards, and a tree in each corner.
+    /// Units walk through the hall; only the stalls are in the way.
     /// </summary>
     internal sealed class MarketDressing : IPlotDressing
     {
         private const float Half = 0.5f;
         private const float PavingHeightMetres = 0.04f;
-        private const float BasinDiameterMetres = 3.6f;
-        private const float BasinHeightMetres = 0.55f;
-        private const float WaterDiameterMetres = 3.1f;
-        private const float WaterHeightMetres = 0.5f;
-        private const float WaterThicknessMetres = 0.04f;
-        private const float ColumnDiameterMetres = 0.4f;
-        private const float ColumnHeightMetres = 1.8f;
-        private const float BowlDiameterMetres = 1.2f;
-        private const float BowlHeightMetres = 0.15f;
-        private const float TreeInsetFraction = 0.25f;
-        private const float BenchOffsetMetres = 3.4f;
-        private const float QuarterTurnDegrees = 90f;
+        private const float HallMinWidthMetres = 14f;
+        private const float HallMinDepthMetres = 14f;
         private const float StallInsetMetres = 2.2f;
-        private const float StallSpacingMetres = 3.6f;
-        private const float StallPostHeightMetres = 2.3f;
-        private const float StallPostDiameterMetres = 0.1f;
-        private const float StallRowFraction = 0.6f;
-        private static readonly Vector3 BenchSize = new Vector3(1.6f, 0.45f, 0.5f);
-        private static readonly Vector3 StallTableSize = new Vector3(2f, 0.9f, 0.9f);
-        private static readonly Vector3 AwningSize = new Vector3(2.4f, 0.08f, 1.5f);
+        private const float StallSpacingMetres = 4f;
+        private const float StallRowFraction = 0.7f;
+        private const float TreeInsetMetres = 2f;
+        private const float HalfTurnDegrees = 180f;
+        private static readonly Vector3 StallFootprint = new Vector3(3.2f, 1f, 2.2f);
 
         private readonly LandmarkMaterials _materials;
-        private readonly TreeProps _trees;
+        private readonly PropModels _models;
 
-        public MarketDressing(LandmarkMaterials materials)
+        public MarketDressing(LandmarkMaterials materials, PropModels models)
         {
             _materials = materials ?? throw new ArgumentNullException(nameof(materials));
-            _trees = new TreeProps(materials);
-        }
-
-        public bool TryGetWallMaterial(out Material material)
-        {
-            material = null;
-            return false;
+            _models = models ?? throw new ArgumentNullException(nameof(models));
         }
 
         public void Dress(PlotFrame frame, PropFactory props)
         {
-            Vector3 centre = frame.GroundCentre;
-            var pavingSize = new Vector3(frame.Width, PavingHeightMetres, frame.Depth);
-            PropFactory.IgnoredByNavigation(props.Box(centre + (Vector3.up * (PavingHeightMetres * Half)), pavingSize, _materials.Stone));
-            AddFountain(props, centre);
-            AddTreesAndBenches(props, frame);
-            AddStallRow(props, frame, frame.South + StallInsetMetres);
-            AddStallRow(props, frame, frame.South + frame.Depth - StallInsetMetres);
+            GroundCover.Lay(props, frame, PavingHeightMetres, _materials.Stone);
+            if (frame.Width >= HallMinWidthMetres && frame.Depth >= HallMinDepthMetres)
+            {
+                props.Model(_models[PropKind.MarketHall], frame.GroundCentre, Quaternion.identity);
+            }
+
+            // A stall's counter faces +Z unrotated: the south row faces north into the square, the north row south.
+            AddStallRow(props, frame, frame.South + StallInsetMetres, Quaternion.identity);
+            AddStallRow(props, frame, frame.South + frame.Depth - StallInsetMetres, Quaternion.Euler(0f, HalfTurnDegrees, 0f));
+            AddCornerTrees(props, frame);
         }
 
-        private void AddFountain(PropFactory props, Vector3 centre)
+        private void AddStallRow(PropFactory props, PlotFrame frame, float z, Quaternion facing)
         {
-            props.Cylinder(centre, BasinDiameterMetres, BasinHeightMetres, _materials.Stone);
-            PropFactory.IgnoredByNavigation(props.Cylinder(centre + (Vector3.up * WaterHeightMetres), WaterDiameterMetres, WaterThicknessMetres, _materials.Water));
-            props.Cylinder(centre, ColumnDiameterMetres, ColumnHeightMetres, _materials.Stone);
-            props.Cylinder(centre + (Vector3.up * ColumnHeightMetres), BowlDiameterMetres, BowlHeightMetres, _materials.Stone);
-        }
-
-        // One tree in each quarter of the square, a bench facing the fountain on each side.
-        private void AddTreesAndBenches(PropFactory props, PlotFrame frame)
-        {
-            Vector3 centre = frame.GroundCentre;
-            float insetX = frame.Width * TreeInsetFraction;
-            float insetZ = frame.Depth * TreeInsetFraction;
-            _trees.AddPine(props, centre + new Vector3(-insetX, 0f, -insetZ));
-            _trees.AddPine(props, centre + new Vector3(insetX, 0f, -insetZ));
-            _trees.AddPine(props, centre + new Vector3(-insetX, 0f, insetZ));
-            _trees.AddPine(props, centre + new Vector3(insetX, 0f, insetZ));
-
-            float benchY = BenchSize.y * Half;
-            Quaternion turned = Quaternion.Euler(0f, QuarterTurnDegrees, 0f);
-            props.Box(centre + new Vector3(0f, benchY, -BenchOffsetMetres), BenchSize, _materials.Wood);
-            props.Box(centre + new Vector3(0f, benchY, BenchOffsetMetres), BenchSize, _materials.Wood);
-            props.Box(centre + new Vector3(-BenchOffsetMetres, benchY, 0f), BenchSize, _materials.Wood).transform.rotation = turned;
-            props.Box(centre + new Vector3(BenchOffsetMetres, benchY, 0f), BenchSize, _materials.Wood).transform.rotation = turned;
-        }
-
-        private void AddStallRow(PropFactory props, PlotFrame frame, float z)
-        {
-            float rowLength = frame.Width * StallRowFraction;
-            int stalls = Math.Max(1, (int)(rowLength / StallSpacingMetres));
+            int stalls = Math.Max(1, (int)(frame.Width * StallRowFraction / StallSpacingMetres));
             float firstX = frame.GroundCentre.x - ((stalls - 1) * StallSpacingMetres * Half);
             for (int index = 0; index < stalls; index++)
             {
-                AddStall(props, new Vector3(firstX + (index * StallSpacingMetres), 0f, z));
+                var foot = new Vector3(firstX + (index * StallSpacingMetres), 0f, z);
+                props.Model(_models[PropKind.MarketStall], foot, facing);
+                props.Obstacle(foot, StallFootprint);
             }
         }
 
-        private void AddStall(PropFactory props, Vector3 foot)
+        private void AddCornerTrees(PropFactory props, PlotFrame frame)
         {
-            props.Box(foot + (Vector3.up * (StallTableSize.y * Half)), StallTableSize, _materials.Wood);
-            float postX = AwningSize.x * Half;
-            float postZ = AwningSize.z * Half;
-            PropFactory.IgnoredByNavigation(props.Cylinder(foot + new Vector3(-postX, 0f, -postZ), StallPostDiameterMetres, StallPostHeightMetres, _materials.Wood));
-            PropFactory.IgnoredByNavigation(props.Cylinder(foot + new Vector3(postX, 0f, -postZ), StallPostDiameterMetres, StallPostHeightMetres, _materials.Wood));
-
-            // No collider on the awning: clicks must reach the units standing under it.
-            GameObject awning = props.Box(foot + (Vector3.up * StallPostHeightMetres), AwningSize, _materials.Cloth);
-            UnityEngine.Object.Destroy(awning.GetComponent<Collider>());
-            PropFactory.IgnoredByNavigation(awning);
+            float west = frame.West + TreeInsetMetres;
+            float east = frame.West + frame.Width - TreeInsetMetres;
+            float south = frame.South + TreeInsetMetres;
+            float north = frame.South + frame.Depth - TreeInsetMetres;
+            foreach (Vector3 corner in new[] { new Vector3(west, 0f, south), new Vector3(east, 0f, south), new Vector3(west, 0f, north), new Vector3(east, 0f, north) })
+            {
+                props.Model(_models[PropKind.PlaneTree], corner, Quaternion.identity);
+            }
         }
     }
 }

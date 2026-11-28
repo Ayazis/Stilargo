@@ -42,5 +42,17 @@ namespace Stilargo.Tests.EditMode.Fog
         {
             Assert.That(() => new VisionSettings().WithUnitVision(0f, 1.7f), Throws.InstanceOf<System.ArgumentOutOfRangeException>());
         }
+
+        [Test]
+        public void WithFogResolution_BelowOne_Throws()
+        {
+            Assert.Throws<System.ArgumentOutOfRangeException>(() => new VisionSettings().WithFogResolution(0));
+        }
+
+        [Test]
+        public void WithFogResolution_StoresTheSplit()
+        {
+            Assert.AreEqual(3, new VisionSettings().WithFogResolution(3).FogCellsPerCityCell);
+        }
     }
 }

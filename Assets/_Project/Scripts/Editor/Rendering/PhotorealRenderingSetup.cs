@@ -10,7 +10,7 @@ namespace Stilargo.Editor.Rendering
     /// Makes HDRP the project's pipeline and applies the settings our photoreal target needs: linear color,
     /// physical light units, high-quality shadows, screen-space effects, and a global volume with a
     /// physically based sky with sparse volumetric clouds, SSGI, automatic exposure, horizon depth of field
-    /// and filmic grading (atmospheric fog is off).
+    /// a thin aerial-perspective haze and neutral filmic grading.
     /// Safe to rerun. Batch: -executeMethod Stilargo.Editor.Rendering.PhotorealRenderingSetup.Apply
     /// </summary>
     public static class PhotorealRenderingSetup
@@ -28,14 +28,25 @@ namespace Stilargo.Editor.Rendering
         private const float MaxShadowDistanceMeters = 600f;
         private const int ShadowCascadeCount = 4;
 
-        // Ambient occlusion radius in meters: wide enough to darken street corners and wall bases.
-        private const float AmbientOcclusionIntensity = 1.2f;
-        private const float AmbientOcclusionRadiusMeters = 2f;
+        // Ambient occlusion: grounds wall bases and corners without crushing the sky-lit shadows to brown.
+        private const float AmbientOcclusionIntensity = 0.8f;
+        private const float AmbientOcclusionRadiusMeters = 1.5f;
+        private const float AmbientOcclusionDirectLightingStrength = 0.15f;
 
-        // Grading: slightly warm, a touch more contrast, a little less saturation for a filmic look.
-        private const float ContrastPercent = 8f;
-        private const float SaturationPercent = -5f;
-        private const float WhiteBalanceTemperature = 6f;
+        // Grading: ACES already adds contrast and the sun is warm, so the grade stays neutral and only
+        // cools a touch so shadows read as sky-blue instead of orange.
+        private const float ContrastPercent = 0f;
+        private const float SaturationPercent = -3f;
+        private const float WhiteBalanceTemperature = -4f;
+
+        // Auto exposure meters the bright roofs; a small lift keeps the streets and shadow sides readable.
+        private const float ExposureCompensationEv = 0.4f;
+
+        // Aerial perspective: a thin, low haze. A long mean free path keeps the play area clear while
+        // distant blocks fade slightly into the sky colour, which gives the city depth and scale.
+        private const float FogMeanFreePathMeters = 1400f;
+        private const float FogBaseHeightMeters = 0f;
+        private const float FogMaximumHeightMeters = 120f;
         private const float FilmGrainIntensity = 0.12f;
 
         // Only the far horizon softens, so zooming never blurs the play area.
@@ -146,11 +157,17 @@ namespace Stilargo.Editor.Rendering
 
         private static void ApplyExposureAndFog(VolumeProfile profile)
         {
-            GetOrAdd<Exposure>(profile).mode.Override(ExposureMode.AutomaticHistogram);
+            Exposure exposure = GetOrAdd<Exposure>(profile);
+            exposure.mode.Override(ExposureMode.AutomaticHistogram);
+            exposure.compensation.Override(ExposureCompensationEv);
 
-            // No haze: from the zoomed-out RTS camera it greyed out the whole city instead of adding depth.
+            // Earlier dense fog greyed out the whole city; this one only tints the distance.
             Fog fog = GetOrAdd<Fog>(profile);
-            fog.enabled.Override(false);
+            fog.enabled.Override(true);
+            fog.colorMode.Override(FogColorMode.SkyColor);
+            fog.meanFreePath.Override(FogMeanFreePathMeters);
+            fog.baseHeight.Override(FogBaseHeightMeters);
+            fog.maximumHeight.Override(FogMaximumHeightMeters);
             fog.enableVolumetricFog.Override(false);
         }
 
@@ -159,6 +176,7 @@ namespace Stilargo.Editor.Rendering
             ScreenSpaceAmbientOcclusion ambientOcclusion = GetOrAdd<ScreenSpaceAmbientOcclusion>(profile);
             ambientOcclusion.intensity.Override(AmbientOcclusionIntensity);
             ambientOcclusion.radius.Override(AmbientOcclusionRadiusMeters);
+            ambientOcclusion.directLightingStrength.Override(AmbientOcclusionDirectLightingStrength);
             ambientOcclusion.quality.Override((int)ScalableSettingLevelParameter.Level.High);
             GlobalIllumination globalIllumination = GetOrAdd<GlobalIllumination>(profile);
             // SSGI off: at RTS distances it flickered and crushed the alleys to black.

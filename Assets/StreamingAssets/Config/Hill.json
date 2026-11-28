@@ -1,7 +1,7 @@
 {
     "hill": {
-        "centerXMetres": 86,
-        "centerZMetres": 72,
+        "centerXMetres": 143,
+        "centerZMetres": 137,
         "radiusMetres": 6,
         "holdDurationSeconds": 180
     },

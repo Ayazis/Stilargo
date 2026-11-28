@@ -7,9 +7,9 @@ namespace Stilargo.Core.City
     /// <summary>The city's roofs, so things placed on a roof (turrets) can sit on its tiles instead of inside it.</summary>
     public sealed class RoofHeights
     {
-        private readonly List<HipRoofSurface> _roofs = new List<HipRoofSurface>();
+        private readonly List<IRoofSurface> _roofs = new List<IRoofSurface>();
 
-        public void Add(HipRoofSurface roof)
+        public void Add(IRoofSurface roof)
         {
             _roofs.Add(roof ?? throw new ArgumentNullException(nameof(roof)));
         }
@@ -28,7 +28,7 @@ namespace Stilargo.Core.City
             float highest = float.NegativeInfinity;
             foreach (WorldPoint point in DeckPoints(centre, halfSizeMetres))
             {
-                foreach (HipRoofSurface roof in _roofs)
+                foreach (IRoofSurface roof in _roofs)
                 {
                     if (roof.TryGetHeight(point, out float height) && height > highest)
                     {

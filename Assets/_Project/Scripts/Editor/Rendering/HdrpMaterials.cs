@@ -13,10 +13,7 @@ namespace Stilargo.Editor.Rendering
         public const string LitShaderName = "HDRP/Lit";
         public const string UnlitShaderName = "HDRP/Unlit";
         public const string UnlitColorMapProperty = "_UnlitColorMap";
-        public const string DecalShaderName = "HDRP/Decal";
-
-        private const string AffectNormalProperty = "_AffectNormal";
-        private const string AffectSmoothnessProperty = "_AffectSmoothness";
+        public const string FogOfWarShaderName = "Stilargo/FogOfWar";
 
         private const string LitColorProperty = "_BaseColor";
         private const string UnlitColorProperty = "_UnlitColor";
@@ -28,6 +25,21 @@ namespace Stilargo.Editor.Rendering
         private const string TexWorldScaleProperty = "_TexWorldScale";
         private const float UvBaseUv0 = 0f;
         private const float UvBaseTriplanar = 5f;
+        private const string HeightMapProperty = "_HeightMap";
+        private const string HeightParametrizationProperty = "_HeightMapParametrization";
+        private const string ParallaxAmplitudeProperty = "_HeightPoMAmplitude";
+        private const string DisplacementModeProperty = "_DisplacementMode";
+        private const string ParallaxMaxSamplesProperty = "_PPDMaxSamples";
+        private const float HeightAsAmplitude = 1f;
+        private const float DisplacementPixel = 2f;
+        private const float ParallaxMaxSamples = 32f;
+        private const string DoubleSidedProperty = "_DoubleSidedEnable";
+        private const string DoubleSidedNormalModeProperty = "_DoubleSidedNormalMode";
+        private const float DoubleSidedNormalFlip = 0f;
+        private const string DetailMapProperty = "_DetailMap";
+        private const string DetailAlbedoScaleProperty = "_DetailAlbedoScale";
+        private const string DetailNormalScaleProperty = "_DetailNormalScale";
+        private const string DetailSmoothnessScaleProperty = "_DetailSmoothnessScale";
 
         // Placeholder surfaces read as painted concrete/plastic rather than mirror-smooth.
         private const float PlaceholderSmoothness = 0.35f;
@@ -46,23 +58,10 @@ namespace Stilargo.Editor.Rendering
             return material;
         }
 
-        /// <summary>
-        /// A decal that only tints albedo, with opacity from its base color map's alpha. HDRP only samples the map
-        /// when one is assigned at validation, so pass a placeholder even if the real map is set at runtime.
-        /// </summary>
-        public static Material CreateAlbedoDecal(Texture colorMap)
+        /// <summary>The full-screen fog of war material; <c>FogOverlay</c> assigns its fog map at runtime.</summary>
+        public static Material CreateFogOfWarScreen()
         {
-            if (colorMap == null)
-            {
-                throw new ArgumentNullException(nameof(colorMap));
-            }
-
-            var material = new Material(RequireShader(DecalShaderName));
-            material.SetTexture(BaseColorMapProperty, colorMap);
-            material.SetFloat(AffectNormalProperty, 0f);
-            material.SetFloat(AffectSmoothnessProperty, 0f);
-            HDMaterial.ValidateMaterial(material);
-            return material;
+            return new Material(RequireShader(FogOfWarShaderName));
         }
 
         public static void SetLitColor(Material material, Color color)
@@ -92,6 +91,52 @@ namespace Stilargo.Editor.Rendering
             ApplyTextures(material, textures, metresPerTile);
             material.SetFloat(UvBaseProperty, UvBaseUv0);
             material.SetTextureScale(BaseColorMapProperty, Vector2.one / metresPerTile);
+            HDMaterial.ValidateMaterial(material);
+        }
+
+        /// <summary>
+        /// Adds parallax occlusion mapping from a height map, so deep relief such as roof tiles has real depth.
+        /// It needs UV mapping, not triplanar.
+        /// </summary>
+        public static void ApplyParallax(Material material, Texture2D height, float depthCentimetres)
+        {
+            if (height == null)
+            {
+                throw new ArgumentNullException(nameof(height));
+            }
+
+            material.SetTexture(HeightMapProperty, height);
+            material.SetFloat(HeightParametrizationProperty, HeightAsAmplitude);
+            material.SetFloat(ParallaxAmplitudeProperty, depthCentimetres);
+            material.SetFloat(DisplacementModeProperty, DisplacementPixel);
+            material.SetFloat(ParallaxMaxSamplesProperty, ParallaxMaxSamples);
+            HDMaterial.ValidateMaterial(material);
+        }
+
+        /// <summary>
+        /// Lays a detail map (such as large-scale grime) over the base textures, through the same mapping; tiling is
+        /// relative to the base texture's tile. Null removes it.
+        /// </summary>
+        public static void SetDetail(Material material, Texture2D detail, float tilingRelativeToBase)
+        {
+            if (tilingRelativeToBase <= 0f)
+            {
+                throw new ArgumentOutOfRangeException(nameof(tilingRelativeToBase), tilingRelativeToBase, "Tiling must be positive.");
+            }
+
+            material.SetTexture(DetailMapProperty, detail);
+            material.SetTextureScale(DetailMapProperty, Vector2.one * tilingRelativeToBase);
+            material.SetFloat(DetailAlbedoScaleProperty, 1f);
+            material.SetFloat(DetailNormalScaleProperty, 0f);
+            material.SetFloat(DetailSmoothnessScaleProperty, 1f);
+            HDMaterial.ValidateMaterial(material);
+        }
+
+        /// <summary>Renders both faces, with the normal flipped on the back, for single-sheet geometry such as leaves.</summary>
+        public static void MakeDoubleSided(Material material)
+        {
+            material.SetFloat(DoubleSidedProperty, 1f);
+            material.SetFloat(DoubleSidedNormalModeProperty, DoubleSidedNormalFlip);
             HDMaterial.ValidateMaterial(material);
         }
 

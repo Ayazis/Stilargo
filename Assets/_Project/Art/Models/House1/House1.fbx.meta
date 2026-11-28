@@ -7,6 +7,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: BoxWood
+    second: {fileID: 2100000, guid: 1f21538321def984cb72bcc8fd3378fb, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: Brick
     second: {fileID: 2100000, guid: ee720ab63b0eebe40ab8e8670deaeec8, type: 2}
   - first:
@@ -97,6 +102,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: LeafDark
+    second: {fileID: 2100000, guid: 13bf00edb8912f5469ba3f063dcd1042, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: Mortar
     second: {fileID: 2100000, guid: bba3d92939c95954dbd870a670ec31d1, type: 2}
   - first:
@@ -104,6 +114,16 @@ ModelImporter:
       assembly: UnityEngine.CoreModule
       name: Moss
     second: {fileID: 2100000, guid: 76e1e19b33186ad4c9e4e80ec1dd8948, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: PlantPink
+    second: {fileID: 2100000, guid: 040907ec6cf18a7468936094da2c0b09, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: PlantRed
+    second: {fileID: 2100000, guid: 993b087d9aeaa814286f73a42c0a3d72, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
@@ -127,6 +147,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: RoofTiles
+    second: {fileID: 2100000, guid: 125d420c6db7a7341bbdd2ccbbb7aa8c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: RoofUnder
     second: {fileID: 2100000, guid: da4d094964814814b8f6e58184bbb51e, type: 2}
   - first:
@@ -139,6 +164,11 @@ ModelImporter:
       assembly: UnityEngine.CoreModule
       name: ShutterFaded
     second: {fileID: 2100000, guid: 25984ebb3edfd7944be2096d82e93e45, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Stem
+    second: {fileID: 2100000, guid: 54718ab3cfb49d947881028759e080cb, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule

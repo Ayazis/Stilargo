@@ -18,6 +18,23 @@ namespace Stilargo.Editor.World
             Smoothness = smoothness;
             TextureSet = textureSet;
             MetresPerTile = metresPerTile;
+            Mapping = SurfaceMapping.Projected;
+            ParallaxCentimetres = 0f;
+            IsWorn = false;
+        }
+
+        private HouseMaterialLook(HouseMaterialLook basis, SurfaceMapping mapping, float parallaxCentimetres)
+            : this(basis.Color, basis.Smoothness, basis.TextureSet, basis.MetresPerTile)
+        {
+            Mapping = mapping;
+            ParallaxCentimetres = parallaxCentimetres;
+            IsWorn = basis.IsWorn;
+        }
+
+        private HouseMaterialLook(HouseMaterialLook basis, bool isWorn)
+            : this(basis, basis.Mapping, basis.ParallaxCentimetres)
+        {
+            IsWorn = isWorn;
         }
 
         /// <summary>Plain colour, for paint, metal, glass and fired clay.</summary>
@@ -44,6 +61,21 @@ namespace Stilargo.Editor.World
             return new HouseMaterialLook(tint, ScannedSmoothness, textureSet, metresPerTile);
         }
 
+        /// <summary>
+        /// A scanned set mapped through the mesh's UVs (in metres) with parallax depth, for surfaces whose pattern must
+        /// follow the face, like roof tiles running down every slope.
+        /// </summary>
+        public static HouseMaterialLook ScannedRelief(Color tint, string textureSet, float metresPerTile, float parallaxCentimetres)
+        {
+            return new HouseMaterialLook(Scanned(tint, textureSet, metresPerTile), SurfaceMapping.MetricUvRelief, parallaxCentimetres);
+        }
+
+        /// <summary>A photo-scanned plant: its own texture set on its own UVs, lit from both sides.</summary>
+        public static HouseMaterialLook ScannedFoliage(string textureSet)
+        {
+            return new HouseMaterialLook(Scanned(Color.white, textureSet, GenericMetresPerTile), SurfaceMapping.ScannedFoliage, 0f);
+        }
+
         public Color Color { get; }
 
         public float Smoothness { get; }
@@ -53,6 +85,25 @@ namespace Stilargo.Editor.World
 
         public float MetresPerTile { get; }
 
+        public SurfaceMapping Mapping { get; }
+
+        /// <summary>True when large-scale dirt and run-off are laid over the texture (see <c>Tools/Art/make_wear_detail_map.py</c>).</summary>
+        public bool IsWorn { get; }
+
+        /// <summary>Parallax depth for <see cref="SurfaceMapping.MetricUvRelief"/>; 0 otherwise.</summary>
+        public float ParallaxCentimetres { get; }
+
         public bool IsTextured => TextureSet != null;
+
+        /// <summary>The same look with weathering over it, for old brick, stone and wood.</summary>
+        public HouseMaterialLook Worn()
+        {
+            if (!IsTextured)
+            {
+                throw new System.InvalidOperationException("Only textured looks can be worn: the wear is a detail map over the texture.");
+            }
+
+            return new HouseMaterialLook(this, true);
+        }
     }
 }

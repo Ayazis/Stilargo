@@ -79,9 +79,8 @@ namespace Stilargo.Editor.Scenes
         private const string StanceControllerField = "_stanceController";
         private const string LineRendererField = "_lineRenderer";
 
-        // Enemies stand in a row on the next street north of home: out of vision at the start, one block away.
+        // Enemies stand in a row along the east high road, where the rival enters the map.
         private static readonly float[] EnemyOffsetsX = { -6f, -2f, 2f, 6f };
-        private const float EnemyOffsetZ = 28f;
         private const float EnemyMarkerDiameter = 1.6f;
         private const float MuzzleHeightAboveCentre = 0.4f;
         private const float TracerWidth = 0.06f;
@@ -126,7 +125,8 @@ namespace Stilargo.Editor.Scenes
         private const string CameraBoundsMaxField = "_boundsMax";
 
         private const float StartHeight = 30f;
-        private const float SunPitchDegrees = 38f;
+        // Higher sun: shorter shadows keep streets lit and the light reads as late morning, not dusk.
+        private const float SunPitchDegrees = 52f;
         private const float SunYawDegrees = -30f;
 
         // A small squad in a loose grid on the street through home. The roads are 4 m wide, so rows stay within ±1 m.
@@ -279,8 +279,8 @@ namespace Stilargo.Editor.Scenes
             var enemies = new CombatUnit[EnemyOffsetsX.Length];
             for (int index = 0; index < enemies.Length; index++)
             {
-                var offset = new Vector3(EnemyOffsetsX[index], 0f, EnemyOffsetZ);
-                Vector3 position = site.RoadPointNearHome(offset) + Vector3.up * UnitHalfHeight;
+                var offset = new Vector3(EnemyOffsetsX[index], 0f, 0f);
+                Vector3 position = site.RoadPointNearRivalStart(offset) + Vector3.up * UnitHalfHeight;
                 enemies[index] = CreateEnemy($"{EnemyName} {index + 1}", position);
             }
 

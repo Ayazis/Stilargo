@@ -1,4 +1,5 @@
 using System;
+using Stilargo.Core.City.CanalTown;
 
 namespace Stilargo.Core.City
 {
@@ -36,6 +37,16 @@ namespace Stilargo.Core.City
         public NeighbourhoodSettings Neighbourhoods { get; private set; } = new NeighbourhoodSettings();
 
         public StreetLifeSettings StreetLife { get; private set; } = new StreetLifeSettings();
+
+        /// <summary>The canal town the game plays in; the settings above shape the older grid town.</summary>
+        public CanalTownSettings CanalTown { get; private set; } = new CanalTownSettings();
+
+        public TownSettings WithCanalTown(CanalTownSettings canalTown)
+        {
+            CanalTown = canalTown ?? throw new ArgumentNullException(nameof(canalTown));
+            CanalTown.Validate();
+            return this;
+        }
 
         public TownSettings WithStreets(StreetSettings streets)
         {
